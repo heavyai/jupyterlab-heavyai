@@ -30,6 +30,12 @@ const MIME_TYPE = 'application/vnd.mapd.vega+json';
  */
 export
 class RenderedMapD extends Widget implements IRenderMime.IRenderer {
+  constructor() {
+    super();
+    this._img = document.createElement('img');
+    this.node.appendChild(this._img);
+  }
+
   /**
    * Render MapD image into this widget's node.
    */
@@ -102,12 +108,15 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
           } else {
             let blobUrl = `data:image/png;base64,${result.image}`;
             console.log(blobUrl);
+            this._img.src = blobUrl;
           }
         });
       });
     console.log(data);
     return Promise.resolve(void 0);
   }
+
+  private _img: HTMLImageElement;
 }
 
 
