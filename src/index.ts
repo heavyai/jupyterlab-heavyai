@@ -106,6 +106,13 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
           if (error) {
             console.error(error.message);
           } else {
+            model.setData({
+              data: {
+                'image/png': result.image,
+                ...model.data
+              },
+              metadata: model.metadata
+            });
             let blobUrl = `data:image/png;base64,${result.image}`;
             console.log(blobUrl);
             this._img.src = blobUrl;
