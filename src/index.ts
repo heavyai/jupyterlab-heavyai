@@ -36,7 +36,10 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
   constructor() {
     super();
     this._img = document.createElement('img');
+    this._error = document.createElement('pre');
+    this._error.className = 'jp-MapD-Vega-Error';
     this.node.appendChild(this._img);
+    this.node.appendChild(this._error);
   }
 
   /**
@@ -61,9 +64,12 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
         .user(connection.user)
         .password(connection.password)
         .connect((error: any, con: any) => {
-          con.renderVega(1, JSON.stringify(vega), {}, (error: any, result: any) => {
+          con.renderVega(Private.id++, JSON.stringify(vega), {}, (error: any, result: any) => {
             if (error) {
               console.error(error.message);
+              this._setImageData('');
+              this._error.textContent = error.message;
+
             } else {
               model.setData({
                 data: {
@@ -73,6 +79,7 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
                 metadata: model.metadata
               });
               this._setImageData(result.image);
+              this._error.textContent = '';
               resolve(void 0);
             }
           });
@@ -89,6 +96,7 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
   }
 
   private _img: HTMLImageElement;
+  private _error: HTMLElement;
 }
 
 /**
@@ -112,7 +120,7 @@ interface IMapDMimeBundle extends JSONObject {
 }
 
 /**
- * A mime renderer factory for PDF data.
+ * A mime renderer factory for mapd-vega data.
  */
 export
 const rendererFactory: IRenderMime.IRendererFactory = {
@@ -132,3 +140,9 @@ const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
 ];
 
 export default extensions;
+
+
+namespace Private {
+  export
+  let id = 0;
+}
