@@ -33,6 +33,9 @@ const IMAGE_MIME = 'image/png';
  */
 export
 class RenderedMapD extends Widget implements IRenderMime.IRenderer {
+  /**
+   * Construct a new MapD widget.
+   */
   constructor() {
     super();
     this._img = document.createElement('img');
@@ -46,16 +49,21 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
    * Render MapD image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
+    // If there is an image already in the mime bundle,
+    // we don't automatically rerun the query.
+    // Instead, just display that.
     let imageData = model.data[IMAGE_MIME] as string;
     if (imageData) {
       this._setImageData(imageData);
       return Promise.resolve(void 0);
     }
 
+    // Get the data from the mimebundle
     const data = model.data[MIME_TYPE] as IMapDMimeBundle;
     const { connection, vega } = data;
 
     return new Promise<void>(resolve => {
+      // Launch the mapd connection.
       new MapdCon()
         .protocol(connection.protocol)
         .host(connection.host)
@@ -66,11 +74,16 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
         .connect((error: any, con: any) => {
           con.renderVega(Private.id++, JSON.stringify(vega), {}, (error: any, result: any) => {
             if (error) {
+              // If there was an error, clear any image data,
+              // and set the text content of the error node.
               console.error(error.message);
               this._setImageData('');
               this._error.textContent = error.message;
 
             } else {
+              // Set the mime data for the png.
+              // This allows us to re-use the image if
+              // we are loading from disk.
               model.setData({
                 data: {
                   'image/png': result.image,
@@ -78,7 +91,9 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
                 },
                 metadata: model.metadata
               });
+              // Set the image data.
               this._setImageData(result.image);
+              // Clear any error message.
               this._error.textContent = '';
               resolve(void 0);
             }
@@ -103,11 +118,34 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
  * Connection data for the mapd browser client.
  */
 interface IMapDConnectionData extends JSONObject {
+  /**
+   * The host of the connection, e.g. `metis.mapd.com`.
+   */
   host: string;
+
+  /**
+   * The protocol to use, e.g. `https`.
+   */
   protocol: string;
+
+  /**
+   * The port to use, e.g. `443`.
+   */
   port: string;
+
+  /**
+   * The user name.
+   */
   user: string;
+
+  /**
+   * The database name.
+   */
   dbname: string;
+
+  /**
+   * The password for the connection.
+   */
   password: string;
 }
 
@@ -115,7 +153,15 @@ interface IMapDConnectionData extends JSONObject {
  * MapD renderer custom mimetype format.
  */
 interface IMapDMimeBundle extends JSONObject {
+  /**
+   * Connection data containing all of the info
+   * we need to make the connection.
+   */
   connection: IMapDConnectionData;
+
+  /**
+   * The vega JSON object to render, including the SQL query.
+   */
   vega: JSONObject;
 }
 
@@ -142,6 +188,9 @@ const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
 export default extensions;
 
 
+/**
+ * A namespace for private data.
+ */
 namespace Private {
   export
   let id = 0;
