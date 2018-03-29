@@ -2,10 +2,6 @@
 // Distributed under the terms of the Modified BSD License.
 
 import {
-  JSONObject
-} from '@phosphor/coreutils';
-
-import {
   Widget
 } from '@phosphor/widgets';
 
@@ -26,6 +22,12 @@ export
 const MIME_TYPE = 'application/vnd.mapd.vega+json';
 
 /**
+ * The MIME type for png data.
+ */
+export
+const IMAGE_MIME = 'image/png';
+
+/**
  * A class for rendering a MapD-generated image.
  */
 export
@@ -40,7 +42,11 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
    * Render MapD image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
-    let data = model.data[MIME_TYPE] as JSONObject;
+    let imageData = model.data[IMAGE_MIME] as string;
+    if (imageData) {
+      this._setImageData(imageData);
+      return Promise.resolve(void 0);
+    }
     const exampleVega = {
       "width": 384,
       "height": 564,
@@ -94,33 +100,40 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
       ]
     };
 
-    new MapdCon()
-      .protocol('https')
-      .host('metis.mapd.com')
-      .port('443')
-      .dbName('mapd')
-      .user('mapd')
-      .password('HyperInteractive')
-      .connect((error: any, con: any) => {
-        con.renderVega(1, JSON.stringify(exampleVega), {}, (error: any, result: any) => {
-          if (error) {
-            console.error(error.message);
-          } else {
-            model.setData({
-              data: {
-                'image/png': result.image,
-                ...model.data
-              },
-              metadata: model.metadata
-            });
-            let blobUrl = `data:image/png;base64,${result.image}`;
-            console.log(blobUrl);
-            this._img.src = blobUrl;
-          }
+    return new Promise<void>(resolve => {
+      new MapdCon()
+        .protocol('https')
+        .host('metis.mapd.com')
+        .port('443')
+        .dbName('mapd')
+        .user('mapd')
+        .password('HyperInteractive')
+        .connect((error: any, con: any) => {
+          con.renderVega(1, JSON.stringify(exampleVega), {}, (error: any, result: any) => {
+            if (error) {
+              console.error(error.message);
+            } else {
+              model.setData({
+                data: {
+                  'image/png': result.image,
+                  ...model.data
+                },
+                metadata: model.metadata
+              });
+              this._setImageData(result.image);
+              resolve(void 0);
+            }
+          });
         });
-      });
-    console.log(data);
-    return Promise.resolve(void 0);
+    });
+  }
+
+  /**
+   * Set the image data to a base64 encoded string.
+   */
+  private _setImageData(blob: string): void {
+    let blobUrl = `data:${IMAGE_MIME};base64,${blob}`;
+    this._img.src = blobUrl;
   }
 
   private _img: HTMLImageElement;
