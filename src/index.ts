@@ -1,5 +1,6 @@
-// Copyright (c) Jupyter Development Team.
-// Distributed under the terms of the Modified BSD License.
+import {
+  JSONObject
+} from '@phosphor/coreutils';
 
 import {
   Widget
@@ -43,62 +44,12 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     let imageData = model.data[IMAGE_MIME] as string;
+    let vegaData = model.data[MIME_TYPE] as JSONObject;
+    console.log(vegaData);
     if (imageData) {
       this._setImageData(imageData);
       return Promise.resolve(void 0);
     }
-    const exampleVega = {
-      "width": 384,
-      "height": 564,
-      "data": [
-        {
-          "name": "tweets",
-          "sql": "SELECT goog_x as x, goog_y as y, tweets_nov_feb.rowid FROM tweets_nov_feb"
-        }
-      ],
-      "scales": [
-        {
-          "name": "x",
-          "type": "linear",
-          "domain": [
-            -3650484.1235206556,
-            7413325.514451755
-          ],
-          "range": "width"
-        },
-        {
-          "name": "y",
-          "type": "linear",
-          "domain": [
-            -5778161.9183506705,
-            10471808.487466192
-          ],
-          "range": "height"
-        }
-      ],
-      "marks": [
-        {
-          "type": "points",
-          "from": {
-            "data": "tweets"
-          },
-          "properties": {
-            "x": {
-              "scale": "x",
-              "field": "x"
-            },
-            "y": {
-              "scale": "y",
-              "field": "y"
-            },
-            "fillColor": "blue",
-            "size": {
-              "value": 1
-            }
-          }
-        }
-      ]
-    };
 
     return new Promise<void>(resolve => {
       new MapdCon()
@@ -109,7 +60,7 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
         .user('mapd')
         .password('HyperInteractive')
         .connect((error: any, con: any) => {
-          con.renderVega(1, JSON.stringify(exampleVega), {}, (error: any, result: any) => {
+          con.renderVega(1, JSON.stringify(vegaData), {}, (error: any, result: any) => {
             if (error) {
               console.error(error.message);
             } else {
