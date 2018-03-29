@@ -44,23 +44,24 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     let imageData = model.data[IMAGE_MIME] as string;
-    let vegaData = model.data[MIME_TYPE] as JSONObject;
-    console.log(vegaData);
     if (imageData) {
       this._setImageData(imageData);
       return Promise.resolve(void 0);
     }
 
+    const data = model.data[MIME_TYPE] as IMapDMimeBundle;
+    const { connection, vega } = data;
+
     return new Promise<void>(resolve => {
       new MapdCon()
-        .protocol('https')
-        .host('metis.mapd.com')
-        .port('443')
-        .dbName('mapd')
-        .user('mapd')
-        .password('HyperInteractive')
+        .protocol(connection.protocol)
+        .host(connection.host)
+        .port(connection.port)
+        .dbName(connection.dbname)
+        .user(connection.user)
+        .password(connection.password)
         .connect((error: any, con: any) => {
-          con.renderVega(1, JSON.stringify(vegaData), {}, (error: any, result: any) => {
+          con.renderVega(1, JSON.stringify(vega), {}, (error: any, result: any) => {
             if (error) {
               console.error(error.message);
             } else {
@@ -90,6 +91,25 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
   private _img: HTMLImageElement;
 }
 
+/**
+ * Connection data for the mapd browser client.
+ */
+interface IMapDConnectionData extends JSONObject {
+  host: string;
+  protocol: string;
+  port: string;
+  user: string;
+  dbname: string;
+  password: string;
+}
+
+/**
+ * MapD renderer custom mimetype format.
+ */
+interface IMapDMimeBundle extends JSONObject {
+  connection: IMapDConnectionData;
+  vega: JSONObject;
+}
 
 /**
  * A mime renderer factory for PDF data.
