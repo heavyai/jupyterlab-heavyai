@@ -1,1 +1,1 @@
-declare module 'mapd-connector';
+declare module 'mapd-connector/dist/browser-connector.js';

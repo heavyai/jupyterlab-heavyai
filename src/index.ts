@@ -10,11 +10,11 @@ import {
   IRenderMime
 } from '@jupyterlab/rendermime-interfaces';
 
-import './browser-connector.js';
-
-declare let MapdCon: any;
+import 'mapd-connector/dist/browser-connector.js';
 
 import '../style/index.css';
+
+declare const MapdCon: any
 
 /**
  * The MIME type for backend-rendered MapD.
