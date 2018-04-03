@@ -1,7 +1,11 @@
 """ Functions for backend rendering with MapD """
 
 import ast
+import base64
+import uuid
 import yaml
+
+import vdom
 
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
@@ -42,6 +46,19 @@ class MapDBackendRenderer:
         return {
             'application/vnd.mapd.vega+json': bundle
         }
+
+def render_vega(connection, vega):
+    _widget_count = 1
+    nonce = str(uuid.uuid1())
+    result = connection._client.render_vega(
+            connection._session,
+            _widget_count,
+            vega,
+            1,
+            nonce)
+    data = base64.b64encode(result.image).decode()
+    return vdom.img([], src=f'data:image/png;base64,{data}')
+
 
 @register_cell_magic
 def mapd(line, cell):
