@@ -40,6 +40,6 @@
     "typescript": "~2.6.2"
   },
   "jupyterlab": {
-    "mimeExtension": true
+    "mimeExtension": "lib/mimextension"
   }
 }
