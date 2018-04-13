@@ -11,7 +11,7 @@ import {
 } from '@phosphor/messaging';
 
 import {
-  Toolbar, ToolbarButton
+  Spinner, Toolbar, ToolbarButton
 } from '@jupyterlab/apputils';
 
 import {
@@ -38,11 +38,10 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       if (this.isDisposed) {
         return;
       }
-      this._render().then(() => {
-        this._ready.resolve(void 0);
-      });
+      this._render();
       context.model.contentChanged.connect(this.update, this);
       context.fileChanged.connect(this.update, this);
+      this._ready.resolve(void 0);
     });
 
     this.layout = new PanelLayout();
@@ -85,7 +84,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
    */
   private _render(): Promise<void> {
     if (this._widget) {
-      this._widget.node.remove();
+      this.node.removeChild(this._widget.node);
       this._widget.dispose();
       this._widget = null;
     }
@@ -106,7 +105,15 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
     };
     this._widget = new MapDWidget(data, connection);
     this.node.appendChild(this._widget.node);
-    return this._widget.renderedImage.then(() => void 0);
+    const spinner = new Spinner();
+    this.node.appendChild(spinner.node);
+    return this._widget.renderedImage.then(() => {
+      this.node.removeChild(spinner.node);
+      return void 0;
+    }).catch(() => {
+      this.node.removeChild(spinner.node);
+      return void 0;
+    });
   }
 
   /**
