@@ -111,7 +111,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       this._content.node.removeChild(spinner.node);
       return void 0;
     }).catch(() => {
-      // this._content.node.removeChild(spinner.node);
+      this._content.node.removeChild(spinner.node);
       return void 0;
     });
   }
