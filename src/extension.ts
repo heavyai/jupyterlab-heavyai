@@ -12,7 +12,7 @@ import {
 
 import {
   MapDViewer, MapDViewerFactory
-} from './panel';
+} from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.

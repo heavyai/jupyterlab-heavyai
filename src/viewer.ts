@@ -3,12 +3,16 @@ import {
 } from '@phosphor/coreutils';
 
 import {
-  Widget
+  PanelLayout, Widget
 } from '@phosphor/widgets';
 
 import {
   Message
 } from '@phosphor/messaging';
+
+import {
+  Toolbar, ToolbarButton
+} from '@jupyterlab/apputils';
 
 import {
   PathExt
@@ -40,6 +44,21 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       context.model.contentChanged.connect(this.update, this);
       context.fileChanged.connect(this.update, this);
     });
+
+    this.layout = new PanelLayout();
+    this._toolbar = new Toolbar();
+    this._content = new Widget();
+
+    (this.layout as PanelLayout).addWidget(this._toolbar);
+    (this.layout as PanelLayout).addWidget(this._content);
+
+    this._toolbar.addItem('Render', new ToolbarButton({
+      className: 'jp-RunIcon',
+      onClick: () => {
+        this._render();
+      },
+      tooltip: 'Render with MapD'
+    }));
   }
 
   /**
@@ -66,6 +85,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
    */
   private _render(): Promise<void> {
     if (this._widget) {
+      this._widget.node.remove();
       this._widget.dispose();
       this._widget = null;
     }
@@ -83,7 +103,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       port: '9092',
       dbname: 'mapd',
       protocol: 'http'
-    }
+    };
     this._widget = new MapDWidget(data, connection);
     this.node.appendChild(this._widget.node);
     return this._widget.renderedImage.then(() => void 0);
@@ -101,6 +121,8 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
 
   private _ready = new PromiseDelegate<void>();
   private _widget: MapDWidget | null = null;
+  private _content: Widget;
+  private _toolbar: Toolbar<any>;
 }
 
 /**
