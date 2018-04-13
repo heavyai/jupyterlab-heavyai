@@ -52,6 +52,10 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
     (this.layout as PanelLayout).addWidget(this._toolbar);
     (this.layout as PanelLayout).addWidget(this._content);
 
+    const logo = new Widget();
+    logo.addClass('jp-Toolbar-button');
+    logo.addClass('mapd-MapD-logo');
+    this._toolbar.addItem('Logo', logo);
     this._toolbar.addItem('Render', new ToolbarButton({
       className: 'jp-RunIcon',
       onClick: () => {

@@ -7,3 +7,7 @@
   height: 100%;
   width: 100%;
 }
+
+.mapd-MapD-logo {
+  background-image: url('mapd-logo.svg');
+}
