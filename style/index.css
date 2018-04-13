@@ -1,4 +1,9 @@
-.jp-MapD-Vega-Error {
+.mapd-VegaError {
   background-color: var(--jp-rendermime-error-background);
   white-space: pre-wrap;
+}
+
+.mapd-MapDViewer-content {
+  height: 100%;
+  width: 100%;
 }

@@ -47,6 +47,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
     this.layout = new PanelLayout();
     this._toolbar = new Toolbar();
     this._content = new Widget();
+    this._content.addClass('mapd-MapDViewer-content');
 
     (this.layout as PanelLayout).addWidget(this._toolbar);
     (this.layout as PanelLayout).addWidget(this._content);
@@ -84,7 +85,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
    */
   private _render(): Promise<void> {
     if (this._widget) {
-      this.node.removeChild(this._widget.node);
+      this._content.node.removeChild(this._widget.node);
       this._widget.dispose();
       this._widget = null;
     }
@@ -104,14 +105,14 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       protocol: 'http'
     };
     this._widget = new MapDWidget(data, connection);
-    this.node.appendChild(this._widget.node);
+    this._content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
-    this.node.appendChild(spinner.node);
+    this._content.node.appendChild(spinner.node);
     return this._widget.renderedImage.then(() => {
-      this.node.removeChild(spinner.node);
+      this._content.node.removeChild(spinner.node);
       return void 0;
     }).catch(() => {
-      this.node.removeChild(spinner.node);
+      // this._content.node.removeChild(spinner.node);
       return void 0;
     });
   }

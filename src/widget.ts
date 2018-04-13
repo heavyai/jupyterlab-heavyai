@@ -27,7 +27,7 @@ class MapDWidget extends Widget {
     super();
     this._img = document.createElement('img');
     this._error = document.createElement('pre');
-    this._error.className = 'jp-MapD-Vega-Error';
+    this._error.className = 'mapd-VegaError';
     this.node.appendChild(this._img);
     this.node.appendChild(this._error);
 
