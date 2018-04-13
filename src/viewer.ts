@@ -7,10 +7,6 @@ import {
 } from '@phosphor/widgets';
 
 import {
-  Message
-} from '@phosphor/messaging';
-
-import {
   Spinner, Toolbar, ToolbarButton
 } from '@jupyterlab/apputils';
 
@@ -40,7 +36,6 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       }
       this._render();
       context.model.contentChanged.connect(this.update, this);
-      context.fileChanged.connect(this.update, this);
       this._ready.resolve(void 0);
     });
 
@@ -119,16 +114,6 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       // this._content.node.removeChild(spinner.node);
       return void 0;
     });
-  }
-
-  /**
-   * Handle `update-request` messages for the widget.
-   */
-  protected onUpdateRequest(msg: Message): void {
-    if (this.isDisposed || !this.context.isReady) {
-      return;
-    }
-    this._render();
   }
 
   private _ready = new PromiseDelegate<void>();
