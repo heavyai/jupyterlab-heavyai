@@ -56,11 +56,18 @@ class MapDWidget extends Widget {
       .user(connection.user)
       .password(connection.password)
       .connect((error: any, con: any) => {
+        if (error) {
+          // If there was an error, clear any image data,
+          // and set the text content of the error node.
+          this._setImageData('');
+          this._error.textContent = error;
+          this._rendered.reject(error);
+          return;
+        }
         con.renderVega(Private.id++, JSON.stringify(vega), {}, (error: any, result: any) => {
           if (error) {
             // If there was an error, clear any image data,
             // and set the text content of the error node.
-            console.error(error.message);
             this._setImageData('');
             this._error.textContent = error.message;
             this._rendered.reject(error.message);
