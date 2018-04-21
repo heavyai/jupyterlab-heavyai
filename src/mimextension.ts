@@ -11,7 +11,11 @@ import {
 } from '@jupyterlab/rendermime-interfaces';
 
 import {
-  IMapDConnectionData, MapDWidget
+  IMapDConnectionData
+} from './connection';
+
+import {
+  MapDWidget
 } from './widget';
 
 

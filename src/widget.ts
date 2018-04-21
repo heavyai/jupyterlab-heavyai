@@ -6,6 +6,10 @@ import {
   Widget
 } from '@phosphor/widgets';
 
+import {
+  IMapDConnectionData
+} from './connection';
+
 import 'mapd-connector/dist/browser-connector.js';
 
 declare const MapdCon: any
@@ -83,43 +87,6 @@ class MapDWidget extends Widget {
   private _connection: IMapDConnectionData;
   private _img: HTMLImageElement;
   private _error: HTMLElement;
-}
-
-
-/**
- * Connection data for the mapd browser client.
- */
-export
-interface IMapDConnectionData extends JSONObject {
-  /**
-   * The host of the connection, e.g. `metis.mapd.com`.
-   */
-  host: string;
-
-  /**
-   * The protocol to use, e.g. `https`.
-   */
-  protocol: string;
-
-  /**
-   * The port to use, e.g. `443`.
-   */
-  port: string;
-
-  /**
-   * The user name.
-   */
-  user: string;
-
-  /**
-   * The database name.
-   */
-  dbname: string;
-
-  /**
-   * The password for the connection.
-   */
-  password: string;
 }
 
 /**

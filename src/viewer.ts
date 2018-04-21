@@ -19,7 +19,11 @@ import {
 } from '@jupyterlab/docregistry';
 
 import {
-  IMapDConnectionData, MapDWidget
+  IMapDConnectionData, showConnectionDialog
+} from './connection';
+
+import {
+  MapDWidget
 } from './widget';
 
 export
@@ -47,16 +51,21 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
     (this.layout as PanelLayout).addWidget(this._toolbar);
     (this.layout as PanelLayout).addWidget(this._content);
 
-    const logo = new Widget();
-    logo.addClass('jp-Toolbar-button');
-    logo.addClass('mapd-MapD-logo');
-    this._toolbar.addItem('Logo', logo);
+    this._toolbar.addItem('Connect', new ToolbarButton({
+      className: 'mapd-MapD-logo',
+      onClick: () => {
+        showConnectionDialog(this._connection).then(connection => {
+          this._connection = connection;
+        });
+      },
+      tooltip: 'Enter MapD Connection Data'
+    }));
     this._toolbar.addItem('Render', new ToolbarButton({
       className: 'jp-RunIcon',
       onClick: () => {
         this._render();
       },
-      tooltip: 'Render with MapD'
+      tooltip: 'Render'
     }));
   }
 
@@ -90,28 +99,22 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
     }
 
     const text = this.context.model.toString();
-    // If there is no data, do nothing.
-    if (!text) {
+    // If there is no data or no connection, do nothing
+    if (!text || !this._connection) {
       return Promise.resolve (void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
-    let connection: IMapDConnectionData = {
-      user: 'mapd',
-      password: 'HyperInteractive',
-      host: 'vega-demo.mapd.com',
-      port: '9092',
-      dbname: 'mapd',
-      protocol: 'http'
-    };
-    this._widget = new MapDWidget(data, connection);
+    this._widget = new MapDWidget(data, this._connection);
     this._content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
     this._content.node.appendChild(spinner.node);
     return this._widget.renderedImage.then(() => {
       this._content.node.removeChild(spinner.node);
+      spinner.dispose();
       return void 0;
     }).catch(() => {
       this._content.node.removeChild(spinner.node);
+      spinner.dispose();
       return void 0;
     });
   }
@@ -120,6 +123,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
   private _widget: MapDWidget | null = null;
   private _content: Widget;
   private _toolbar: Toolbar<any>;
+  private _connection: IMapDConnectionData | undefined;
 }
 
 /**
