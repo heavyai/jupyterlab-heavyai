@@ -12,7 +12,8 @@
     "lib/*.d.ts",
     "lib/*.js.map",
     "lib/*.js",
-    "style/*.css"
+    "schema/*.json",
+    "style/*.*"
   ],
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -30,6 +31,10 @@
     "watch": "tsc -w"
   },
   "dependencies": {
+    "@jupyterlab/application": "^0.16.0",
+    "@jupyterlab/apputils": "^0.16.0",
+    "@jupyterlab/coreutils": "^1.1.0",
+    "@jupyterlab/docregistry": "^0.16.0",
     "@jupyterlab/rendermime-interfaces": "^1.0.6",
     "@phosphor/coreutils": "^1.3.0",
     "@phosphor/widgets": "^1.5.0",
@@ -40,6 +45,8 @@
     "typescript": "~2.6.2"
   },
   "jupyterlab": {
-    "mimeExtension": true
+    "extension": "lib/extension",
+    "mimeExtension": "lib/mimextension",
+    "schemaDir": "schema"
   }
 }

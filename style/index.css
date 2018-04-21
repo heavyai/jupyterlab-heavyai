@@ -1,4 +1,20 @@
-.jp-MapD-Vega-Error {
+.mapd-VegaError {
   background-color: var(--jp-rendermime-error-background);
   white-space: pre-wrap;
+}
+
+.mapd-MapDViewer-content {
+  height: 100%;
+  width: 100%;
+}
+
+.mapd-MapDVega {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+.mapd-MapD-logo {
+  background-image: url('mapd-logo.svg');
+  background-size: 100%;
 }
