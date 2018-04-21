@@ -38,7 +38,7 @@ interface IMapDConnectionData extends JSONObject {
   /**
    * The database name.
    */
-  dbname: string;
+  dbName: string;
 
   /**
    * The password for the connection.
@@ -90,7 +90,7 @@ class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDCon
     if (oldData) {
       this._user.value = oldData.user;
       this._password.value = oldData.password;
-      this._database.value = oldData.dbname;
+      this._database.value = oldData.dbName;
       this._host.value = oldData.host;
       this._protocol.value = oldData.protocol;
       this._port.value = oldData.port;
@@ -127,7 +127,7 @@ class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDCon
     return {
       user: this._user.value,
       password: this._password.value,
-      dbname: this._database.value,
+      dbName: this._database.value,
       host: this._host.value,
       protocol: this._protocol.value,
       port: this._port.value

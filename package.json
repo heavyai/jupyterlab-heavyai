@@ -12,6 +12,7 @@
     "lib/*.d.ts",
     "lib/*.js.map",
     "lib/*.js",
+    "schema/*.json",
     "style/*.*"
   ],
   "main": "lib/index.js",
@@ -44,7 +45,8 @@
     "typescript": "~2.6.2"
   },
   "jupyterlab": {
+    "extension": "lib/extension",
     "mimeExtension": "lib/mimextension",
-    "extension": "lib/extension"
+    "schemaDir": "schema"
   }
 }

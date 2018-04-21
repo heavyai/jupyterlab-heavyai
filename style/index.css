@@ -10,4 +10,5 @@
 
 .mapd-MapD-logo {
   background-image: url('mapd-logo.svg');
+  background-size: 100%;
 }

@@ -30,10 +30,18 @@
     }
   },
   "properties": {
-    "editorConfig": {
+    "defaultConnection": {
       "title": "Default Connection Configuration",
       "description": "The default connection settings for MapD",
-      "$ref": "#/definitions/defaultConnection"
+      "$ref": "#/definitions/defaultConnection",
+      "default": {
+        "user": "",
+        "password": "",
+        "dbName": "",
+        "host": "",
+        "protocol": "",
+        "port": ""
+      }
     }
   },
   "additionalProperties": false,

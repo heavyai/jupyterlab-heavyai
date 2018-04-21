@@ -7,8 +7,16 @@ import {
 } from '@jupyterlab/apputils';
 
 import {
+  ISettingRegistry
+} from '@jupyterlab/coreutils';
+
+import {
   DocumentRegistry
 } from '@jupyterlab/docregistry';
+
+import {
+  IMapDConnectionData
+} from './connection';
 
 import {
   MapDViewer, MapDViewerFactory
@@ -32,6 +40,8 @@ export
 const EXTENSIONS = ['.vega', '.mapd.vega', '.mapd.vg.json',
   '.mapd.vega.json', '.vg.json', '.vega.json'];
 
+const PLUGIN_ID = 'jupyterlab-mapd:plugin';
+
 /**
  * The MapD-Vega file type.
  */
@@ -50,12 +60,12 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
  */
 const mapdPlugin: JupyterLabPlugin<void> = {
   activate: activateMapDViewer,
-  id: '@jupyterlab/mapd-extension:plugin',
-  requires: [ ILayoutRestorer ],
+  id: PLUGIN_ID,
+  requires: [ ILayoutRestorer, ISettingRegistry ],
   autoStart: true
 };
 
-function activateMapDViewer(app: JupyterLab, restorer: ILayoutRestorer): void {
+function activateMapDViewer(app: JupyterLab, restorer: ILayoutRestorer, settingRegistry: ISettingRegistry): void {
   const namespace = 'mapd-widget';
   const factory = new MapDViewerFactory({
     name: FACTORY,
@@ -87,6 +97,30 @@ function activateMapDViewer(app: JupyterLab, restorer: ILayoutRestorer): void {
       widget.title.iconClass = types[0].iconClass;
       widget.title.iconLabel = types[0].iconLabel;
     }
+  });
+
+  // Update the default connection data for viewers that don't already
+  // have it defined.
+  const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
+    const defaultConnection = settings.get('defaultConnection').composite as IMapDConnectionData | null | undefined;
+    if (!defaultConnection) {
+      return;
+    }
+    factory.defaultConnection = defaultConnection;
+    tracker.forEach(viewer => {
+      if (!viewer.connection) {
+        viewer.connection = defaultConnection;
+      }
+    });
+  };
+
+  // Fetch the initial state of the settings.
+  Promise.all([settingRegistry.load(PLUGIN_ID), app.restored])
+  .then(([settings]) => {
+    settings.changed.connect(onSettingsUpdated);
+    onSettingsUpdated(settings);
+  }).catch((reason: Error) => {
+    console.error(reason.message);
   });
 }
 

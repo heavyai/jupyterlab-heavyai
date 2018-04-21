@@ -52,7 +52,7 @@ class MapDWidget extends Widget {
       .protocol(connection.protocol)
       .host(connection.host)
       .port(connection.port)
-      .dbName(connection.dbname)
+      .dbName(connection.dbName)
       .user(connection.user)
       .password(connection.password)
       .connect((error: any, con: any) => {

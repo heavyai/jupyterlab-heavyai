@@ -28,9 +28,10 @@ import {
 
 export
 class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
-  constructor(context: DocumentRegistry.Context) {
+  constructor(context: DocumentRegistry.Context, connection?: IMapDConnectionData) {
     super();
     this.context = context;
+    this.connection = connection;
     this._onTitleChanged();
     context.pathChanged.connect(this._onTitleChanged, this);
 
@@ -73,6 +74,16 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
    * The widget's context.
    */
   readonly context: DocumentRegistry.Context;
+
+  /**
+   * The current connection data for the viewer.
+   */
+  get connection(): IMapDConnectionData {
+    return this._connection;
+  }
+  set connection(value: IMapDConnectionData) {
+    this._connection = value;
+  }
 
   /**
    * A promise that resolves when the viewer is ready.
@@ -135,6 +146,18 @@ class MapDViewerFactory extends ABCWidgetFactory<MapDViewer, DocumentRegistry.IM
    * Create a new widget given a context.
    */
   protected createNewWidget(context: DocumentRegistry.IContext<DocumentRegistry.IModel>): MapDViewer {
-    return new MapDViewer(context);
+    return new MapDViewer(context, this.defaultConnection);
   }
+
+  /**
+   * The current default connection data for viewers.
+   */
+  get defaultConnection(): IMapDConnectionData {
+    return this._defaultConnection;
+  }
+  set defaultConnection(value: IMapDConnectionData) {
+    this._defaultConnection = value;
+  }
+
+  private _defaultConnection: IMapDConnectionData | undefined;
 }
