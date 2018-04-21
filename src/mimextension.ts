@@ -15,7 +15,7 @@ import {
 } from './connection';
 
 import {
-  MapDWidget
+  MapDVega
 } from './widget';
 
 
@@ -64,8 +64,8 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
     const data = model.data[MIME_TYPE] as IMapDMimeBundle;
     const { connection, vega } = data;
 
-    // Create a new MapDWidget
-    this._widget = new MapDWidget(vega, connection);
+    // Create a new MapDVega
+    this._widget = new MapDVega(vega, connection);
     this.node.appendChild(this._widget.node);
     return this._widget.renderedImage.then(data => {
       // Set the mime data for the png.
@@ -82,7 +82,7 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
     });
   }
 
-  private _widget: MapDWidget | null = null;
+  private _widget: MapDVega | null = null;
 }
 
 

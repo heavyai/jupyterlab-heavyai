@@ -23,7 +23,7 @@ import {
 } from './connection';
 
 import {
-  MapDWidget
+  MapDVega
 } from './widget';
 
 export
@@ -115,7 +115,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       return Promise.resolve (void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
-    this._widget = new MapDWidget(data, this._connection);
+    this._widget = new MapDVega(data, this._connection);
     this._content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
     this._content.node.appendChild(spinner.node);
@@ -131,7 +131,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
   }
 
   private _ready = new PromiseDelegate<void>();
-  private _widget: MapDWidget | null = null;
+  private _widget: MapDVega | null = null;
   private _content: Widget;
   private _toolbar: Toolbar<any>;
   private _connection: IMapDConnectionData | undefined;

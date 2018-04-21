@@ -8,6 +8,12 @@
   width: 100%;
 }
 
+.mapd-MapDVega {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
 .mapd-MapD-logo {
   background-image: url('mapd-logo.svg');
   background-size: 100%;

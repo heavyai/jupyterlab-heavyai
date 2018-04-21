@@ -23,12 +23,13 @@ const IMAGE_MIME = 'image/png';
  * A class for rendering a MapD-generated image.
  */
 export
-class MapDWidget extends Widget {
+class MapDVega extends Widget {
   /**
    * Construct a new MapD widget.
    */
   constructor(vega: JSONObject, connection: IMapDConnectionData) {
     super();
+    this.addClass('mapd-MapDVega')
     this._img = document.createElement('img');
     this._error = document.createElement('pre');
     this._error.className = 'mapd-VegaError';
