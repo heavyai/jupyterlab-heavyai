@@ -54,8 +54,14 @@ function showConnectionDialog(oldConnection?: IMapDConnectionData): Promise<IMap
   return showDialog<IMapDConnectionData>({
     title: 'MapD Connection',
     body: new MapDConnectionDialog(oldConnection),
-    buttons: [Dialog.okButton()],
-  }).then(result => result.value);
+    buttons: [Dialog.cancelButton(), Dialog.okButton()],
+  }).then(result => {
+    if (result.button.accept) {
+      return result.value;
+    } else {
+      return oldConnection;
+    }
+  });
 }
 
 
