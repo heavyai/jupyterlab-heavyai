@@ -1,0 +1,14 @@
+version: "3"
+services:
+  jupyter:
+    build: .
+    environment:
+      JUPYTER_ENABLE_LAB: 'true'
+    command: start-notebook.sh --watch
+    ports:
+      - "8888:8888"
+    volumes:
+      - ".:/home/jovyan"
+      - "./docker-start.sh:/usr/local/bin/start-notebook.d/docker-start.sh"
+  mapd:
+    image: mapd/mapd-ce-cpu

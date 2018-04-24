@@ -10,6 +10,3 @@ yarn-error.log
 .node-gyp
 .npm
 __pycache__
-.yarnrc
-.bash_history
-.config
