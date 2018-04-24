@@ -13,7 +13,7 @@ export function compileToVega(vlSpec: any): any {
     vlSpec.data.name = 'mapd_data' 
 
 
-    const vSpec = compile(vlSpec).spec;
+    const vSpec = compile(vlSpec, {config: {invalidValues: null}}).spec;
 
     vSpec.data[0].sql = sql;
     return vSpec;
