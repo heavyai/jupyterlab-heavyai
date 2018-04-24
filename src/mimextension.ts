@@ -18,6 +18,7 @@ import {
   MapDVega
 } from './widget';
 
+import { compileToVega } from './vega-lite';
 
 import '../style/index.css';
 
@@ -62,10 +63,10 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
 
     // Get the data from the mimebundle
     const data = model.data[MIME_TYPE] as IMapDMimeBundle;
-    const { connection, vega } = data;
+    const { connection, vega, vegalite } = data;
 
     // Create a new MapDVega
-    this._widget = new MapDVega(vega, connection);
+    this._widget = new MapDVega(vega || compileToVega(vegalite), connection);
     this.node.appendChild(this._widget.node);
     return this._widget.renderedImage.then(data => {
       // Set the mime data for the png.
@@ -99,7 +100,11 @@ interface IMapDMimeBundle extends JSONObject {
   /**
    * The vega JSON object to render, including the SQL query.
    */
-  vega: JSONObject;
+  vega?: JSONObject;
+  /**
+   * The vega lite JSON object to render, including the SQL query.
+   */
+  vegalite?: JSONObject;
 }
 
 /**
