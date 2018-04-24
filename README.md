@@ -24,9 +24,6 @@ You can start developing on this locally with Docker
 git clone https://github.com/Quansight/jupyter-mapd-renderer
 cd jupyter-mapd-renderer
 docker-compose up
-
-# optionally insert sample data
-docker-compose exec mapd /mapd/insert_sample_data
 ```
 
 Open link to Jupyterlab instance once it is built and shows up in the logs.

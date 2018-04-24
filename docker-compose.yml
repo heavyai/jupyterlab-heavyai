@@ -10,5 +10,3 @@ services:
     volumes:
       - ".:/home/jovyan"
       - "./docker-start.sh:/usr/local/bin/start-notebook.d/docker-start.sh"
-  mapd:
-    image: mapd/mapd-ce-cpu
