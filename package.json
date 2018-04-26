@@ -2,12 +2,12 @@
   "name": "jupyterlab-mapd",
   "version": "0.1.0",
   "description": "JupyterLab - MapD backend renderer",
-  "homepage": "https://github.com/jupyterlab/jupyterlab",
+  "homepage": "https://github.com/Quansight/jupyter-mapd-renderer",
   "bugs": {
-    "url": "https://github.com/jupyterlab/jupyterlab/issues"
+    "url": "https://github.com/Quansight/jupyter-mapd-renderer/issues"
   },
-  "license": "BSD-3-Clause",
-  "author": "Project Jupyter",
+  "license": "Apache-2.0",
+  "author": "MapD",
   "files": [
     "lib/*.d.ts",
     "lib/*.js.map",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jupyterlab/jupyterlab.git"
+    "url": "https://github.com/Quansight/jupyter-mapd-renderer.git"
   },
   "scripts": {
     "build": "tsc",
