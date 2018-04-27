@@ -46,6 +46,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
 
     this.layout = new PanelLayout();
     this._toolbar = new Toolbar();
+    this._toolbar.addClass('mapd-MapD-toolbar');
     this._content = new Widget();
     this._content.addClass('mapd-MapDViewer-content');
 
