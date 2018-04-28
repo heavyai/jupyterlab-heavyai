@@ -166,12 +166,33 @@ class MapDTableModel extends DataModel {
     }
 
     const blockIndex = Math.floor(row/BLOCK_SIZE);
+    const offset = BLOCK_SIZE * blockIndex;
+    const localRow = row - offset;
+
+    // Trash other blocks that we don't need.
+    const keep = [0, blockIndex + 1, blockIndex, blockIndex - 1];
+    Object.keys(this._dataBlocks).forEach(index => {
+      let idx = Number(index);
+      if (keep.indexOf(idx) === -1) {
+        this._freeBlock(idx);
+      }
+    });
+
+    // Check if we should fetch the next block.
+    if (blockIndex <= this._maxBlock && localRow / BLOCK_SIZE > 0.9 && !this._dataBlocks[blockIndex+1]) {
+      this._fetchBlock(blockIndex + 1);
+    }
+
+    // Check if we should fetch the previous block.
+    if (blockIndex >= 1 && localRow / BLOCK_SIZE < 0.1 && !this._dataBlocks[blockIndex-1]) {
+      this._fetchBlock(blockIndex - 1);
+    }
+
     if (!this._dataBlocks[blockIndex]) {
       this._fetchBlock(blockIndex);
       return null;
     } else {
       const block = this._dataBlocks[blockIndex];
-      const offset = BLOCK_SIZE * blockIndex;
       const rowData = block[row - offset];
       return rowData[this._fieldNames[column]];
     }
@@ -200,18 +221,24 @@ class MapDTableModel extends DataModel {
     for (let key of Object.keys(this._dataBlocks)) {
       delete this._dataBlocks[Number(key)];
     }
-    if (!this.query) {
-      this._dataBlocks = {};
-      this._fieldNames = [];
-      this.emitChanged({ type: 'model-reset' });
-      return;
+    this._fieldNames = [];
+    this._tableLength = -1;
+    this._maxBlock = Infinity;
+    this._pending.clear();
+
+    if (this.query) {
+      this._fieldNames = Private.getFields(this._query);
+      this._fetchBlock(0);
     }
-    this._fieldNames = Private.getFields(this._query);
     this.emitChanged({ type: 'model-reset' });
-    this._fetchBlock(0);
+    return;
   }
 
   private _fetchBlock(index: number): void {
+    if (this._pending.has(index)) {
+      return;
+    }
+    this._pending.add(index);
     const limit = BLOCK_SIZE;
     const offset = index * BLOCK_SIZE;
     const query = `${this._query} LIMIT ${limit} OFFSET ${offset}`;
@@ -219,9 +246,12 @@ class MapDTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
+    console.log(`Fetching block ${index}`);
     Private.makeQuery(this._connection, query).then(res => {
+      this._pending.delete(index);
+      console.log(`Fetched block ${index}`);
       this._dataBlocks[index] = res;
-      if (index <= maxIndex) {
+      if (index <= maxIndex || this._tableLength !== -1) {
         this.emitChanged({
           type: 'cells-changed',
           region: 'body',
@@ -233,6 +263,7 @@ class MapDTableModel extends DataModel {
       } else {
         if (res.length < BLOCK_SIZE) {
           this._tableLength = offset + res.length;
+          this._maxBlock = index;
           console.log('table length found!', this._tableLength);
         }
         this.emitChanged({
@@ -245,6 +276,22 @@ class MapDTableModel extends DataModel {
     });
   }
 
+  private _freeBlock(index: number): void {
+    if (!this._dataBlocks[index]) {
+      return;
+    }
+    const offset = index * BLOCK_SIZE;
+    const length = this._dataBlocks[index].length;
+    delete this._dataBlocks[index];
+    this.emitChanged({
+      type: 'cells-changed',
+      region: 'body',
+      rowIndex: offset,
+      columnIndex: 0,
+      rowSpan: length,
+      columnSpan: this._fieldNames.length,
+    });
+  }
 
 
   private _query = '';
@@ -252,7 +299,9 @@ class MapDTableModel extends DataModel {
 
   private _fieldNames: string[];
   private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
+  private _pending = new Set<number>();
   private _tableLength = -1;
+  private _maxBlock = Infinity;
 }
 
 
