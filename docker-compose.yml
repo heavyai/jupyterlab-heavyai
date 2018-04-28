@@ -4,13 +4,13 @@ services:
     build: .
     environment:
       JUPYTER_ENABLE_LAB: 'true'
+      YARN_CACHE_FOLDER: /yarn-cache
     command: start-notebook.sh --watch
     ports:
       - "8888:8888"
     volumes:
       - ".:/home/jovyan"
       - "./docker-start.sh:/usr/local/bin/start-notebook.d/docker-start.sh"
-      # to cache node_modules in volume between builds
-      - "staging_nm:/opt/conda/share/jupyter/lab/staging/node_modules"
+      - "yarn-cache:/yarn-cache"
 volumes:
-  staging_nm:
+  yarn-cache:

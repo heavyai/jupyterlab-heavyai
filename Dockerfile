@@ -5,3 +5,7 @@ RUN conda install -y -c conda-forge \
     pymapd
 
 RUN pip install vdom altair==2.0.0rc2
+
+USER root
+RUN echo "$NB_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/notebook
+USER $NB_USER
