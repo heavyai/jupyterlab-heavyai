@@ -10,3 +10,7 @@ services:
     volumes:
       - ".:/home/jovyan"
       - "./docker-start.sh:/usr/local/bin/start-notebook.d/docker-start.sh"
+      # to cache node_modules in volume between builds
+      - "staging_nm:/opt/conda/share/jupyter/lab/staging/node_modules"
+volumes:
+  staging_nm:
