@@ -22,6 +22,8 @@ import 'mapd-connector/dist/browser-connector.js';
 
 declare const MapdCon: any
 
+const BLOCK_SIZE = 50000;
+
 export
 class MapDGrid extends Widget {
   constructor(connection?: IMapDConnectionData) {
@@ -111,7 +113,19 @@ class MapDTableModel extends DataModel {
    * Get the number of rows for the model.
    */
   rowCount(region: DataModel.RowRegion): number {
-    return region === 'body' ? this._data.length: 1;
+    if (region === 'column-header') {
+      return 1;
+    }
+    if (this._tableLength > 0) {
+      return this._tableLength;
+    }
+
+    const indices = Object.keys(this._dataBlocks).map(key => Number(key));
+    if (indices.length === 0) {
+      return 0;
+    }
+    const maxIndex = Math.max(...indices);
+    return BLOCK_SIZE * maxIndex + this._dataBlocks[maxIndex].length;
   }
 
   /**
@@ -140,7 +154,7 @@ class MapDTableModel extends DataModel {
    */
   data(region: DataModel.CellRegion, row: number, column: number): any {
     if (region === 'row-header') {
-      return String(row);
+      return String(row+1);
     }
 
     if (region === 'column-header') {
@@ -151,8 +165,16 @@ class MapDTableModel extends DataModel {
       return null;
     }
 
-    const rowData = this._data[row];
-    return rowData[this._fieldNames[column]];
+    const blockIndex = Math.floor(row/BLOCK_SIZE);
+    if (!this._dataBlocks[blockIndex]) {
+      this._fetchBlock(blockIndex);
+      return null;
+    } else {
+      const block = this._dataBlocks[blockIndex];
+      const offset = BLOCK_SIZE * blockIndex;
+      const rowData = block[row - offset];
+      return rowData[this._fieldNames[column]];
+    }
   }
 
 
@@ -170,24 +192,67 @@ class MapDTableModel extends DataModel {
     this._updateModel();
   }
 
+  /**
+   * Reset the model. Should be called when either
+   * the query or the connection data change.
+   */
   private _updateModel(): void {
+    for (let key of Object.keys(this._dataBlocks)) {
+      delete this._dataBlocks[Number(key)];
+    }
     if (!this.query) {
-      this._data = [];
+      this._dataBlocks = {};
       this._fieldNames = [];
       this.emitChanged({ type: 'model-reset' });
       return;
     }
     this._fieldNames = Private.getFields(this._query);
-    Private.makeQuery(this._connection, this._query).then(res => {
-      this._data = res;
-      this.emitChanged({ type: 'model-reset' });
+    this.emitChanged({ type: 'model-reset' });
+    this._fetchBlock(0);
+  }
+
+  private _fetchBlock(index: number): void {
+    const limit = BLOCK_SIZE;
+    const offset = index * BLOCK_SIZE;
+    const query = `${this._query} LIMIT ${limit} OFFSET ${offset}`;
+
+    const indices = Object.keys(this._dataBlocks).map(key => Number(key));
+    const maxIndex = Math.max(...indices);
+
+    Private.makeQuery(this._connection, query).then(res => {
+      this._dataBlocks[index] = res;
+      if (index <= maxIndex) {
+        this.emitChanged({
+          type: 'cells-changed',
+          region: 'body',
+          rowIndex: offset,
+          columnIndex: 0,
+          rowSpan: res.length,
+          columnSpan: this._fieldNames.length,
+        });
+      } else {
+        if (res.length < BLOCK_SIZE) {
+          this._tableLength = offset + res.length;
+          console.log('table length found!', this._tableLength);
+        }
+        this.emitChanged({
+          type: 'rows-inserted',
+          region: 'body',
+          index: offset,
+          span: res.length,
+        });
+      }
     });
   }
 
-  private _fieldNames: string[];
+
+
   private _query = '';
   private _connection: IMapDConnectionData | undefined;
-  private _data: ReadonlyArray<JSONObject> = [];
+
+  private _fieldNames: string[];
+  private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
+  private _tableLength = -1;
 }
 
 

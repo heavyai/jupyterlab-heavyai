@@ -4,7 +4,7 @@
 }
 
 .mapd-MapDViewer-content {
-  height: 100%;
+  height: calc(100% - 35px);
   width: 100%;
 }
 
