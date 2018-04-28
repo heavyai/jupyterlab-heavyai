@@ -50,6 +50,20 @@ class MapDGrid extends Widget {
     queryInput.placeholder = 'SQL Query';
     const queryInputWidget = new Widget({ node: queryInput });
 
+    // Add an `Enter` keydown handler for the input field.
+    queryInput.onkeydown = (event: KeyboardEvent) => {
+      switch (event.keyCode) {
+        case 13: // Enter
+          event.stopPropagation();
+          event.preventDefault();
+          this._model.query = queryInput.value;
+          break;
+        default:
+          break;
+      }
+    };
+
+    // Create the toolbar.
     this._toolbar.addItem('QueryInput', queryInputWidget);
     this._toolbar.addItem('Query', new ToolbarButton({
       className: 'jp-RunIcon',
