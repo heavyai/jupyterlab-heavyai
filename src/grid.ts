@@ -261,15 +261,19 @@ class MapDTableModel extends DataModel {
     this._streaming = false;
 
     if (this.query) {
-      this._fieldNames = Private.getFields(this._query);
       this._streaming = !Private.hasLimitOrOffset(this._query);
-      if (this._streaming) {
-        this._fetchBlock(0);
-      } else {
-        this._fetchDataset();
-      }
+      Private.getFields(this._connection, this._query).then(names => {
+        this._fieldNames = names;
+        this.emitChanged({ type: 'model-reset' });
+        if (this._streaming) {
+          this._fetchBlock(0);
+        } else {
+          this._fetchDataset();
+        }
+      });
+    } else {
+      this.emitChanged({ type: 'model-reset' });
     }
-    this.emitChanged({ type: 'model-reset' });
     return;
   }
 
@@ -379,23 +383,10 @@ namespace Private {
   }
 
   export
-  function getFields(query: string): string[] {
-    let selection = query.match(/SELECT(.*)FROM/i);
-    if (!selection) {
-      throw Error('Malformed query');
-    }
-    let fieldNames = selection[1].split(',').map(sel => {
-      let test = sel.split(' as ');
-      if (test.length === 2) {
-        return test[1].trim();
-      }
-      test = sel.split(' AS ');
-      if (test.length === 2) {
-        return test[1].trim();
-      }
-      return sel.trim();
+  function getFields(connection: IMapDConnectionData, query: string): Promise<string[]> {
+    return validateQuery(connection, query).then(res => {
+      return res.map(item => item.name as string);
     });
-    return fieldNames;
   }
 
   /**
@@ -422,6 +413,31 @@ namespace Private {
               } else {
                 resolve(result);
               }
+            });
+          }
+        });
+    });
+  }
+
+  /**
+   * Validate a query with the MapD backend.
+   */
+  function validateQuery(connection: IMapDConnectionData, query: string): Promise<ReadonlyArray<JSONObject>> {
+    return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
+      new MapdCon()
+        .protocol(connection.protocol)
+        .host(connection.host)
+        .port(connection.port)
+        .dbName(connection.dbName)
+        .user(connection.user)
+        .password(connection.password)
+        .connect((error: any, con: any) => {
+          if (error) {
+            reject(error);
+          }
+          else {
+            con.validateQuery(query).then((result: ReadonlyArray<JSONObject>) => {
+              resolve(result);
             });
           }
         });
