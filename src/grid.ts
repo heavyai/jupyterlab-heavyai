@@ -191,35 +191,40 @@ class MapDTableModel extends DataModel {
       return null;
     }
 
-    const blockIndex = Math.floor(row/BLOCK_SIZE);
-    const offset = BLOCK_SIZE * blockIndex;
-    const localRow = row - offset;
+    if (this._streaming) {
+      const blockIndex = Math.floor(row/BLOCK_SIZE);
+      const offset = BLOCK_SIZE * blockIndex;
+      const localRow = row - offset;
 
-    // Trash other blocks that we don't need.
-    const keep = [0, blockIndex + 1, blockIndex, blockIndex - 1];
-    Object.keys(this._dataBlocks).forEach(index => {
-      let idx = Number(index);
-      if (keep.indexOf(idx) === -1) {
-        this._freeBlock(idx);
+      // Trash other blocks that we don't need.
+      const keep = [0, blockIndex + 1, blockIndex, blockIndex - 1];
+      Object.keys(this._dataBlocks).forEach(index => {
+        let idx = Number(index);
+        if (keep.indexOf(idx) === -1) {
+          this._freeBlock(idx);
+        }
+      });
+
+      // Check if we should fetch the next block.
+      if (blockIndex <= this._maxBlock && localRow / BLOCK_SIZE > 0.9 && !this._dataBlocks[blockIndex+1]) {
+        this._fetchBlock(blockIndex + 1);
       }
-    });
 
-    // Check if we should fetch the next block.
-    if (blockIndex <= this._maxBlock && localRow / BLOCK_SIZE > 0.9 && !this._dataBlocks[blockIndex+1]) {
-      this._fetchBlock(blockIndex + 1);
-    }
+      // Check if we should fetch the previous block.
+      if (blockIndex >= 1 && localRow / BLOCK_SIZE < 0.1 && !this._dataBlocks[blockIndex-1]) {
+        this._fetchBlock(blockIndex - 1);
+      }
 
-    // Check if we should fetch the previous block.
-    if (blockIndex >= 1 && localRow / BLOCK_SIZE < 0.1 && !this._dataBlocks[blockIndex-1]) {
-      this._fetchBlock(blockIndex - 1);
-    }
-
-    if (!this._dataBlocks[blockIndex]) {
-      this._fetchBlock(blockIndex);
-      return null;
+      if (!this._dataBlocks[blockIndex]) {
+        this._fetchBlock(blockIndex);
+        return null;
+      } else {
+        const block = this._dataBlocks[blockIndex];
+        const rowData = block[row - offset];
+        return rowData[this._fieldNames[column]];
+      }
     } else {
-      const block = this._dataBlocks[blockIndex];
-      const rowData = block[row - offset];
+      const rowData = this._dataset[row];
       return rowData[this._fieldNames[column]];
     }
   }
@@ -244,17 +249,25 @@ class MapDTableModel extends DataModel {
    * the query or the connection data change.
    */
   private _updateModel(): void {
+    // Clear the data of any previous model
     for (let key of Object.keys(this._dataBlocks)) {
       delete this._dataBlocks[Number(key)];
     }
+    this._dataset = null;
     this._fieldNames = [];
     this._tableLength = -1;
     this._maxBlock = Infinity;
     this._pending.clear();
+    this._streaming = false;
 
     if (this.query) {
       this._fieldNames = Private.getFields(this._query);
-      this._fetchBlock(0);
+      this._streaming = !Private.hasLimitOrOffset(this._query);
+      if (this._streaming) {
+        this._fetchBlock(0);
+      } else {
+        this._fetchDataset();
+      }
     }
     this.emitChanged({ type: 'model-reset' });
     return;
@@ -319,21 +332,52 @@ class MapDTableModel extends DataModel {
     });
   }
 
+  private _fetchDataset(): void {
+    Private.makeQuery(this._connection, this._query).then(res => {
+      this._tableLength = res.length;
+      if (this._dataset) {
+        this._dataset = res;
+        this.emitChanged({
+          type: 'cells-changed',
+          region: 'body',
+          rowIndex: 0,
+          columnIndex: 0,
+          rowSpan: res.length,
+          columnSpan: this._fieldNames.length,
+        });
+      } else {
+        this._dataset = res;
+        this.emitChanged({
+          type: 'rows-inserted',
+          region: 'body',
+          index: 0,
+          span: res.length,
+        });
+      }
+    });
+  }
 
   private _query = '';
   private _connection: IMapDConnectionData | undefined;
 
   private _fieldNames: string[];
   private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
+  private _dataset: ReadonlyArray<JSONObject> | null = null;
   private _pending = new Set<number>();
   private _tableLength = -1;
   private _maxBlock = Infinity;
+  private _streaming = false;
 }
 
 
 
 
 namespace Private {
+  export
+  function hasLimitOrOffset(query: string): boolean {
+    return query.search(/limit/i) !== -1 || query.search(/offset/i) !== -1;
+  }
+
   export
   function getFields(query: string): string[] {
     let selection = query.match(/SELECT(.*)FROM/i);
