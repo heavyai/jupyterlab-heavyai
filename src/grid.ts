@@ -3,7 +3,7 @@ import {
 } from '@phosphor/coreutils';
 
 import {
-  DataGrid, DataModel
+  DataGrid, DataModel, TextRenderer
 } from '@phosphor/datagrid';
 
 import {
@@ -42,9 +42,29 @@ class MapDGrid extends Widget {
     this._model.connection = connection;
 
     // Create the grid
-    this._grid = new DataGrid();
+    const headerRenderer = new TextRenderer({
+      font: 'bold 14px sans-serif',
+      horizontalAlignment: 'left'
+    });
+    const bodyRenderer = new TextRenderer({
+      horizontalAlignment: 'right'
+    });
+    this._gridStyle = {
+      ...DataGrid.defaultStyle,
+      rowBackgroundColor: i => i % 2 === 0 ? 'rgba(34, 167, 240, 0.2)' : ''
+    };
+    this._grid = new DataGrid({
+      style: this._gridStyle,
+      baseRowSize: 24,
+      baseColumnSize: 96,
+      baseColumnHeaderSize: 24,
+      baseRowHeaderSize: 64,
+    });
+    this._grid.cellRenderers.set('body', {}, bodyRenderer);
+    this._grid.cellRenderers.set('column-header', {}, headerRenderer);
     this._grid.model = this._model;
     this._content.addWidget(this._grid);
+    this._grid.hide(); // Initially hide the grid until we set the query.
 
     // Create the query input box
     const queryInput = document.createElement('input');
@@ -58,7 +78,7 @@ class MapDGrid extends Widget {
         case 13: // Enter
           event.stopPropagation();
           event.preventDefault();
-          this._model.query = queryInput.value;
+          this._setQuery(queryInput.value);
           break;
         default:
           break;
@@ -70,7 +90,7 @@ class MapDGrid extends Widget {
     this._toolbar.addItem('Query', new ToolbarButton({
       className: 'jp-RunIcon',
       onClick: () => {
-        this._model.query = queryInput.value;
+        this._setQuery(queryInput.value);
       },
       tooltip: 'Query'
     }));
@@ -95,9 +115,15 @@ class MapDGrid extends Widget {
     this._model.connection = value;
   }
 
+  private _setQuery(query: string): void {
+    this._model.query = query;
+    const hasQuery = query !== '';
+    this._grid.setHidden(!hasQuery);
+  }
 
   private _model: MapDTableModel;
   private _grid: DataGrid;
+  private _gridStyle: DataGrid.IStyle;
   private _toolbar: Toolbar<any>;
   private _content: StackedPanel;
 }
