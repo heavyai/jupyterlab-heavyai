@@ -70,7 +70,7 @@ class MapDVega extends Widget {
             // If there was an error, clear any image data,
             // and set the text content of the error node.
             this._setImageData('');
-            this._error.textContent = error.message;
+            this._error.textContent = `${error.message} \n\n For Vega spec: \n ${JSON.stringify(vega, null, 2)}`;
             this._rendered.reject(error.message);
           } else {
             // Set the image data.

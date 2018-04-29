@@ -1,6 +1,5 @@
 import { compile } from "vega-lite";
 
-
 /**
  * Compiles a Mapd vega lite spec to a Mapd vega spec.
  * 
@@ -15,6 +14,10 @@ export function compileToVega(vlSpec: any): any {
 
     const vSpec = compile(vlSpec, {config: {invalidValues: null}}).spec;
 
+    // manually remove transformation from vega spec
+    // until https://github.com/vega/vega-lite/issues/3665 is merged
+    vSpec.data[0].name = vSpec.data.pop().name;
     vSpec.data[0].sql = sql;
+    console.log(vSpec);
     return vSpec;
 }
