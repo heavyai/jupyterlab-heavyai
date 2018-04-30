@@ -23,6 +23,7 @@ import 'mapd-connector/dist/browser-connector.js';
 declare const MapdCon: any
 
 const BLOCK_SIZE = 50000;
+const DEFAULT_LIMIT = 50000;
 
 export
 class MapDGrid extends Widget {
@@ -271,7 +272,7 @@ class MapDTableModel extends DataModel {
     this._streaming = false;
 
     if (this.query) {
-      this._streaming = !Private.hasLimitOrOffset(this._query);
+      this._streaming = Private.shouldChunkRequests(this._query);
       return Private.getFields(this._connection, this._query).then(names => {
         this._fieldNames = names;
         this.emitChanged({ type: 'model-reset' });
@@ -350,7 +351,7 @@ class MapDTableModel extends DataModel {
   }
 
   private _fetchDataset(): void {
-    Private.makeQuery(this._connection, this._query).then(res => {
+    Private.makeQuery(this._connection, this._query, { limit: DEFAULT_LIMIT }).then(res => {
       this._tableLength = res.length;
       if (this._dataset) {
         this._dataset = res;
@@ -391,8 +392,9 @@ class MapDTableModel extends DataModel {
 
 namespace Private {
   export
-  function hasLimitOrOffset(query: string): boolean {
-    return query.search(/limit/i) !== -1 || query.search(/offset/i) !== -1;
+  function shouldChunkRequests(query: string): boolean {
+    return query.search(/limit/i) === -1 && query.search(/offset/i) === -1
+           && query.search(/order by/i) !== -1;
   }
 
   export
@@ -406,7 +408,7 @@ namespace Private {
    * Query the MapD backend.
    */
   export
-  function makeQuery(connection: IMapDConnectionData, query: string): Promise<ReadonlyArray<JSONObject>> {
+  function makeQuery(connection: IMapDConnectionData, query: string, options: Object = {}): Promise<ReadonlyArray<JSONObject>> {
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
       new MapdCon()
         .protocol(connection.protocol)
@@ -420,7 +422,7 @@ namespace Private {
             reject(error);
           }
           else {
-            con.query(query, {}, (err: any, result: ReadonlyArray<JSONObject>) => {
+            con.query(query, options, (err: any, result: ReadonlyArray<JSONObject>) => {
               if (err) {
                 reject(err);
               } else {
