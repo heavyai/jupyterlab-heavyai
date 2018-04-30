@@ -22,11 +22,24 @@ import 'mapd-connector/dist/browser-connector.js';
 
 declare const MapdCon: any
 
+/**
+ * The default block size whenn streaming blocks of the query results.
+ */
 const BLOCK_SIZE = 50000;
+
+/**
+ * The default limit for standalone requests.
+ */
 const DEFAULT_LIMIT = 50000;
 
+/**
+ * A widget that hosts a phosphor grid with a MapD dataset.
+ */
 export
 class MapDGrid extends Widget {
+  /**
+   * Construct a new MapDGrid widget.
+   */
   constructor(connection?: IMapDConnectionData) {
     super();
     // Create the Layout
@@ -121,6 +134,12 @@ class MapDGrid extends Widget {
     this._updateModel(value, this._model.query);
   }
 
+  /**
+   * Update the underlying data model with a new query and connection.
+   *
+   * If the update fails, either due to a connection failure or a query
+   * validation failure, it shows the error in the panel.
+   */
   private _updateModel(connection: IMapDConnectionData, query: string): void {
     const hasQuery = query !== '';
     this._model.updateModel(connection, query).then(() => {
@@ -140,8 +159,14 @@ class MapDGrid extends Widget {
   private _error: Widget;
 }
 
+/**
+ * A data model for a query.
+ */
 export
 class MapDTableModel extends DataModel {
+  /**
+   * Construct a new data model.
+   */
   constructor() {
     super();
     this._updateModel();
@@ -154,10 +179,13 @@ class MapDTableModel extends DataModel {
     if (region === 'column-header') {
       return 1;
     }
+    // If we have found the length of the table, return that.
     if (this._tableLength > 0) {
       return this._tableLength;
     }
 
+    // If we don't know the length, try to infer it from the currently
+    // loaded blocks.
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     if (indices.length === 0) {
       return 0;
@@ -181,6 +209,13 @@ class MapDTableModel extends DataModel {
   }
 
   /**
+   * The current query for the viewer.
+   */
+  get query(): string {
+    return this._query;
+  }
+
+  /**
    * Get data from the model.
    */
   data(region: DataModel.CellRegion, row: number, column: number): any {
@@ -196,6 +231,10 @@ class MapDTableModel extends DataModel {
       return null;
     }
 
+    // If we are streaming data, first check to see if the
+    // relevant block is loaded into memory. If it is not,
+    // load it. Also load the blocks on each side of the relevant block,
+    // and free blocks outside of that window.
     if (this._streaming) {
       const blockIndex = Math.floor(row/BLOCK_SIZE);
       const offset = BLOCK_SIZE * blockIndex;
@@ -211,15 +250,24 @@ class MapDTableModel extends DataModel {
       });
 
       // Check if we should fetch the next block.
-      if (blockIndex <= this._maxBlock && localRow / BLOCK_SIZE > 0.9 && !this._dataBlocks[blockIndex+1]) {
+      if (blockIndex <= this._maxBlock &&
+          localRow / BLOCK_SIZE > 0.9 &&
+          !this._dataBlocks[blockIndex+1]
+      ) {
         this._fetchBlock(blockIndex + 1);
       }
 
       // Check if we should fetch the previous block.
-      if (blockIndex >= 1 && localRow / BLOCK_SIZE < 0.1 && !this._dataBlocks[blockIndex-1]) {
+      if (blockIndex >= 1 &&
+          localRow / BLOCK_SIZE < 0.1 &&
+          !this._dataBlocks[blockIndex-1]
+      ) {
         this._fetchBlock(blockIndex - 1);
       }
 
+      // If the current block has not been loaded, then load it and
+      // return null. The grid will be notified when it is loaded.
+      // If the current block has been loaded, then return the data from it.
       if (!this._dataBlocks[blockIndex]) {
         this._fetchBlock(blockIndex);
         return null;
@@ -229,6 +277,7 @@ class MapDTableModel extends DataModel {
         return rowData[this._fieldNames[column]];
       }
     } else {
+      // If we are not streaming, then just return the loaded data.
       const rowData = this._dataset[row];
       return rowData[this._fieldNames[column]];
     }
@@ -236,14 +285,15 @@ class MapDTableModel extends DataModel {
 
 
   /**
-   * The current query for the viewer.
-   */
-  get query(): string {
-    return this._query;
-  }
-
-  /**
    * Update the model with new connection data or a new query.
+   *
+   * @param connection - the connection data to use.
+   *
+   * @param query - the query to use.
+   *
+   * @returns a promsise that resolves when the model has been updated,
+   *   and the connection and query data have been validated. It throws
+   *   an error if the validation fails.
    */
   updateModel(connection: IMapDConnectionData, query: string): Promise<void> {
     if (this._query === query && connection && this._connection
@@ -291,11 +341,17 @@ class MapDTableModel extends DataModel {
     }
   }
 
+  /**
+   * Fetch a block with a given index into memory.
+   */
   private _fetchBlock(index: number): void {
+    // If we are already fetching this block, do nothing.
     if (this._pending.has(index)) {
       return;
     }
     this._pending.add(index);
+
+    // Augment the query with the relevant LIMIT and OFFSET.
     const limit = BLOCK_SIZE;
     const offset = index * BLOCK_SIZE;
     const query = `${this._query} LIMIT ${limit} OFFSET ${offset}`;
@@ -303,12 +359,12 @@ class MapDTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
-    console.log(`Fetching block ${index}`);
     Private.makeQuery(this._connection, query).then(res => {
       this._pending.delete(index);
-      console.log(`Fetched block ${index}`);
       this._dataBlocks[index] = res;
       if (index <= maxIndex || this._tableLength !== -1) {
+        // In this case, we are not appending, so emit a changed
+        // signal.
         this.emitChanged({
           type: 'cells-changed',
           region: 'body',
@@ -319,10 +375,12 @@ class MapDTableModel extends DataModel {
         });
       } else {
         if (res.length < BLOCK_SIZE) {
+          // If the length of the result is less than the block size,
+          // we have found the table length. Set that.
           this._tableLength = offset + res.length;
           this._maxBlock = index;
-          console.log('table length found!', this._tableLength);
         }
+        // Emit a rows-inserted signal.
         this.emitChanged({
           type: 'rows-inserted',
           region: 'body',
@@ -333,6 +391,9 @@ class MapDTableModel extends DataModel {
     });
   }
 
+  /**
+   * Free references to a block when it is no longer needed.
+   */
   private _freeBlock(index: number): void {
     if (!this._dataBlocks[index]) {
       return;
@@ -350,9 +411,15 @@ class MapDTableModel extends DataModel {
     });
   }
 
+  /**
+   * If we are not chunking the data, then just load the whole thing,
+   * limited by DEFAULT_LIMIT.
+   */
   private _fetchDataset(): void {
     Private.makeQuery(this._connection, this._query, { limit: DEFAULT_LIMIT }).then(res => {
       this._tableLength = res.length;
+      // If the dataset already exists, emit a cells-changed signal.
+      // Otherwise, emit a 'rows-inserted' signal.
       if (this._dataset) {
         this._dataset = res;
         this.emitChanged({
@@ -391,12 +458,21 @@ class MapDTableModel extends DataModel {
 
 
 namespace Private {
+  /**
+   * Whether to chunk requests to the backend. We only do this is if
+   * (1) LIMIT/OFFSET has not been defined.
+   * (2) ORDER BY has been defined, otherwise we cannot guarantee a consistent
+   * ordering across requests.
+   */
   export
   function shouldChunkRequests(query: string): boolean {
     return query.search(/limit/i) === -1 && query.search(/offset/i) === -1
            && query.search(/order by/i) !== -1;
   }
 
+  /**
+   * Validate a query, getting the fields that will be returned by the query.
+   */
   export
   function getFields(connection: IMapDConnectionData, query: string): Promise<string[]> {
     return validateQuery(connection, query).then(res => {
