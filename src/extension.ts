@@ -15,6 +15,10 @@ import {
 } from '@jupyterlab/docregistry';
 
 import {
+  ILauncher
+} from '@jupyterlab/launcher';
+
+import {
   IMainMenu
 } from '@jupyterlab/mainmenu';
 
@@ -77,11 +81,11 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
 const mapdPlugin: JupyterLabPlugin<void> = {
   activate: activateMapDViewer,
   id: PLUGIN_ID,
-  requires: [ ILayoutRestorer, IMainMenu, ISettingRegistry ],
+  requires: [ ILauncher, ILayoutRestorer, IMainMenu, ISettingRegistry ],
   autoStart: true
 };
 
-function activateMapDViewer(app: JupyterLab, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
+function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
   const viewerNamespace = 'mapd-viewer-widget';
   const gridNamespace = 'mapd-grid-widget';
 
@@ -141,9 +145,18 @@ function activateMapDViewer(app: JupyterLab, restorer: ILayoutRestorer, mainMenu
       gridTracker.add(grid);
       app.shell.addToMainArea(grid);
       app.shell.activateById(grid.id);
+      return grid;
     }
   });
   mainMenu.fileMenu.newMenu.addGroup([{ command: 'mapd:new-grid'}], 50);
+
+  launcher.add({
+    displayName: 'MapD Explorer',
+    category: 'Other',
+    rank: 0,
+    iconClass: 'mapd-MapD-logo',
+    callback: () => app.commands.execute(CommandIDs.newGrid)
+  });
 
   // Update the default connection data for viewers that don't already
   // have it defined.
