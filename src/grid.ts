@@ -34,12 +34,14 @@ class MapDGrid extends Widget {
     this._toolbar.addClass('mapd-MapD-toolbar');
     this._content = new StackedPanel();
     this._content.addClass('mapd-MapDViewer-content');
+    this._error = new Widget({ node: document.createElement('pre') });
+    this._error.addClass('mapd-ErrorMessage');
     (this.layout as PanelLayout).addWidget(this._toolbar);
     (this.layout as PanelLayout).addWidget(this._content);
+    (this.layout as PanelLayout).addWidget(this._error);
 
     // Create the data model
     this._model = new MapDTableModel();
-    this._model.connection = connection;
 
     // Create the grid
     const headerRenderer = new TextRenderer({
@@ -64,7 +66,7 @@ class MapDGrid extends Widget {
     this._grid.cellRenderers.set('column-header', {}, headerRenderer);
     this._grid.model = this._model;
     this._content.addWidget(this._grid);
-    this._grid.hide(); // Initially hide the grid until we set the query.
+    this._content.hide(); // Initially hide the grid until we set the query.
 
     // Create the query input box
     const queryInput = document.createElement('input');
@@ -78,7 +80,7 @@ class MapDGrid extends Widget {
         case 13: // Enter
           event.stopPropagation();
           event.preventDefault();
-          this._setQuery(queryInput.value);
+          this._updateModel(this._model.connection, queryInput.value);
           break;
         default:
           break;
@@ -90,7 +92,7 @@ class MapDGrid extends Widget {
     this._toolbar.addItem('Query', new ToolbarButton({
       className: 'jp-RunIcon',
       onClick: () => {
-        this._setQuery(queryInput.value);
+        this._updateModel(this._model.connection, queryInput.value);
       },
       tooltip: 'Query'
     }));
@@ -98,11 +100,14 @@ class MapDGrid extends Widget {
       className: 'mapd-MapD-logo',
       onClick: () => {
         showConnectionDialog(this._model.connection).then(connection => {
-          this._model.connection = connection;
+          this._updateModel(connection, this._model.query);
         });
       },
       tooltip: 'Enter MapD Connection Data'
     }));
+
+    // Initialize the data model.
+    this._updateModel(connection, '');
   }
 
   /**
@@ -112,13 +117,18 @@ class MapDGrid extends Widget {
     return this._model.connection;
   }
   set connection(value: IMapDConnectionData) {
-    this._model.connection = value;
+    this._updateModel(value, this._model.query);
   }
 
-  private _setQuery(query: string): void {
-    this._model.query = query;
+  private _updateModel(connection: IMapDConnectionData, query: string): void {
     const hasQuery = query !== '';
-    this._grid.setHidden(!hasQuery);
+    this._model.updateModel(connection, query).then(() => {
+      this._content.setHidden(!hasQuery);
+      this._error.node.textContent = '';
+    }).catch((err: any) => {
+      this._content.hide()
+      this._error.node.textContent = err ? (err.message || err) : 'Error';
+    });
   }
 
   private _model: MapDTableModel;
@@ -126,6 +136,7 @@ class MapDGrid extends Widget {
   private _gridStyle: DataGrid.IStyle;
   private _toolbar: Toolbar<any>;
   private _content: StackedPanel;
+  private _error: Widget;
 }
 
 export
@@ -166,13 +177,6 @@ class MapDTableModel extends DataModel {
    */
   get connection(): IMapDConnectionData | undefined {
     return this._connection;
-  }
-  set connection(value: IMapDConnectionData | undefined) {
-    if (this._connection && JSONExt.deepEqual(value, this._connection)) {
-      return;
-    }
-    this._connection = value;
-    this._updateModel();
   }
 
   /**
@@ -236,19 +240,25 @@ class MapDTableModel extends DataModel {
   get query(): string {
     return this._query;
   }
-  set query(value: string) {
-    if (this._query === value) {
-      return;
+
+  /**
+   * Update the model with new connection data or a new query.
+   */
+  updateModel(connection: IMapDConnectionData, query: string): Promise<void> {
+    if (this._query === query && connection && this._connection
+        && JSONExt.deepEqual(connection, this._connection)) {
+      return Promise.resolve(void 0);
     }
-    this._query = value;
-    this._updateModel();
-  }
+    this._query = query;
+    this._connection = connection;
+    return this._updateModel();
+  };
 
   /**
    * Reset the model. Should be called when either
    * the query or the connection data change.
    */
-  private _updateModel(): void {
+  private _updateModel(): Promise<void> {
     // Clear the data of any previous model
     for (let key of Object.keys(this._dataBlocks)) {
       delete this._dataBlocks[Number(key)];
@@ -262,7 +272,7 @@ class MapDTableModel extends DataModel {
 
     if (this.query) {
       this._streaming = !Private.hasLimitOrOffset(this._query);
-      Private.getFields(this._connection, this._query).then(names => {
+      return Private.getFields(this._connection, this._query).then(names => {
         this._fieldNames = names;
         this.emitChanged({ type: 'model-reset' });
         if (this._streaming) {
@@ -270,11 +280,14 @@ class MapDTableModel extends DataModel {
         } else {
           this._fetchDataset();
         }
+      }).catch(err => {
+        this.emitChanged({ type: 'model-reset' });
+        throw err;
       });
     } else {
       this.emitChanged({ type: 'model-reset' });
+      return Promise.resolve(void 0);
     }
-    return;
   }
 
   private _fetchBlock(index: number): void {
@@ -438,7 +451,7 @@ namespace Private {
           else {
             con.validateQuery(query).then((result: ReadonlyArray<JSONObject>) => {
               resolve(result);
-            });
+            }).catch((err: any) => { reject(err); });
           }
         });
     });

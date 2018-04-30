@@ -32,7 +32,7 @@ class MapDVega extends Widget {
     this.addClass('mapd-MapDVega')
     this._img = document.createElement('img');
     this._error = document.createElement('pre');
-    this._error.className = 'mapd-VegaError';
+    this._error.className = 'mapd-ErrorMessage';
     this.node.appendChild(this._img);
     this.node.appendChild(this._error);
 

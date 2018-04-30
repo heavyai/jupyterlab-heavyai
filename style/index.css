@@ -1,4 +1,4 @@
-.mapd-VegaError {
+.mapd-ErrorMessage {
   background-color: var(--jp-rendermime-error-background);
   white-space: pre-wrap;
 }
