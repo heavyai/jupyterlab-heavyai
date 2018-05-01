@@ -1,7 +1,24 @@
 # jupyterlab-mapd
 
-Connection to MapD, query their databases, and render the MapD-flavored Vega specification.
+Connect to MapD, query their databases, and render the MapD-flavored Vega specification,
+all within JupyterLab
 
+![example](./screenshot.png)
+
+## Installation
+
+Requirements:
+* JupyterLab v0.32
+* Access to a MapD server
+
+To install the `jupyterlab-mapd` extension, run the following in a terminal:
+```bash
+jupyter labextension install jupyterlab-mapd
+```
+
+## Installing from source
+
+To install from source, run the following in a terminal:
 ```bash
 git clone https://github.com/Quansight/jupyter-mapd-renderer
 cd jupyter-mapd-renderer
