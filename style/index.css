@@ -1,10 +1,10 @@
-.mapd-VegaError {
+.mapd-ErrorMessage {
   background-color: var(--jp-rendermime-error-background);
   white-space: pre-wrap;
 }
 
 .mapd-MapDViewer-content {
-  height: 100%;
+  height: calc(100% - 35px);
   width: 100%;
 }
 
@@ -12,6 +12,17 @@
   height: 100%;
   width: 100%;
   overflow: auto;
+}
+
+.jp-Toolbar.mapd-MapD-toolbar {
+  align-items: center;
+  height: 35px;
+}
+
+.jp-Toolbar.mapd-MapD-toolbar input {
+  flex-grow: 1;
+  font-size: 1.0em;
+  font-family: monospace;
 }
 
 .mapd-MapD-logo {
