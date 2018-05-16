@@ -7,6 +7,11 @@ import yaml
 
 import vdom
 
+try:
+    import altair as alt
+except ImportError:
+    alt = None
+
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
 
@@ -97,3 +102,25 @@ def mapd_vl(line, cell):
     connection_data = ast.literal_eval(line)
     vl = yaml.load(cell)
     display(MapDBackendRenderer(connection_data, vl_data=vl))
+ 
+def mapd_mimetype(spec, conn):
+    """
+    Returns a mapd vega lite mimetype, assuming that the URL
+    for the vega spec is actually the SQL query
+    """
+    data = spec['data']
+    data['sql'] = data.pop('url')
+    return {'application/vnd.mapd.vega+json': {
+        'vegalite': spec,
+        'connection': {
+            'host': conn.host,
+            'protocol': conn.protocol,
+            'port': conn.port,
+            'user': conn.user,
+            'dbName': conn.db_name,
+            'password': conn.password
+        }
+    }}
+
+if alt:
+    alt.renderers.register('mapd', mapd_mimetype)
