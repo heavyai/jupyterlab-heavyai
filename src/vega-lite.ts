@@ -43,10 +43,11 @@ export function compileToVega(vlSpec: any): any {
         }
 
         // the width and height are required in mapd for symbols,
-        // unlike in vega where they are optional
+        // unlike in vega where they are optional, or you can just set the
+        // size
         if (mark.type === 'symbol') {
-            properties.width = 1;
-            properties.height = 1;
+            properties.width = properties.height = properties.size;
+            delete properties.size;
         }
     }
 
