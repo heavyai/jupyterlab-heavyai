@@ -6,7 +6,7 @@ RUN conda install -y -c conda-forge \
 
 RUN pip install \
     vdom \
-    git+https://github.com/Quansight/ibis.git@8fdcfc55031653ebb0ce03a4c1a737d7f77b60b2
+    git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe
 
 USER root
 RUN echo "$NB_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/notebook
