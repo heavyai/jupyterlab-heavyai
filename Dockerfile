@@ -1,7 +1,13 @@
-FROM jupyter/scipy-notebook
+FROM jupyter/scipy-notebook:1085ca054a5f
 
 RUN conda install -y -c conda-forge \
-    jupyterlab=0.32.0 \
-    pymapd
+    pymapd==0.3.2 \
+    altair==2.0.1
 
-RUN pip install vdom altair==2.0.0rc2
+RUN pip install \
+    vdom \
+    git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe
+
+USER root
+RUN echo "$NB_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/notebook
+USER $NB_USER
