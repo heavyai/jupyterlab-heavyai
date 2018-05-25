@@ -9,7 +9,7 @@ install:
     pymapd==0.3.2 \
     altair==2.0.1 \
     jupyterlab==0.32.1 \
-    pyyaml \
+    pyyaml
 
 script:
   - jlpm
