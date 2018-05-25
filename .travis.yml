@@ -11,8 +11,10 @@ install:
     jupyterlab==0.32.1 \
     pyyaml
 
-script:
+before_script:
   - jlpm
   - jlpm build
   - jupyter labextension link
+
+script:
   - jupyter nbconvert --execute *.ipynb
