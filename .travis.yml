@@ -13,5 +13,5 @@ install:
 script:
   - jlpm
   - jlpm build
-  - jupyter labextension link --no-build
+  - jupyter labextension link
   - jupyter nbconvert --execute *.ipynb
