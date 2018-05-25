@@ -34,7 +34,7 @@ git clone https://github.com/Quansight/jupyter-mapd-renderer
 cd jupyter-mapd-renderer
 jlpm
 jlpm build
-jupyter labextension install .
+jupyter labextension install
 ```
 
 ## Edit the default database connection
