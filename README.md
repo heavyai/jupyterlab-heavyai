@@ -1,5 +1,7 @@
 # jupyterlab-mapd
 
+[![Build Status](https://travis-ci.com/Quansight/jupyter-mapd-renderer.svg?branch=master)](https://travis-ci.com/Quansight/jupyter-mapd-renderer)
+
 Connect to MapD, query their databases, and render the MapD-flavored Vega specification,
 all within JupyterLab
 
