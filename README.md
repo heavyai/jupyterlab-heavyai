@@ -22,10 +22,18 @@ jupyter labextension install jupyterlab-mapd
 
 To install from source, run the following in a terminal:
 ```bash
+pip install \
+    vdom \
+    git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe \
+    pymapd==0.3.2 \
+    altair==2.0.1 \
+    jupyterlab==0.32.1 \
+    pyyaml
+
 git clone https://github.com/Quansight/jupyter-mapd-renderer
 cd jupyter-mapd-renderer
-jlpm install
-jlpm run build
+jlpm
+jlpm build
 jupyter labextension install .
 ```
 
