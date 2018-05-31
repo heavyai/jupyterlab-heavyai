@@ -151,7 +151,10 @@ setup(
     extras_require={  # Optional
         # 'dev': ['check-manifest'],
         # 'test': ['coverage'],
-        'altair': ['altair', 'ibis'],
+        'altair': [
+            'altair',
+            'git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe#egg=ibis-framework[mapd]'
+        ],
     },
 
     # If there are data files included in your packages that need to be
