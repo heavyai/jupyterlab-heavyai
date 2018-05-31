@@ -139,11 +139,11 @@ setup(
         'pyyaml',
         'jupyterlab',
         'altair',
-        'ibis'
+        'ibis-framework'
     ],  # Optional
 
     dependency_links=[
-        "git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe"
+        "git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe#egg=ibis-framework"
     ],
 
     # List additional groups of dependencies here (e.g. development
