@@ -137,14 +137,8 @@ setup(
         'vdom',
         'pymapd',
         'pyyaml',
-        'jupyterlab',
-        'altair',
-        'ibis-framework==quansight'
+        'jupyterlab'
     ],  # Optional
-
-    dependency_links=[
-        "git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe#egg=ibis-framework-quansight"
-    ],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
@@ -157,10 +151,10 @@ setup(
     extras_require={  # Optional
         # 'dev': ['check-manifest'],
         # 'test': ['coverage'],
-        # 'altair': [
-        #     'altair',
-        #     'git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe#egg=ibis-framework[mapd]'
-        # ],
+        'altair': [
+            'altair',
+            'ibis-framework'
+        ],
     },
 
     # If there are data files included in your packages that need to be
