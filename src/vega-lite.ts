@@ -43,10 +43,23 @@ export function compileToVega(vlSpec: any): any {
         }
 
         // the width and height are required in mapd for symbols,
-        // unlike in vega where they are optional, or you can just set the
-        // size
+        // unlike in vega where they are optional, and it just sets
+        // a default size.
+        // So we wanna transform whatever size is present to a width and height.
+        // The size is the area, so the width and height are the sqrt of that.
         if (mark.type === 'symbol') {
-            properties.width = properties.height = properties.size;
+            let size = properties.size || {value: 25};
+            // If we are setting the size to another field, then
+            // we should take the sqrt of the range of that scale, so that it looks the
+            // same size.
+            if (size.field) {
+                const sizeScaleName = properties.size.scale;
+                const sizeScale = vSpec.scales.find(({name}: {name: string}) => name === sizeScaleName);
+                sizeScale.range = sizeScale.range.map(Math.sqrt);
+            } else {
+                size.value = Math.sqrt(size.value);
+            }
+            properties.width = properties.height = size;
             delete properties.size;
         }
     }
