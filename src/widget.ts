@@ -27,7 +27,7 @@ class MapDVega extends Widget {
   /**
    * Construct a new MapD widget.
    */
-  constructor(vega: JSONObject, connection: IMapDConnectionData) {
+  constructor(vega: JSONObject, connection: IMapDConnectionData, vegaLite?: JSONObject) {
     super();
     this.addClass('mapd-MapDVega')
     this._img = document.createElement('img');
@@ -38,6 +38,9 @@ class MapDVega extends Widget {
 
     this._connection = connection;
     this._vega = vega;
+
+    // _vegaLite is just for debugging, in case we get an error, we can show it.
+    this._vegaLite = vegaLite;
     this._renderData();
   }
 
@@ -70,7 +73,11 @@ class MapDVega extends Widget {
             // If there was an error, clear any image data,
             // and set the text content of the error node.
             this._setImageData('');
-            this._error.textContent = `${error.message} \n\n For Vega spec: \n ${JSON.stringify(vega, null, 2)}`;
+            this._error.textContent = error.message;
+            if (this._vegaLite) {
+              this._error.textContent += `\n\nVega Lite:\n${JSON.stringify(this._vegaLite, null, 2)}`
+            }
+            this._error.textContent += `\n\nVega:\n${JSON.stringify(vega, null, 2)}`
             this._rendered.reject(error.message);
           } else {
             // Set the image data.
@@ -92,6 +99,7 @@ class MapDVega extends Widget {
 
   private _rendered = new PromiseDelegate<string>();
   private _vega: JSONObject;
+  private _vegaLite: JSONObject;
   private _connection: IMapDConnectionData;
   private _img: HTMLImageElement;
   private _error: HTMLElement;

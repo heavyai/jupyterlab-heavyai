@@ -66,7 +66,7 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
     const { connection, vega, vegalite } = data;
 
     // Create a new MapDVega
-    this._widget = new MapDVega(vega || compileToVega(vegalite), connection);
+    this._widget = new MapDVega(vega || compileToVega(vegalite), connection, vegalite);
     this.node.appendChild(this._widget.node);
     return this._widget.renderedImage.then(data => {
       // Set the mime data for the png.
