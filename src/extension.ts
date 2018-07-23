@@ -111,9 +111,7 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
   app.docRegistry.addWidgetFactory(factory);
 
   factory.widgetCreated.connect((sender, widget) => {
-    // Notify the instance tracker if restore data needs to update.
-    widget.context.pathChanged.connect(() => { viewerTracker.save(widget); });
-    viewerTracker.add(widget);
+    viewerTracker.add(widget as MapDViewer);
 
     const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
@@ -136,6 +134,7 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
 
   app.commands.addCommand(CommandIDs.newGrid, {
     label: 'MapD Explorer',
+    iconClass: 'mapd-MapD-logo',
     execute: () => {
       const grid = new MapDGrid(factory.defaultConnection);
       grid.id = `mapd-grid-widget-${Private.id++}`;
@@ -151,11 +150,9 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
   mainMenu.fileMenu.newMenu.addGroup([{ command: 'mapd:new-grid'}], 50);
 
   launcher.add({
-    displayName: 'MapD Explorer',
     category: 'Other',
     rank: 0,
-    iconClass: 'mapd-MapD-logo',
-    callback: () => app.commands.execute(CommandIDs.newGrid)
+    command: CommandIDs.newGrid
   });
 
   // Update the default connection data for viewers that don't already
