@@ -139,7 +139,7 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
       const query = args['initialQuery'] as string || '';
       const grid = new MapDExplorer(factory.defaultConnection);
       grid.content.query = query;
-      grid.id = `mapd-grid-widget-${Private.id++}`;
+      grid.id = `mapd-grid-widget-${++Private.id}`;
       grid.title.label = `MapD Explorer ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'mapd-MapD-logo';
