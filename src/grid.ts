@@ -87,7 +87,7 @@ class MapDGrid extends Widget {
     this._content.hide(); // Initially hide the grid until we set the query.
 
     // Create the query input box
-    const queryInput = document.createElement('input');
+    const queryInput = this._queryInput = document.createElement('input');
     queryInput.value = '';
     queryInput.placeholder = 'SQL Query';
     const queryInputWidget = new Widget({ node: queryInput });
@@ -98,7 +98,7 @@ class MapDGrid extends Widget {
         case 13: // Enter
           event.stopPropagation();
           event.preventDefault();
-          this._updateModel(this._model.connection, queryInput.value);
+          this.query = queryInput.value;
           break;
         default:
           break;
@@ -110,7 +110,7 @@ class MapDGrid extends Widget {
     this._toolbar.addItem('Query', new ToolbarButton({
       className: 'jp-RunIcon',
       onClick: () => {
-        this._updateModel(this._model.connection, queryInput.value);
+        this.query = queryInput.value;
       },
       tooltip: 'Query'
     }));
@@ -145,7 +145,8 @@ class MapDGrid extends Widget {
     return this._model.query;
   }
   set query(value: string) {
-    this._updateModel(this._model.connection, this._model.query);
+    this._queryInput.value = value;
+    this._updateModel(this._model.connection, value);
   }
 
   /**
@@ -180,6 +181,7 @@ class MapDGrid extends Widget {
   private _toolbar: Toolbar<any>;
   private _content: StackedPanel;
   private _error: Widget;
+  private _queryInput: HTMLInputElement;
   private _onModelChanged = new Signal<this, void>(this);
 }
 

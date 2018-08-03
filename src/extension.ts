@@ -146,6 +146,9 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
       gridTracker.add(grid);
       app.shell.addToMainArea(grid);
       app.shell.activateById(grid.id);
+      grid.onModelChanged.connect(() => {
+        gridTracker.save(grid);
+      });
       return grid;
     }
   });
