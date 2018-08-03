@@ -15,6 +15,10 @@ import {
 } from '@jupyterlab/apputils';
 
 import {
+  ISignal, Signal
+} from '@phosphor/signaling';
+
+import {
   IMapDConnectionData, showConnectionDialog
 } from './connection';
 
@@ -135,6 +139,24 @@ class MapDGrid extends Widget {
   }
 
   /**
+   * The query for the viewer.
+   */
+  get query(): string {
+    return this._model.query;
+  }
+  set query(value: string) {
+    this._updateModel(this._model.connection, this._model.query);
+  }
+
+  /**
+   * A change signal emitted when the connection or
+   * query data change.
+   */
+  get onModelChanged(): ISignal<MapDGrid, void> {
+    return this._onModelChanged;
+  }
+
+  /**
    * Update the underlying data model with a new query and connection.
    *
    * If the update fails, either due to a connection failure or a query
@@ -149,6 +171,7 @@ class MapDGrid extends Widget {
       this._content.hide()
       this._error.node.textContent = err ? (err.message || err) : 'Error';
     });
+    this._onModelChanged.emit(void 0);
   }
 
   private _model: MapDTableModel;
@@ -157,6 +180,7 @@ class MapDGrid extends Widget {
   private _toolbar: Toolbar<any>;
   private _content: StackedPanel;
   private _error: Widget;
+  private _onModelChanged = new Signal<this, void>(this);
 }
 
 /**
@@ -283,7 +307,6 @@ class MapDTableModel extends DataModel {
     }
   }
 
-
   /**
    * Update the model with new connection data or a new query.
    *
@@ -304,6 +327,7 @@ class MapDTableModel extends DataModel {
     this._connection = connection;
     return this._updateModel();
   };
+
 
   /**
    * Reset the model. Should be called when either

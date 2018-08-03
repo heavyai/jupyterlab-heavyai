@@ -128,15 +128,17 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
   // Handle state restoration.
   restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
-    args: () => null,
+    args: widget => ({ initialQuery: widget.query }),
     name: widget => widget.id
   });
 
   app.commands.addCommand(CommandIDs.newGrid, {
     label: 'MapD Explorer',
     iconClass: 'mapd-MapD-logo',
-    execute: () => {
+    execute: args => {
+      const query = args['initialQuery'] as string || '';
       const grid = new MapDGrid(factory.defaultConnection);
+      grid.query = query;
       grid.id = `mapd-grid-widget-${Private.id++}`;
       grid.title.label = `MapD Explorer ${Private.id}`;
       grid.title.closable = true;
