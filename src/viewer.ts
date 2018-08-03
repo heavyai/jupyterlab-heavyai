@@ -25,7 +25,6 @@ import {
 export
 class MapDViewer extends DocumentWidget<Widget> {
   constructor(context: DocumentRegistry.Context, connection?: IMapDConnectionData) {
-
     super({
       context,
       reveal: context.ready.then(() => this._render()),
@@ -35,6 +34,13 @@ class MapDViewer extends DocumentWidget<Widget> {
     this.toolbar.addClass('mapd-MapD-toolbar');
     this.addClass('mapd-MapDViewer-content');
 
+    this.toolbar.addItem('Render', new ToolbarButton({
+      className: 'jp-RunIcon',
+      onClick: () => {
+        this._render();
+      },
+      tooltip: 'Render'
+    }));
     this.toolbar.addItem('Connect', new ToolbarButton({
       className: 'mapd-MapD-logo',
       onClick: () => {
@@ -44,14 +50,6 @@ class MapDViewer extends DocumentWidget<Widget> {
       },
       tooltip: 'Enter MapD Connection Data'
     }));
-    this.toolbar.addItem('Render', new ToolbarButton({
-      className: 'jp-RunIcon',
-      onClick: () => {
-        this._render();
-      },
-      tooltip: 'Render'
-    }));
-
   }
 
   /**

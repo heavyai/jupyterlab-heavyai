@@ -16,7 +16,8 @@
 
 .jp-Toolbar.mapd-MapD-toolbar {
   align-items: center;
-  height: 35px;
+  justify-content: right;
+  height: 35px !important;
 }
 
 .jp-Toolbar.mapd-MapD-toolbar input {
