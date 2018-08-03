@@ -27,7 +27,7 @@ import {
 } from './connection';
 
 import {
-  MapDGrid
+  MapDExplorer
 } from './grid';
 
 import {
@@ -121,14 +121,14 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
     }
   });
 
-  const gridTracker = new InstanceTracker<MapDGrid>({
+  const gridTracker = new InstanceTracker<MapDExplorer>({
     namespace: gridNamespace
   });
 
   // Handle state restoration.
   restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
-    args: widget => ({ initialQuery: widget.query }),
+    args: widget => ({ initialQuery: widget.content.query }),
     name: widget => widget.id
   });
 
@@ -137,8 +137,8 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
     iconClass: 'mapd-MapD-logo',
     execute: args => {
       const query = args['initialQuery'] as string || '';
-      const grid = new MapDGrid(factory.defaultConnection);
-      grid.query = query;
+      const grid = new MapDExplorer(factory.defaultConnection);
+      grid.content.query = query;
       grid.id = `mapd-grid-widget-${Private.id++}`;
       grid.title.label = `MapD Explorer ${Private.id}`;
       grid.title.closable = true;
@@ -146,7 +146,7 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
       gridTracker.add(grid);
       app.shell.addToMainArea(grid);
       app.shell.activateById(grid.id);
-      grid.onModelChanged.connect(() => {
+      grid.content.onModelChanged.connect(() => {
         gridTracker.save(grid);
       });
       return grid;
@@ -174,8 +174,8 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
       }
     });
     gridTracker.forEach(grid => {
-      if (!grid.connection) {
-        grid.connection = defaultConnection;
+      if (!grid.content.connection) {
+        grid.content.connection = defaultConnection;
       }
     });
   };
