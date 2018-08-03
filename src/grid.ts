@@ -500,7 +500,7 @@ namespace Private {
     toolbar.addItem('Connect', new ToolbarButton({
       className: 'mapd-MapD-logo',
       onClick: () => {
-        showConnectionDialog(this._model.connection).then(connection => {
+        showConnectionDialog(widget.connection).then(connection => {
           widget.connection = connection;
         });
       },
