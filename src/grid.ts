@@ -23,6 +23,10 @@ import {
 } from '@jupyterlab/apputils';
 
 import {
+  CodeEditor, CodeEditorWrapper
+} from '@jupyterlab/codeeditor';
+
+import {
   IMapDConnectionData, showConnectionDialog
 } from './connection';
 
@@ -45,18 +49,91 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
   /**
    * Construct a new MapDExplorer widget.
    */
-  constructor(connection?: IMapDConnectionData) {
-    const content = new MapDGrid(connection);
-    const toolbar = Private.createToolbar(content);
+  constructor(options: MapDExplorer.IOptions) {
+    const content = new MapDGrid(options.connection);
+    const toolbar = Private.createToolbar(content, options.editorFactory);
     super({ content, toolbar });
+  }
+
+  /**
+   * Handle the DOM events for the widget.
+   *
+   * @param event - The DOM event sent to the widget.
+   *
+   * #### Notes
+   * This method implements the DOM `EventListener` interface and is
+   * called in response to events on the main area widget's node. It should
+   * not be called directly by user code.
+   */
+  handleEvent(event: KeyboardEvent): void {
+    switch (event.type) {
+      case 'keydown':
+        switch (event.keyCode) {
+          case 13: // Enter
+            event.stopPropagation();
+            event.preventDefault();
+            const editor = this.toolbar.children().next() as CodeEditorWrapper;
+            this.content.query = editor.editor.model.value.text;
+            break;
+          default:
+            break;
+        }
+      default:
+        break;
+    };
+  }
+
+  /**
+   * Handle `after-attach` messages for the widget.
+   */
+  protected onAfterAttach(msg: Message): void {
+    let editor: Widget = this.toolbar.children().next();
+    editor.node.addEventListener('keydown', this, true);
+  }
+
+  /**
+   * Handle `before-detach` messages for the widget.
+   */
+  protected onBeforeDetach(msg: Message): void {
+    let editor: Widget = this.toolbar.children().next();
+    editor.node.removeEventListener('keydown', this, true);
   }
 
   /**
    * Handle `'activate-request'` messages.
    */
   protected onActivateRequest(msg: Message): void {
-    const input = this.toolbar.node.getElementsByTagName('input')![0];
-    input.focus();
+    this._focusInput();
+  }
+
+  /**
+   * Focus the toolbar editor widget.
+   */
+  private _focusInput(): void {
+    let editor: Widget = this.toolbar.children().next();
+    editor.activate();
+  }
+}
+
+/**
+ * A namespace for MapDExplorer statics.
+ */
+export
+namespace MapDExplorer {
+  /**
+   * Options for creating a new MapDExplorer.
+   */
+  export
+  interface IOptions {
+    /**
+     * An editor factory for the SQL editor widget.
+     */
+    editorFactory: CodeEditor.Factory;
+
+    /**
+     * An optional initial connection data structure.
+     */
+    connection?: IMapDConnectionData;
   }
 }
 
@@ -465,35 +542,24 @@ class MapDTableModel extends DataModel {
 
 namespace Private {
   export
-  function createToolbar(widget: MapDGrid): Toolbar {
+  function createToolbar(widget: MapDGrid, editorFactory: CodeEditor.Factory): Toolbar {
     const toolbar = new Toolbar();
     toolbar.addClass('mapd-MapD-toolbar');
 
-    // Create the query input box
-    const queryInput = document.createElement('input');
-    queryInput.value = '';
-    queryInput.placeholder = 'SQL Query';
-    const queryInputWidget = new Widget({ node: queryInput });
-
-    // Add an `Enter` keydown handler for the input field.
-    queryInput.onkeydown = (event: KeyboardEvent) => {
-      switch (event.keyCode) {
-        case 13: // Enter
-          event.stopPropagation();
-          event.preventDefault();
-          widget.query = queryInput.value;
-          break;
-        default:
-          break;
-      }
-    };
+    // Create the query editor.
+    const queryEditor = new CodeEditorWrapper({
+      model: new CodeEditor.Model(),
+      factory: editorFactory
+    });
+    queryEditor.editor.model.value.text = '';
+    queryEditor.editor.model.mimeType = 'text/x-sql';
 
     // Create the toolbar.
-    toolbar.addItem('QueryInput', queryInputWidget);
+    toolbar.addItem('QueryInput', queryEditor);
     toolbar.addItem('Query', new ToolbarButton({
       className: 'jp-RunIcon',
       onClick: () => {
-        widget.query = queryInput.value;
+        widget.query = queryEditor.editor.model.value.text;
       },
       tooltip: 'Query'
     }));
@@ -508,10 +574,10 @@ namespace Private {
     }));
 
     widget.onModelChanged.connect(() => {
-      if (widget.query === queryInput.value) {
+      if (widget.query === queryEditor.editor.model.value.text) {
         return;
       }
-      queryInput.value = widget.query;
+      queryEditor.editor.model.value.text = widget.query;
     });
 
     return toolbar;

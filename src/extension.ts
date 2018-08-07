@@ -7,6 +7,10 @@ import {
 } from '@jupyterlab/apputils';
 
 import {
+  IEditorServices
+} from '@jupyterlab/codeeditor';
+
+import {
   ISettingRegistry
 } from '@jupyterlab/coreutils';
 
@@ -71,7 +75,7 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
   fileFormat: 'text',
   extensions: EXTENSIONS,
   mimeTypes: [VEGA_MIME_TYPE],
-  iconClass: 'jpMaterialIcon jp-VegaIcon'
+  iconClass: 'jp-MaterialIcon jp-VegaIcon'
 };
 
 
@@ -81,11 +85,11 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
 const mapdPlugin: JupyterLabPlugin<void> = {
   activate: activateMapDViewer,
   id: PLUGIN_ID,
-  requires: [ ILauncher, ILayoutRestorer, IMainMenu, ISettingRegistry ],
+  requires: [ IEditorServices, ILauncher, ILayoutRestorer, IMainMenu, ISettingRegistry ],
   autoStart: true
 };
 
-function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
+function activateMapDViewer(app: JupyterLab, editorServices: IEditorServices, launcher: ILauncher, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
   const viewerNamespace = 'mapd-viewer-widget';
   const gridNamespace = 'mapd-grid-widget';
 
@@ -137,7 +141,10 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
     iconClass: 'mapd-MapD-logo',
     execute: args => {
       const query = args['initialQuery'] as string || '';
-      const grid = new MapDExplorer(factory.defaultConnection);
+      const grid = new MapDExplorer({
+        editorFactory: editorServices.factoryService.newInlineEditor,
+        connection: factory.defaultConnection
+      });
       grid.content.query = query;
       grid.id = `mapd-grid-widget-${++Private.id}`;
       grid.title.label = `MapD Explorer ${Private.id}`;

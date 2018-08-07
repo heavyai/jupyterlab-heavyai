@@ -20,10 +20,16 @@
   height: 35px !important;
 }
 
-.jp-Toolbar.mapd-MapD-toolbar input {
+.jp-Toolbar.mapd-MapD-toolbar .jp-Editor {
   flex-grow: 1;
   font-size: 1.0em;
   font-family: monospace;
+}
+
+.jp-Toolbar.mapd-MapD-toolbar .jp-Editor.jp-mod-focused {
+  border: var(--jp-border-width) solid var(--jp-cell-editor-active-border-color);
+  box-shadow: var(--jp-input-box-shadow);
+  background-color: var(--jp-cell-editor-active-background);
 }
 
 .mapd-MapD-logo {
