@@ -10,6 +10,10 @@ import {
   PanelLayout, Widget
 } from '@phosphor/widgets';
 
+import './browser-connector';
+
+declare const MapdCon: any
+
 /**
  * Connection data for the mapd browser client.
  */

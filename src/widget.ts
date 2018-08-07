@@ -10,8 +10,6 @@ import {
   IMapDConnectionData
 } from './connection';
 
-import 'mapd-connector/dist/browser-connector.js';
-
 declare const MapdCon: any
 
 /**
