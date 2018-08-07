@@ -7,11 +7,19 @@ import {
 } from '@phosphor/datagrid';
 
 import {
+  Message
+} from '@phosphor/messaging';
+
+import {
   PanelLayout, StackedPanel, Widget
 } from '@phosphor/widgets';
 
 import {
-  Toolbar, ToolbarButton
+  ISignal, Signal
+} from '@phosphor/signaling';
+
+import {
+  MainAreaWidget, Toolbar, ToolbarButton
 } from '@jupyterlab/apputils';
 
 import {
@@ -32,6 +40,26 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
+export
+class MapDExplorer extends MainAreaWidget<MapDGrid> {
+  /**
+   * Construct a new MapDExplorer widget.
+   */
+  constructor(connection?: IMapDConnectionData) {
+    const content = new MapDGrid(connection);
+    const toolbar = Private.createToolbar(content);
+    super({ content, toolbar });
+  }
+
+  /**
+   * Handle `'activate-request'` messages.
+   */
+  protected onActivateRequest(msg: Message): void {
+    const input = this.toolbar.node.getElementsByTagName('input')![0];
+    input.focus();
+  }
+}
+
 /**
  * A widget that hosts a phosphor grid with a MapD dataset.
  */
@@ -44,13 +72,10 @@ class MapDGrid extends Widget {
     super();
     // Create the Layout
     this.layout = new PanelLayout();
-    this._toolbar = new Toolbar();
-    this._toolbar.addClass('mapd-MapD-toolbar');
     this._content = new StackedPanel();
     this._content.addClass('mapd-MapDViewer-content');
     this._error = new Widget({ node: document.createElement('pre') });
     this._error.addClass('mapd-ErrorMessage');
-    (this.layout as PanelLayout).addWidget(this._toolbar);
     (this.layout as PanelLayout).addWidget(this._content);
     (this.layout as PanelLayout).addWidget(this._error);
 
@@ -82,44 +107,6 @@ class MapDGrid extends Widget {
     this._content.addWidget(this._grid);
     this._content.hide(); // Initially hide the grid until we set the query.
 
-    // Create the query input box
-    const queryInput = document.createElement('input');
-    queryInput.value = '';
-    queryInput.placeholder = 'SQL Query';
-    const queryInputWidget = new Widget({ node: queryInput });
-
-    // Add an `Enter` keydown handler for the input field.
-    queryInput.onkeydown = (event: KeyboardEvent) => {
-      switch (event.keyCode) {
-        case 13: // Enter
-          event.stopPropagation();
-          event.preventDefault();
-          this._updateModel(this._model.connection, queryInput.value);
-          break;
-        default:
-          break;
-      }
-    };
-
-    // Create the toolbar.
-    this._toolbar.addItem('QueryInput', queryInputWidget);
-    this._toolbar.addItem('Query', new ToolbarButton({
-      className: 'jp-RunIcon',
-      onClick: () => {
-        this._updateModel(this._model.connection, queryInput.value);
-      },
-      tooltip: 'Query'
-    }));
-    this._toolbar.addItem('Connect', new ToolbarButton({
-      className: 'mapd-MapD-logo',
-      onClick: () => {
-        showConnectionDialog(this._model.connection).then(connection => {
-          this._updateModel(connection, this._model.query);
-        });
-      },
-      tooltip: 'Enter MapD Connection Data'
-    }));
-
     // Initialize the data model.
     this._updateModel(connection, '');
   }
@@ -132,6 +119,24 @@ class MapDGrid extends Widget {
   }
   set connection(value: IMapDConnectionData) {
     this._updateModel(value, this._model.query);
+  }
+
+  /**
+   * The query for the viewer.
+   */
+  get query(): string {
+    return this._model.query;
+  }
+  set query(value: string) {
+    this._updateModel(this._model.connection, value);
+  }
+
+  /**
+   * A change signal emitted when the connection or
+   * query data change.
+   */
+  get onModelChanged(): ISignal<MapDGrid, void> {
+    return this._onModelChanged;
   }
 
   /**
@@ -149,14 +154,15 @@ class MapDGrid extends Widget {
       this._content.hide()
       this._error.node.textContent = err ? (err.message || err) : 'Error';
     });
+    this._onModelChanged.emit(void 0);
   }
 
   private _model: MapDTableModel;
   private _grid: DataGrid;
   private _gridStyle: DataGrid.IStyle;
-  private _toolbar: Toolbar<any>;
   private _content: StackedPanel;
   private _error: Widget;
+  private _onModelChanged = new Signal<this, void>(this);
 }
 
 /**
@@ -283,7 +289,6 @@ class MapDTableModel extends DataModel {
     }
   }
 
-
   /**
    * Update the model with new connection data or a new query.
    *
@@ -304,6 +309,7 @@ class MapDTableModel extends DataModel {
     this._connection = connection;
     return this._updateModel();
   };
+
 
   /**
    * Reset the model. Should be called when either
@@ -458,6 +464,59 @@ class MapDTableModel extends DataModel {
 
 
 namespace Private {
+  export
+  function createToolbar(widget: MapDGrid): Toolbar {
+    const toolbar = new Toolbar();
+    toolbar.addClass('mapd-MapD-toolbar');
+
+    // Create the query input box
+    const queryInput = document.createElement('input');
+    queryInput.value = '';
+    queryInput.placeholder = 'SQL Query';
+    const queryInputWidget = new Widget({ node: queryInput });
+
+    // Add an `Enter` keydown handler for the input field.
+    queryInput.onkeydown = (event: KeyboardEvent) => {
+      switch (event.keyCode) {
+        case 13: // Enter
+          event.stopPropagation();
+          event.preventDefault();
+          widget.query = queryInput.value;
+          break;
+        default:
+          break;
+      }
+    };
+
+    // Create the toolbar.
+    toolbar.addItem('QueryInput', queryInputWidget);
+    toolbar.addItem('Query', new ToolbarButton({
+      className: 'jp-RunIcon',
+      onClick: () => {
+        widget.query = queryInput.value;
+      },
+      tooltip: 'Query'
+    }));
+    toolbar.addItem('Connect', new ToolbarButton({
+      className: 'mapd-MapD-logo',
+      onClick: () => {
+        showConnectionDialog(widget.connection).then(connection => {
+          widget.connection = connection;
+        });
+      },
+      tooltip: 'Enter MapD Connection Data'
+    }));
+
+    widget.onModelChanged.connect(() => {
+      if (widget.query === queryInput.value) {
+        return;
+      }
+      queryInput.value = widget.query;
+    });
+
+    return toolbar;
+  }
+
   /**
    * Whether to chunk requests to the backend. We only do this is if
    * (1) LIMIT/OFFSET has not been defined.

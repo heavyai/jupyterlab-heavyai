@@ -3,19 +3,15 @@ import {
 } from '@phosphor/coreutils';
 
 import {
-  PanelLayout, Widget
+  Widget
 } from '@phosphor/widgets';
 
 import {
-  Spinner, Toolbar, ToolbarButton
+  Spinner, ToolbarButton
 } from '@jupyterlab/apputils';
 
 import {
-  PathExt
-} from '@jupyterlab/coreutils';
-
-import {
-  ABCWidgetFactory, DocumentRegistry
+  ABCWidgetFactory, DocumentRegistry, DocumentWidget, IDocumentWidget
 } from '@jupyterlab/docregistry';
 
 import {
@@ -27,33 +23,25 @@ import {
 } from './widget';
 
 export
-class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
+class MapDViewer extends DocumentWidget<Widget> {
   constructor(context: DocumentRegistry.Context, connection?: IMapDConnectionData) {
-    super();
-    this.context = context;
-    this.connection = connection;
-    this._onTitleChanged();
-    context.pathChanged.connect(this._onTitleChanged, this);
-
-    context.ready.then(() => {
-      if (this.isDisposed) {
-        return;
-      }
-      this._render();
-      context.model.contentChanged.connect(this.update, this);
-      this._ready.resolve(void 0);
+    super({
+      context,
+      reveal: context.ready.then(() => this._render()),
+      content: new Widget()
     });
 
-    this.layout = new PanelLayout();
-    this._toolbar = new Toolbar();
-    this._toolbar.addClass('mapd-MapD-toolbar');
-    this._content = new Widget();
-    this._content.addClass('mapd-MapDViewer-content');
+    this.toolbar.addClass('mapd-MapD-toolbar');
+    this.addClass('mapd-MapDViewer-content');
 
-    (this.layout as PanelLayout).addWidget(this._toolbar);
-    (this.layout as PanelLayout).addWidget(this._content);
-
-    this._toolbar.addItem('Connect', new ToolbarButton({
+    this.toolbar.addItem('Render', new ToolbarButton({
+      className: 'jp-RunIcon',
+      onClick: () => {
+        this._render();
+      },
+      tooltip: 'Render'
+    }));
+    this.toolbar.addItem('Connect', new ToolbarButton({
       className: 'mapd-MapD-logo',
       onClick: () => {
         showConnectionDialog(this._connection).then(connection => {
@@ -62,19 +50,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
       },
       tooltip: 'Enter MapD Connection Data'
     }));
-    this._toolbar.addItem('Render', new ToolbarButton({
-      className: 'jp-RunIcon',
-      onClick: () => {
-        this._render();
-      },
-      tooltip: 'Render'
-    }));
   }
-
-  /**
-   * The widget's context.
-   */
-  readonly context: DocumentRegistry.Context;
 
   /**
    * The current connection data for the viewer.
@@ -94,18 +70,11 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
   }
 
   /**
-   * Handle a change to the title.
-   */
-  private _onTitleChanged(): void {
-    this.title.label = PathExt.basename(this.context.localPath);
-  }
-
-  /**
    * Render MapD into this widget's node.
    */
   private _render(): Promise<void> {
     if (this._widget) {
-      this._content.node.removeChild(this._widget.node);
+      this.content.node.removeChild(this._widget.node);
       this._widget.dispose();
       this._widget = null;
     }
@@ -117,15 +86,15 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
     this._widget = new MapDVega(data, this._connection);
-    this._content.node.appendChild(this._widget.node);
+    this.content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
-    this._content.node.appendChild(spinner.node);
+    this.content.node.appendChild(spinner.node);
     return this._widget.renderedImage.then(() => {
-      this._content.node.removeChild(spinner.node);
+      this.content.node.removeChild(spinner.node);
       spinner.dispose();
       return void 0;
     }).catch(() => {
-      this._content.node.removeChild(spinner.node);
+      this.content.node.removeChild(spinner.node);
       spinner.dispose();
       return void 0;
     });
@@ -133,8 +102,6 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
 
   private _ready = new PromiseDelegate<void>();
   private _widget: MapDVega | null = null;
-  private _content: Widget;
-  private _toolbar: Toolbar<any>;
   private _connection: IMapDConnectionData | undefined;
 }
 
@@ -142,7 +109,7 @@ class MapDViewer extends Widget implements DocumentRegistry.IReadyWidget {
  * A widget factory for images.
  */
 export
-class MapDViewerFactory extends ABCWidgetFactory<MapDViewer, DocumentRegistry.IModel> {
+class MapDViewerFactory extends ABCWidgetFactory<IDocumentWidget<Widget>, DocumentRegistry.IModel> {
   /**
    * Create a new widget given a context.
    */
