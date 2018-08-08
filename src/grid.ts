@@ -1,36 +1,20 @@
-import {
-  JSONExt, JSONObject
-} from '@phosphor/coreutils';
+import { JSONExt, JSONObject } from '@phosphor/coreutils';
 
-import {
-  DataGrid, DataModel, TextRenderer
-} from '@phosphor/datagrid';
+import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
 
-import {
-  Message
-} from '@phosphor/messaging';
+import { Message } from '@phosphor/messaging';
 
-import {
-  PanelLayout, StackedPanel, Widget
-} from '@phosphor/widgets';
+import { PanelLayout, StackedPanel, Widget } from '@phosphor/widgets';
 
-import {
-  ISignal, Signal
-} from '@phosphor/signaling';
+import { ISignal, Signal } from '@phosphor/signaling';
 
-import {
-  MainAreaWidget, Toolbar, ToolbarButton
-} from '@jupyterlab/apputils';
+import { MainAreaWidget, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 
-import {
-  CodeEditor, CodeEditorWrapper
-} from '@jupyterlab/codeeditor';
+import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
-import {
-  IMapDConnectionData, showConnectionDialog
-} from './connection';
+import { IMapDConnectionData, showConnectionDialog } from './connection';
 
-declare const MapdCon: any
+declare const MapdCon: any;
 
 /**
  * The default block size whenn streaming blocks of the query results.
@@ -42,8 +26,7 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export
-class MapDExplorer extends MainAreaWidget<MapDGrid> {
+export class MapDExplorer extends MainAreaWidget<MapDGrid> {
   /**
    * Construct a new MapDExplorer widget.
    */
@@ -84,7 +67,7 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
         }
       default:
         break;
-    };
+    }
   }
 
   /**
@@ -119,13 +102,11 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
 /**
  * A namespace for MapDExplorer statics.
  */
-export
-namespace MapDExplorer {
+export namespace MapDExplorer {
   /**
    * Options for creating a new MapDExplorer.
    */
-  export
-  interface IOptions {
+  export interface IOptions {
     /**
      * An editor factory for the SQL editor widget.
      */
@@ -141,8 +122,7 @@ namespace MapDExplorer {
 /**
  * A widget that hosts a phosphor grid with a MapD dataset.
  */
-export
-class MapDGrid extends Widget {
+export class MapDGrid extends Widget {
   /**
    * Construct a new MapDGrid widget.
    */
@@ -170,14 +150,14 @@ class MapDGrid extends Widget {
     });
     this._gridStyle = {
       ...DataGrid.defaultStyle,
-      rowBackgroundColor: i => i % 2 === 0 ? 'rgba(34, 167, 240, 0.2)' : ''
+      rowBackgroundColor: i => (i % 2 === 0 ? 'rgba(34, 167, 240, 0.2)' : '')
     };
     this._grid = new DataGrid({
       style: this._gridStyle,
       baseRowSize: 24,
       baseColumnSize: 96,
       baseColumnHeaderSize: 24,
-      baseRowHeaderSize: 64,
+      baseRowHeaderSize: 64
     });
     this._grid.cellRenderers.set('body', {}, bodyRenderer);
     this._grid.cellRenderers.set('column-header', {}, headerRenderer);
@@ -225,13 +205,16 @@ class MapDGrid extends Widget {
    */
   private _updateModel(connection: IMapDConnectionData, query: string): void {
     const hasQuery = query !== '';
-    this._model.updateModel(connection, query).then(() => {
-      this._content.setHidden(!hasQuery);
-      this._error.node.textContent = '';
-    }).catch((err: any) => {
-      this._content.hide()
-      this._error.node.textContent = err ? (err.message || err) : 'Error';
-    });
+    this._model
+      .updateModel(connection, query)
+      .then(() => {
+        this._content.setHidden(!hasQuery);
+        this._error.node.textContent = '';
+      })
+      .catch((err: any) => {
+        this._content.hide();
+        this._error.node.textContent = err ? err.message || err : 'Error';
+      });
     this._onModelChanged.emit(void 0);
   }
 
@@ -246,8 +229,7 @@ class MapDGrid extends Widget {
 /**
  * A data model for a query.
  */
-export
-class MapDTableModel extends DataModel {
+export class MapDTableModel extends DataModel {
   /**
    * Construct a new data model.
    */
@@ -255,7 +237,7 @@ class MapDTableModel extends DataModel {
     super();
     this._updateModel();
   }
- 
+
   /**
    * Get the number of rows for the model.
    */
@@ -282,7 +264,7 @@ class MapDTableModel extends DataModel {
    * Get the number of columns for the model.
    */
   columnCount(region: DataModel.ColumnRegion): number {
-    return region === 'body' ? this._fieldNames.length: 1;
+    return region === 'body' ? this._fieldNames.length : 1;
   }
 
   /**
@@ -304,7 +286,7 @@ class MapDTableModel extends DataModel {
    */
   data(region: DataModel.CellRegion, row: number, column: number): any {
     if (region === 'row-header') {
-      return String(row+1);
+      return String(row + 1);
     }
 
     if (region === 'column-header') {
@@ -320,7 +302,7 @@ class MapDTableModel extends DataModel {
     // load it. Also load the blocks on each side of the relevant block,
     // and free blocks outside of that window.
     if (this._streaming) {
-      const blockIndex = Math.floor(row/BLOCK_SIZE);
+      const blockIndex = Math.floor(row / BLOCK_SIZE);
       const offset = BLOCK_SIZE * blockIndex;
       const localRow = row - offset;
 
@@ -334,17 +316,19 @@ class MapDTableModel extends DataModel {
       });
 
       // Check if we should fetch the next block.
-      if (blockIndex <= this._maxBlock &&
-          localRow / BLOCK_SIZE > 0.9 &&
-          !this._dataBlocks[blockIndex+1]
+      if (
+        blockIndex <= this._maxBlock &&
+        localRow / BLOCK_SIZE > 0.9 &&
+        !this._dataBlocks[blockIndex + 1]
       ) {
         this._fetchBlock(blockIndex + 1);
       }
 
       // Check if we should fetch the previous block.
-      if (blockIndex >= 1 &&
-          localRow / BLOCK_SIZE < 0.1 &&
-          !this._dataBlocks[blockIndex-1]
+      if (
+        blockIndex >= 1 &&
+        localRow / BLOCK_SIZE < 0.1 &&
+        !this._dataBlocks[blockIndex - 1]
       ) {
         this._fetchBlock(blockIndex - 1);
       }
@@ -379,15 +363,18 @@ class MapDTableModel extends DataModel {
    *   an error if the validation fails.
    */
   updateModel(connection: IMapDConnectionData, query: string): Promise<void> {
-    if (this._query === query && connection && this._connection
-        && JSONExt.deepEqual(connection, this._connection)) {
+    if (
+      this._query === query &&
+      connection &&
+      this._connection &&
+      JSONExt.deepEqual(connection, this._connection)
+    ) {
       return Promise.resolve(void 0);
     }
     this._query = query;
     this._connection = connection;
     return this._updateModel();
-  };
-
+  }
 
   /**
    * Reset the model. Should be called when either
@@ -407,18 +394,20 @@ class MapDTableModel extends DataModel {
 
     if (this.query) {
       this._streaming = Private.shouldChunkRequests(this._query);
-      return Private.getFields(this._connection, this._query).then(names => {
-        this._fieldNames = names;
-        this.emitChanged({ type: 'model-reset' });
-        if (this._streaming) {
-          this._fetchBlock(0);
-        } else {
-          this._fetchDataset();
-        }
-      }).catch(err => {
-        this.emitChanged({ type: 'model-reset' });
-        throw err;
-      });
+      return Private.getFields(this._connection, this._query)
+        .then(names => {
+          this._fieldNames = names;
+          this.emitChanged({ type: 'model-reset' });
+          if (this._streaming) {
+            this._fetchBlock(0);
+          } else {
+            this._fetchDataset();
+          }
+        })
+        .catch(err => {
+          this.emitChanged({ type: 'model-reset' });
+          throw err;
+        });
     } else {
       this.emitChanged({ type: 'model-reset' });
       return Promise.resolve(void 0);
@@ -455,7 +444,7 @@ class MapDTableModel extends DataModel {
           rowIndex: offset,
           columnIndex: 0,
           rowSpan: res.length,
-          columnSpan: this._fieldNames.length,
+          columnSpan: this._fieldNames.length
         });
       } else {
         if (res.length < BLOCK_SIZE) {
@@ -469,7 +458,7 @@ class MapDTableModel extends DataModel {
           type: 'rows-inserted',
           region: 'body',
           index: offset,
-          span: res.length,
+          span: res.length
         });
       }
     });
@@ -491,7 +480,7 @@ class MapDTableModel extends DataModel {
       rowIndex: offset,
       columnIndex: 0,
       rowSpan: length,
-      columnSpan: this._fieldNames.length,
+      columnSpan: this._fieldNames.length
     });
   }
 
@@ -500,7 +489,9 @@ class MapDTableModel extends DataModel {
    * limited by DEFAULT_LIMIT.
    */
   private _fetchDataset(): void {
-    Private.makeQuery(this._connection, this._query, { limit: DEFAULT_LIMIT }).then(res => {
+    Private.makeQuery(this._connection, this._query, {
+      limit: DEFAULT_LIMIT
+    }).then(res => {
       this._tableLength = res.length;
       // If the dataset already exists, emit a cells-changed signal.
       // Otherwise, emit a 'rows-inserted' signal.
@@ -512,7 +503,7 @@ class MapDTableModel extends DataModel {
           rowIndex: 0,
           columnIndex: 0,
           rowSpan: res.length,
-          columnSpan: this._fieldNames.length,
+          columnSpan: this._fieldNames.length
         });
       } else {
         this._dataset = res;
@@ -520,7 +511,7 @@ class MapDTableModel extends DataModel {
           type: 'rows-inserted',
           region: 'body',
           index: 0,
-          span: res.length,
+          span: res.length
         });
       }
     });
@@ -538,12 +529,11 @@ class MapDTableModel extends DataModel {
   private _streaming = false;
 }
 
-
-
-
 namespace Private {
-  export
-  function createToolbar(widget: MapDGrid, editorFactory: CodeEditor.Factory): Toolbar {
+  export function createToolbar(
+    widget: MapDGrid,
+    editorFactory: CodeEditor.Factory
+  ): Toolbar {
     const toolbar = new Toolbar();
     toolbar.addClass('mapd-MapD-toolbar');
 
@@ -557,22 +547,28 @@ namespace Private {
 
     // Create the toolbar.
     toolbar.addItem('QueryInput', queryEditor);
-    toolbar.addItem('Query', new ToolbarButton({
-      className: 'jp-RunIcon',
-      onClick: () => {
-        widget.query = queryEditor.editor.model.value.text;
-      },
-      tooltip: 'Query'
-    }));
-    toolbar.addItem('Connect', new ToolbarButton({
-      className: 'mapd-MapD-logo',
-      onClick: () => {
-        showConnectionDialog(widget.connection).then(connection => {
-          widget.connection = connection;
-        });
-      },
-      tooltip: 'Enter MapD Connection Data'
-    }));
+    toolbar.addItem(
+      'Query',
+      new ToolbarButton({
+        className: 'jp-RunIcon',
+        onClick: () => {
+          widget.query = queryEditor.editor.model.value.text;
+        },
+        tooltip: 'Query'
+      })
+    );
+    toolbar.addItem(
+      'Connect',
+      new ToolbarButton({
+        className: 'mapd-MapD-logo',
+        onClick: () => {
+          showConnectionDialog(widget.connection).then(connection => {
+            widget.connection = connection;
+          });
+        },
+        tooltip: 'Enter MapD Connection Data'
+      })
+    );
 
     widget.onModelChanged.connect(() => {
       if (widget.query === queryEditor.editor.model.value.text) {
@@ -590,17 +586,21 @@ namespace Private {
    * (2) ORDER BY has been defined, otherwise we cannot guarantee a consistent
    * ordering across requests.
    */
-  export
-  function shouldChunkRequests(query: string): boolean {
-    return query.search(/limit/i) === -1 && query.search(/offset/i) === -1
-           && query.search(/order by/i) !== -1;
+  export function shouldChunkRequests(query: string): boolean {
+    return (
+      query.search(/limit/i) === -1 &&
+      query.search(/offset/i) === -1 &&
+      query.search(/order by/i) !== -1
+    );
   }
 
   /**
    * Validate a query, getting the fields that will be returned by the query.
    */
-  export
-  function getFields(connection: IMapDConnectionData, query: string): Promise<string[]> {
+  export function getFields(
+    connection: IMapDConnectionData,
+    query: string
+  ): Promise<string[]> {
     return validateQuery(connection, query).then(res => {
       return res.map(item => item.name as string);
     });
@@ -609,8 +609,11 @@ namespace Private {
   /**
    * Query the MapD backend.
    */
-  export
-  function makeQuery(connection: IMapDConnectionData, query: string, options: Object = {}): Promise<ReadonlyArray<JSONObject>> {
+  export function makeQuery(
+    connection: IMapDConnectionData,
+    query: string,
+    options: Object = {}
+  ): Promise<ReadonlyArray<JSONObject>> {
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
       new MapdCon()
         .protocol(connection.protocol)
@@ -622,15 +625,18 @@ namespace Private {
         .connect((error: any, con: any) => {
           if (error) {
             reject(error);
-          }
-          else {
-            con.query(query, options, (err: any, result: ReadonlyArray<JSONObject>) => {
-              if (err) {
-                reject(err);
-              } else {
-                resolve(result);
+          } else {
+            con.query(
+              query,
+              options,
+              (err: any, result: ReadonlyArray<JSONObject>) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(result);
+                }
               }
-            });
+            );
           }
         });
     });
@@ -639,7 +645,10 @@ namespace Private {
   /**
    * Validate a query with the MapD backend.
    */
-  function validateQuery(connection: IMapDConnectionData, query: string): Promise<ReadonlyArray<JSONObject>> {
+  function validateQuery(
+    connection: IMapDConnectionData,
+    query: string
+  ): Promise<ReadonlyArray<JSONObject>> {
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
       new MapdCon()
         .protocol(connection.protocol)
@@ -651,11 +660,15 @@ namespace Private {
         .connect((error: any, con: any) => {
           if (error) {
             reject(error);
-          }
-          else {
-            con.validateQuery(query).then((result: ReadonlyArray<JSONObject>) => {
-              resolve(result);
-            }).catch((err: any) => { reject(err); });
+          } else {
+            con
+              .validateQuery(query)
+              .then((result: ReadonlyArray<JSONObject>) => {
+                resolve(result);
+              })
+              .catch((err: any) => {
+                reject(err);
+              });
           }
         });
     });

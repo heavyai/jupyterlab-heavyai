@@ -1,32 +1,21 @@
-import {
-  Dialog, showDialog
-} from '@jupyterlab/apputils';
+import { Dialog, showDialog } from '@jupyterlab/apputils';
 
-import {
-  CompletionHandler
-} from '@jupyterlab/completer';
+import { CompletionHandler } from '@jupyterlab/completer';
 
-import {
-  DataConnector
-} from '@jupyterlab/coreutils';
+import { DataConnector } from '@jupyterlab/coreutils';
 
-import {
-  JSONObject
-} from '@phosphor/coreutils';
+import { JSONObject } from '@phosphor/coreutils';
 
-import {
-  PanelLayout, Widget
-} from '@phosphor/widgets';
+import { PanelLayout, Widget } from '@phosphor/widgets';
 
 import './browser-connector';
 
-declare const MapdCon: any
+declare const MapdCon: any;
 
 /**
  * Connection data for the mapd browser client.
  */
-export
-interface IMapDConnectionData extends JSONObject {
+export interface IMapDConnectionData extends JSONObject {
   /**
    * The host of the connection, e.g. `metis.mapd.com`.
    */
@@ -61,12 +50,13 @@ interface IMapDConnectionData extends JSONObject {
 /**
  * Show a dialog for entering MapD connection data.
  */
-export
-function showConnectionDialog(oldConnection?: IMapDConnectionData): Promise<IMapDConnectionData> {
+export function showConnectionDialog(
+  oldConnection?: IMapDConnectionData
+): Promise<IMapDConnectionData> {
   return showDialog<IMapDConnectionData>({
     title: 'MapD Connection',
     body: new MapDConnectionDialog(oldConnection),
-    buttons: [Dialog.cancelButton(), Dialog.okButton()],
+    buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {
     if (result.button.accept) {
       return result.value;
@@ -76,15 +66,14 @@ function showConnectionDialog(oldConnection?: IMapDConnectionData): Promise<IMap
   });
 }
 
-
 /**
  * A dialog for entering MapD connection data.
  */
-export
-class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDConnectionData> {
+export class MapDConnectionDialog extends Widget
+  implements Dialog.IBodyWidget<IMapDConnectionData> {
   constructor(oldData?: IMapDConnectionData) {
     super();
-    let layout = this.layout = new PanelLayout();
+    let layout = (this.layout = new PanelLayout());
 
     this._user = document.createElement('input');
     this._password = document.createElement('input');
@@ -157,11 +146,11 @@ class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDCon
 /**
  * A class for fetching completion data from a MapD connection.
  */
-export
-class MapDCompletionConnector extends DataConnector<
+export class MapDCompletionConnector extends DataConnector<
   CompletionHandler.IReply,
   void,
-  CompletionHandler.IRequest> {
+  CompletionHandler.IRequest
+> {
   /**
    * Construct a new completion connector.
    */
@@ -173,7 +162,9 @@ class MapDCompletionConnector extends DataConnector<
   /**
    * Fetch completion data from the MapD backend.
    */
-  fetch(request: CompletionHandler.IRequest): Promise<CompletionHandler.IReply | undefined> {
+  fetch(
+    request: CompletionHandler.IRequest
+  ): Promise<CompletionHandler.IReply | undefined> {
     const connection = this._connection;
     return new Promise<CompletionHandler.IReply>((resolve, reject) => {
       new MapdCon()
@@ -186,8 +177,7 @@ class MapDCompletionConnector extends DataConnector<
         .connect((error: any, con: any) => {
           if (error) {
             reject(error);
-          }
-          else {
+          } else {
             con.getCompletionHints(
               request.text,
               { cursor: request.offset },
@@ -195,7 +185,8 @@ class MapDCompletionConnector extends DataConnector<
                 if (err) {
                   reject(err);
                 } else if (result && result[0] && result[0].hints) {
-                  const matches = result.map((hintObject: any) => hintObject.hints)
+                  const matches = result
+                    .map((hintObject: any) => hintObject.hints)
                     .reduce((acc: any, val: any) => [].concat(acc, val), []);
 
                   resolve({

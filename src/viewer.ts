@@ -1,30 +1,25 @@
-import {
-  PromiseDelegate
-} from '@phosphor/coreutils';
+import { PromiseDelegate } from '@phosphor/coreutils';
+
+import { Widget } from '@phosphor/widgets';
+
+import { Spinner, ToolbarButton } from '@jupyterlab/apputils';
 
 import {
-  Widget
-} from '@phosphor/widgets';
-
-import {
-  Spinner, ToolbarButton
-} from '@jupyterlab/apputils';
-
-import {
-  ABCWidgetFactory, DocumentRegistry, DocumentWidget, IDocumentWidget
+  ABCWidgetFactory,
+  DocumentRegistry,
+  DocumentWidget,
+  IDocumentWidget
 } from '@jupyterlab/docregistry';
 
-import {
-  IMapDConnectionData, showConnectionDialog
-} from './connection';
+import { IMapDConnectionData, showConnectionDialog } from './connection';
 
-import {
-  MapDVega
-} from './widget';
+import { MapDVega } from './widget';
 
-export
-class MapDViewer extends DocumentWidget<Widget> {
-  constructor(context: DocumentRegistry.Context, connection?: IMapDConnectionData) {
+export class MapDViewer extends DocumentWidget<Widget> {
+  constructor(
+    context: DocumentRegistry.Context,
+    connection?: IMapDConnectionData
+  ) {
     super({
       context,
       reveal: context.ready.then(() => this._render()),
@@ -34,22 +29,28 @@ class MapDViewer extends DocumentWidget<Widget> {
     this.toolbar.addClass('mapd-MapD-toolbar');
     this.addClass('mapd-MapDViewer-content');
 
-    this.toolbar.addItem('Render', new ToolbarButton({
-      className: 'jp-RunIcon',
-      onClick: () => {
-        this._render();
-      },
-      tooltip: 'Render'
-    }));
-    this.toolbar.addItem('Connect', new ToolbarButton({
-      className: 'mapd-MapD-logo',
-      onClick: () => {
-        showConnectionDialog(this._connection).then(connection => {
-          this._connection = connection;
-        });
-      },
-      tooltip: 'Enter MapD Connection Data'
-    }));
+    this.toolbar.addItem(
+      'Render',
+      new ToolbarButton({
+        className: 'jp-RunIcon',
+        onClick: () => {
+          this._render();
+        },
+        tooltip: 'Render'
+      })
+    );
+    this.toolbar.addItem(
+      'Connect',
+      new ToolbarButton({
+        className: 'mapd-MapD-logo',
+        onClick: () => {
+          showConnectionDialog(this._connection).then(connection => {
+            this._connection = connection;
+          });
+        },
+        tooltip: 'Enter MapD Connection Data'
+      })
+    );
   }
 
   /**
@@ -82,22 +83,24 @@ class MapDViewer extends DocumentWidget<Widget> {
     const text = this.context.model.toString();
     // If there is no data or no connection, do nothing
     if (!text || !this._connection) {
-      return Promise.resolve (void 0);
+      return Promise.resolve(void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
     this._widget = new MapDVega(data, this._connection);
     this.content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
     this.content.node.appendChild(spinner.node);
-    return this._widget.renderedImage.then(() => {
-      this.content.node.removeChild(spinner.node);
-      spinner.dispose();
-      return void 0;
-    }).catch(() => {
-      this.content.node.removeChild(spinner.node);
-      spinner.dispose();
-      return void 0;
-    });
+    return this._widget.renderedImage
+      .then(() => {
+        this.content.node.removeChild(spinner.node);
+        spinner.dispose();
+        return void 0;
+      })
+      .catch(() => {
+        this.content.node.removeChild(spinner.node);
+        spinner.dispose();
+        return void 0;
+      });
   }
 
   private _ready = new PromiseDelegate<void>();
@@ -108,12 +111,16 @@ class MapDViewer extends DocumentWidget<Widget> {
 /**
  * A widget factory for images.
  */
-export
-class MapDViewerFactory extends ABCWidgetFactory<IDocumentWidget<Widget>, DocumentRegistry.IModel> {
+export class MapDViewerFactory extends ABCWidgetFactory<
+  IDocumentWidget<Widget>,
+  DocumentRegistry.IModel
+> {
   /**
    * Create a new widget given a context.
    */
-  protected createNewWidget(context: DocumentRegistry.IContext<DocumentRegistry.IModel>): MapDViewer {
+  protected createNewWidget(
+    context: DocumentRegistry.IContext<DocumentRegistry.IModel>
+  ): MapDViewer {
     return new MapDViewer(context, this.defaultConnection);
   }
 
