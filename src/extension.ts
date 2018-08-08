@@ -11,6 +11,10 @@ import {
 } from '@jupyterlab/codeeditor';
 
 import {
+  ICompletionManager
+} from '@jupyterlab/completer';
+
+import {
   ISettingRegistry
 } from '@jupyterlab/coreutils';
 
@@ -27,7 +31,7 @@ import {
 } from '@jupyterlab/mainmenu';
 
 import {
-  IMapDConnectionData
+  IMapDConnectionData, MapDCompletionConnector
 } from './connection';
 
 import {
@@ -49,6 +53,12 @@ const FACTORY = 'MapDVega';
 namespace CommandIDs {
   export
   const newGrid = 'mapd:new-grid';
+
+  export
+  const invokeCompleter = 'mapd:invoke-completer';
+
+  export
+  const selectCompleter = 'mapd:select-completer';
 }
 
 /**
@@ -85,11 +95,11 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
 const mapdPlugin: JupyterLabPlugin<void> = {
   activate: activateMapDViewer,
   id: PLUGIN_ID,
-  requires: [ IEditorServices, ILauncher, ILayoutRestorer, IMainMenu, ISettingRegistry ],
+  requires: [ ICompletionManager, IEditorServices, ILauncher, ILayoutRestorer, IMainMenu, ISettingRegistry ],
   autoStart: true
 };
 
-function activateMapDViewer(app: JupyterLab, editorServices: IEditorServices, launcher: ILauncher, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
+function activateMapDViewer(app: JupyterLab, completionManager: ICompletionManager, editorServices: IEditorServices, launcher: ILauncher, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
   const viewerNamespace = 'mapd-viewer-widget';
   const gridNamespace = 'mapd-grid-widget';
 
@@ -135,6 +145,51 @@ function activateMapDViewer(app: JupyterLab, editorServices: IEditorServices, la
     args: widget => ({ initialQuery: widget.content.query }),
     name: widget => widget.id
   });
+
+  // Create a completion handler for each grid that is created.
+  gridTracker.widgetAdded.connect((sender, explorer) => {
+    const editor = explorer.input.editor;
+    const connector = new MapDCompletionConnector(explorer.content.connection);
+    const parent = explorer;
+    const handle = completionManager.register({ connector, editor, parent });
+
+    explorer.content.onModelChanged.connect(() => {
+      handle.connector = new MapDCompletionConnector(explorer.content.connection);
+    });
+  });
+
+  // Add grid completer command.
+  app.commands.addCommand(CommandIDs.invokeCompleter, {
+    execute: () => {
+      const explorer = gridTracker.currentWidget;
+      if (explorer) {
+        return app.commands.execute('completer:invoke', { id: explorer.id });
+      }
+    }
+  });
+
+  // Add grid completer select command.
+  app.commands.addCommand(CommandIDs.selectCompleter, {
+    execute: () => {
+      const explorer = gridTracker.currentWidget;
+      if (explorer) {
+        return app.commands.execute('completer:select', { id: explorer.id });
+      }
+    }
+  });
+
+  // Set enter key for grid completer select command.
+  app.commands.addKeyBinding({
+    command: CommandIDs.selectCompleter,
+    keys: ['Enter'],
+    selector: `.mapd-MapD-toolbar .jp-Editor.jp-mod-completer-active`
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.invokeCompleter,
+    keys: ['Tab'],
+    selector: `.mapd-MapD-toolbar .jp-Editor.jp-mod-completer-enabled`
+  });
+
 
   app.commands.addCommand(CommandIDs.newGrid, {
     label: 'MapD Explorer',

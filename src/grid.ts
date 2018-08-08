@@ -54,6 +54,13 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
   }
 
   /**
+   * Get a reference to the input editor.
+   */
+  get input(): CodeEditorWrapper {
+    return this.toolbar.children().next() as CodeEditorWrapper;
+  }
+
+  /**
    * Handle the DOM events for the widget.
    *
    * @param event - The DOM event sent to the widget.
@@ -70,8 +77,7 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
           case 13: // Enter
             event.stopPropagation();
             event.preventDefault();
-            const editor = this.toolbar.children().next() as CodeEditorWrapper;
-            this.content.query = editor.editor.model.value.text;
+            this.content.query = this.input.editor.model.value.text;
             break;
           default:
             break;
@@ -85,16 +91,14 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
    * Handle `after-attach` messages for the widget.
    */
   protected onAfterAttach(msg: Message): void {
-    let editor: Widget = this.toolbar.children().next();
-    editor.node.addEventListener('keydown', this, true);
+    this.input.node.addEventListener('keydown', this, true);
   }
 
   /**
    * Handle `before-detach` messages for the widget.
    */
   protected onBeforeDetach(msg: Message): void {
-    let editor: Widget = this.toolbar.children().next();
-    editor.node.removeEventListener('keydown', this, true);
+    this.input.node.removeEventListener('keydown', this, true);
   }
 
   /**
@@ -108,8 +112,7 @@ class MapDExplorer extends MainAreaWidget<MapDGrid> {
    * Focus the toolbar editor widget.
    */
   private _focusInput(): void {
-    let editor: Widget = this.toolbar.children().next();
-    editor.activate();
+    this.input.activate();
   }
 }
 

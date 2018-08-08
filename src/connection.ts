@@ -3,6 +3,14 @@ import {
 } from '@jupyterlab/apputils';
 
 import {
+  CompletionHandler
+} from '@jupyterlab/completer';
+
+import {
+  DataConnector
+} from '@jupyterlab/coreutils';
+
+import {
   JSONObject
 } from '@phosphor/coreutils';
 
@@ -144,4 +152,68 @@ class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDCon
   private _host: HTMLInputElement;
   private _protocol: HTMLInputElement;
   private _port: HTMLInputElement;
+}
+
+/**
+ * A class for fetching completion data from a MapD connection.
+ */
+export
+class MapDCompletionConnector extends DataConnector<
+  CompletionHandler.IReply,
+  void,
+  CompletionHandler.IRequest> {
+  /**
+   * Construct a new completion connector.
+   */
+  constructor(connection: IMapDConnectionData) {
+    super();
+    this._connection = connection;
+  }
+
+  /**
+   * Fetch completion data from the MapD backend.
+   */
+  fetch(request: CompletionHandler.IRequest): Promise<CompletionHandler.IReply | undefined> {
+    const connection = this._connection;
+    return new Promise<CompletionHandler.IReply>((resolve, reject) => {
+      new MapdCon()
+        .protocol(connection.protocol)
+        .host(connection.host)
+        .port(connection.port)
+        .dbName(connection.dbName)
+        .user(connection.user)
+        .password(connection.password)
+        .connect((error: any, con: any) => {
+          if (error) {
+            reject(error);
+          }
+          else {
+            con.getCompletionHints(
+              request.text,
+              { cursor: request.offset },
+              (err: any, result: any) => {
+                if (err) {
+                  reject(err);
+                } else if (result && result[0] && result[0].hints) {
+                  const matches = result.map((hintObject: any) => hintObject.hints)
+                    .reduce((acc: any, val: any) => [].concat(acc, val), []);
+
+                  resolve({
+                    start: request.offset - result[0].replaced.length,
+                    end: request.offset,
+                    matches,
+                    metadata: {}
+                  });
+                  resolve(void 0);
+                } else {
+                  resolve(void 0);
+                }
+              }
+            );
+          }
+        });
+    });
+  }
+
+  private _connection: IMapDConnectionData;
 }
