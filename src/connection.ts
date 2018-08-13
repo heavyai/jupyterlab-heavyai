@@ -1,20 +1,21 @@
-import {
-  Dialog, showDialog
-} from '@jupyterlab/apputils';
+import { Dialog, showDialog } from '@jupyterlab/apputils';
 
-import {
-  JSONObject
-} from '@phosphor/coreutils';
+import { CompletionHandler } from '@jupyterlab/completer';
 
-import {
-  PanelLayout, Widget
-} from '@phosphor/widgets';
+import { DataConnector } from '@jupyterlab/coreutils';
+
+import { JSONObject } from '@phosphor/coreutils';
+
+import { PanelLayout, Widget } from '@phosphor/widgets';
+
+import './browser-connector';
+
+declare const MapdCon: any;
 
 /**
  * Connection data for the mapd browser client.
  */
-export
-interface IMapDConnectionData extends JSONObject {
+export interface IMapDConnectionData extends JSONObject {
   /**
    * The host of the connection, e.g. `metis.mapd.com`.
    */
@@ -49,12 +50,13 @@ interface IMapDConnectionData extends JSONObject {
 /**
  * Show a dialog for entering MapD connection data.
  */
-export
-function showConnectionDialog(oldConnection?: IMapDConnectionData): Promise<IMapDConnectionData> {
+export function showConnectionDialog(
+  oldConnection?: IMapDConnectionData
+): Promise<IMapDConnectionData> {
   return showDialog<IMapDConnectionData>({
     title: 'MapD Connection',
     body: new MapDConnectionDialog(oldConnection),
-    buttons: [Dialog.cancelButton(), Dialog.okButton()],
+    buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {
     if (result.button.accept) {
       return result.value;
@@ -64,15 +66,14 @@ function showConnectionDialog(oldConnection?: IMapDConnectionData): Promise<IMap
   });
 }
 
-
 /**
  * A dialog for entering MapD connection data.
  */
-export
-class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDConnectionData> {
+export class MapDConnectionDialog extends Widget
+  implements Dialog.IBodyWidget<IMapDConnectionData> {
   constructor(oldData?: IMapDConnectionData) {
     super();
-    let layout = this.layout = new PanelLayout();
+    let layout = (this.layout = new PanelLayout());
 
     this._user = document.createElement('input');
     this._password = document.createElement('input');
@@ -140,4 +141,70 @@ class MapDConnectionDialog extends Widget implements Dialog.IBodyWidget<IMapDCon
   private _host: HTMLInputElement;
   private _protocol: HTMLInputElement;
   private _port: HTMLInputElement;
+}
+
+/**
+ * A class for fetching completion data from a MapD connection.
+ */
+export class MapDCompletionConnector extends DataConnector<
+  CompletionHandler.IReply,
+  void,
+  CompletionHandler.IRequest
+> {
+  /**
+   * Construct a new completion connector.
+   */
+  constructor(connection: IMapDConnectionData) {
+    super();
+    this._connection = connection;
+  }
+
+  /**
+   * Fetch completion data from the MapD backend.
+   */
+  fetch(
+    request: CompletionHandler.IRequest
+  ): Promise<CompletionHandler.IReply | undefined> {
+    const connection = this._connection;
+    return new Promise<CompletionHandler.IReply>((resolve, reject) => {
+      new MapdCon()
+        .protocol(connection.protocol)
+        .host(connection.host)
+        .port(connection.port)
+        .dbName(connection.dbName)
+        .user(connection.user)
+        .password(connection.password)
+        .connect((error: any, con: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            con.getCompletionHints(
+              request.text,
+              { cursor: request.offset },
+              (err: any, result: any) => {
+                if (err) {
+                  reject(err);
+                } else if (result && result[0] && result[0].hints) {
+                  const matches = result
+                    .map((hintObject: any) => hintObject.hints)
+                    .reduce((acc: any, val: any) => [].concat(acc, val), []);
+
+                  resolve({
+                    start: request.offset - result[0].replaced.length,
+                    end: request.offset,
+                    matches,
+                    metadata: {}
+                  });
+                  resolve(void 0);
+                } else {
+                  resolve(void 0);
+                }
+              }
+            );
+          }
+        });
+    });
+  }
+
+  private _connection: IMapDConnectionData;
 }

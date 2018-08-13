@@ -1,50 +1,35 @@
-import {
-  JSONObject
-} from '@phosphor/coreutils';
+import { JSONObject } from '@phosphor/coreutils';
 
-import {
-  Widget
-} from '@phosphor/widgets';
+import { Widget } from '@phosphor/widgets';
 
-import {
-  IRenderMime
-} from '@jupyterlab/rendermime-interfaces';
+import { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 
-import {
-  IMapDConnectionData
-} from './connection';
+import { IMapDConnectionData } from './connection';
 
-import {
-  MapDVega
-} from './widget';
+import { MapDVega } from './widget';
 
 import { compileToVega } from './vega-lite';
 
 import '../style/index.css';
 
-
 /**
  * The MIME type for backend-rendered MapD.
  */
-export
-const MIME_TYPE = 'application/vnd.mapd.vega+json';
+export const MIME_TYPE = 'application/vnd.mapd.vega+json';
 
 /**
  * The MIME type for png data.
  */
-export
-const IMAGE_MIME = 'image/png';
+export const IMAGE_MIME = 'image/png';
 
 /**
  * A class for rendering a MapD-generated image.
  */
-export
-class RenderedMapD extends Widget implements IRenderMime.IRenderer {
+export class RenderedMapD extends Widget implements IRenderMime.IRenderer {
   /**
    * Render MapD image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
-
     // If we have already rendered a widget, dispose of it.
     if (this._widget) {
       this._widget.parent = null;
@@ -66,7 +51,11 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
     const { connection, vega, vegalite } = data;
 
     // Create a new MapDVega
-    this._widget = new MapDVega(vega || compileToVega(vegalite), connection, vegalite);
+    this._widget = new MapDVega(
+      vega || compileToVega(vegalite),
+      connection,
+      vegalite
+    );
     this.node.appendChild(this._widget.node);
     return this._widget.renderedImage.then(data => {
       // Set the mime data for the png.
@@ -85,7 +74,6 @@ class RenderedMapD extends Widget implements IRenderMime.IRenderer {
 
   private _widget: MapDVega | null = null;
 }
-
 
 /**
  * MapD renderer custom mimetype format.
@@ -110,20 +98,18 @@ interface IMapDMimeBundle extends JSONObject {
 /**
  * A mime renderer factory for mapd-vega data.
  */
-export
-const rendererFactory: IRenderMime.IRendererFactory = {
+export const rendererFactory: IRenderMime.IRendererFactory = {
   safe: false,
   mimeTypes: [MIME_TYPE],
   defaultRank: 10,
   createRenderer: options => new RenderedMapD()
 };
 
-
 const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
   {
     id: 'jupyterlab-mapd:factory',
     rendererFactory,
-    dataType: 'string',
+    dataType: 'string'
   }
 ];
 
@@ -136,8 +122,7 @@ namespace Private {
   /**
    * Create an image node from a base64-encoded image.
    */
-  export
-  function createImageNode(blob: string): HTMLElement  {
+  export function createImageNode(blob: string): HTMLElement {
     const img = document.createElement('img');
     let blobUrl = `data:${IMAGE_MIME};base64,${blob}`;
     img.src = blobUrl;

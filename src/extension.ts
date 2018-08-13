@@ -1,38 +1,28 @@
 import {
-  ILayoutRestorer, JupyterLab, JupyterLabPlugin
+  ILayoutRestorer,
+  JupyterLab,
+  JupyterLabPlugin
 } from '@jupyterlab/application';
 
-import {
-  InstanceTracker,
-} from '@jupyterlab/apputils';
+import { InstanceTracker } from '@jupyterlab/apputils';
 
-import {
-  ISettingRegistry
-} from '@jupyterlab/coreutils';
+import { IEditorServices } from '@jupyterlab/codeeditor';
 
-import {
-  DocumentRegistry
-} from '@jupyterlab/docregistry';
+import { ICompletionManager } from '@jupyterlab/completer';
 
-import {
-  ILauncher
-} from '@jupyterlab/launcher';
+import { ISettingRegistry } from '@jupyterlab/coreutils';
 
-import {
-  IMainMenu
-} from '@jupyterlab/mainmenu';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-import {
-  IMapDConnectionData
-} from './connection';
+import { ILauncher } from '@jupyterlab/launcher';
 
-import {
-  MapDExplorer
-} from './grid';
+import { IMainMenu } from '@jupyterlab/mainmenu';
 
-import {
-  MapDViewer, MapDViewerFactory
-} from './viewer';
+import { IMapDConnectionData, MapDCompletionConnector } from './connection';
+
+import { MapDExplorer } from './grid';
+
+import { MapDViewer, MapDViewerFactory } from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.
@@ -43,8 +33,11 @@ const FACTORY = 'MapDVega';
  * Command IDs for the extension.
  */
 namespace CommandIDs {
-  export
-  const newGrid = 'mapd:new-grid';
+  export const newGrid = 'mapd:new-grid';
+
+  export const invokeCompleter = 'mapd:invoke-completer';
+
+  export const selectCompleter = 'mapd:select-completer';
 }
 
 /**
@@ -53,12 +46,16 @@ namespace CommandIDs {
  * #### Notes
  * The version of this follows the major version of Vega.
  */
-export
-const VEGA_MIME_TYPE = 'application/vnd.vega.v3+json';
+export const VEGA_MIME_TYPE = 'application/vnd.vega.v3+json';
 
-export
-const EXTENSIONS = ['.vega', '.mapd.vega', '.mapd.vg.json',
-  '.mapd.vega.json', '.vg.json', '.vega.json'];
+export const EXTENSIONS = [
+  '.vega',
+  '.mapd.vega',
+  '.mapd.vg.json',
+  '.mapd.vega.json',
+  '.vg.json',
+  '.vega.json'
+];
 
 const PLUGIN_ID = 'jupyterlab-mapd:plugin';
 
@@ -71,9 +68,8 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
   fileFormat: 'text',
   extensions: EXTENSIONS,
   mimeTypes: [VEGA_MIME_TYPE],
-  iconClass: 'jpMaterialIcon jp-VegaIcon'
+  iconClass: 'jp-MaterialIcon jp-VegaIcon'
 };
-
 
 /**
  * The pdf file handler extension.
@@ -81,11 +77,26 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
 const mapdPlugin: JupyterLabPlugin<void> = {
   activate: activateMapDViewer,
   id: PLUGIN_ID,
-  requires: [ ILauncher, ILayoutRestorer, IMainMenu, ISettingRegistry ],
+  requires: [
+    ICompletionManager,
+    IEditorServices,
+    ILauncher,
+    ILayoutRestorer,
+    IMainMenu,
+    ISettingRegistry
+  ],
   autoStart: true
 };
 
-function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILayoutRestorer, mainMenu: IMainMenu, settingRegistry: ISettingRegistry): void {
+function activateMapDViewer(
+  app: JupyterLab,
+  completionManager: ICompletionManager,
+  editorServices: IEditorServices,
+  launcher: ILauncher,
+  restorer: ILayoutRestorer,
+  mainMenu: IMainMenu,
+  settingRegistry: ISettingRegistry
+): void {
   const viewerNamespace = 'mapd-viewer-widget';
   const gridNamespace = 'mapd-grid-widget';
 
@@ -132,12 +143,61 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
     name: widget => widget.id
   });
 
+  // Create a completion handler for each grid that is created.
+  gridTracker.widgetAdded.connect((sender, explorer) => {
+    const editor = explorer.input.editor;
+    const connector = new MapDCompletionConnector(explorer.content.connection);
+    const parent = explorer;
+    const handle = completionManager.register({ connector, editor, parent });
+
+    explorer.content.onModelChanged.connect(() => {
+      handle.connector = new MapDCompletionConnector(
+        explorer.content.connection
+      );
+    });
+  });
+
+  // Add grid completer command.
+  app.commands.addCommand(CommandIDs.invokeCompleter, {
+    execute: () => {
+      const explorer = gridTracker.currentWidget;
+      if (explorer) {
+        return app.commands.execute('completer:invoke', { id: explorer.id });
+      }
+    }
+  });
+
+  // Add grid completer select command.
+  app.commands.addCommand(CommandIDs.selectCompleter, {
+    execute: () => {
+      const explorer = gridTracker.currentWidget;
+      if (explorer) {
+        return app.commands.execute('completer:select', { id: explorer.id });
+      }
+    }
+  });
+
+  // Set enter key for grid completer select command.
+  app.commands.addKeyBinding({
+    command: CommandIDs.selectCompleter,
+    keys: ['Enter'],
+    selector: `.mapd-MapD-toolbar .jp-Editor.jp-mod-completer-active`
+  });
+  app.commands.addKeyBinding({
+    command: CommandIDs.invokeCompleter,
+    keys: ['Tab'],
+    selector: `.mapd-MapD-toolbar .jp-Editor.jp-mod-completer-enabled`
+  });
+
   app.commands.addCommand(CommandIDs.newGrid, {
     label: 'MapD Explorer',
     iconClass: 'mapd-MapD-logo',
     execute: args => {
-      const query = args['initialQuery'] as string || '';
-      const grid = new MapDExplorer(factory.defaultConnection);
+      const query = (args['initialQuery'] as string) || '';
+      const grid = new MapDExplorer({
+        editorFactory: editorServices.factoryService.newInlineEditor,
+        connection: factory.defaultConnection
+      });
       grid.content.query = query;
       grid.id = `mapd-grid-widget-${++Private.id}`;
       grid.title.label = `MapD Explorer ${Private.id}`;
@@ -152,7 +212,7 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
       return grid;
     }
   });
-  mainMenu.fileMenu.newMenu.addGroup([{ command: 'mapd:new-grid'}], 50);
+  mainMenu.fileMenu.newMenu.addGroup([{ command: 'mapd:new-grid' }], 50);
 
   launcher.add({
     category: 'Other',
@@ -163,7 +223,10 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const defaultConnection = settings.get('defaultConnection').composite as IMapDConnectionData | null | undefined;
+    const defaultConnection = settings.get('defaultConnection').composite as
+      | IMapDConnectionData
+      | null
+      | undefined;
     if (!defaultConnection) {
       return;
     }
@@ -182,12 +245,13 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
 
   // Fetch the initial state of the settings.
   Promise.all([settingRegistry.load(PLUGIN_ID), app.restored])
-  .then(([settings]) => {
-    settings.changed.connect(onSettingsUpdated);
-    onSettingsUpdated(settings);
-  }).catch((reason: Error) => {
-    console.error(reason.message);
-  });
+    .then(([settings]) => {
+      settings.changed.connect(onSettingsUpdated);
+      onSettingsUpdated(settings);
+    })
+    .catch((reason: Error) => {
+      console.error(reason.message);
+    });
 }
 
 /**
@@ -196,11 +260,9 @@ function activateMapDViewer(app: JupyterLab, launcher: ILauncher, restorer: ILay
 const plugin: JupyterLabPlugin<any> = mapdPlugin;
 export default plugin;
 
-
 /**
  * A namespace for private statics.
  */
 namespace Private {
-  export
-  let id = 0;
+  export let id = 0;
 }

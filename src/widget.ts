@@ -1,18 +1,10 @@
-import {
-  JSONObject, PromiseDelegate
-} from '@phosphor/coreutils';
+import { JSONObject, PromiseDelegate } from '@phosphor/coreutils';
 
-import {
-  Widget
-} from '@phosphor/widgets';
+import { Widget } from '@phosphor/widgets';
 
-import {
-  IMapDConnectionData
-} from './connection';
+import { IMapDConnectionData } from './connection';
 
-import 'mapd-connector/dist/browser-connector.js';
-
-declare const MapdCon: any
+declare const MapdCon: any;
 
 /**
  * The MIME type for png data.
@@ -22,14 +14,17 @@ const IMAGE_MIME = 'image/png';
 /**
  * A class for rendering a MapD-generated image.
  */
-export
-class MapDVega extends Widget {
+export class MapDVega extends Widget {
   /**
    * Construct a new MapD widget.
    */
-  constructor(vega: JSONObject, connection: IMapDConnectionData, vegaLite?: JSONObject) {
+  constructor(
+    vega: JSONObject,
+    connection: IMapDConnectionData,
+    vegaLite?: JSONObject
+  ) {
     super();
-    this.addClass('mapd-MapDVega')
+    this.addClass('mapd-MapDVega');
     this._img = document.createElement('img');
     this._error = document.createElement('pre');
     this._error.className = 'mapd-ErrorMessage';
@@ -68,25 +63,38 @@ class MapDVega extends Widget {
           this._rendered.reject(error);
           return;
         }
-        con.renderVega(Private.id++, JSON.stringify(vega), {}, (error: any, result: any) => {
-          if (error) {
-            // If there was an error, clear any image data,
-            // and set the text content of the error node.
-            this._setImageData('');
-            this._error.textContent = error.message;
-            if (this._vegaLite) {
-              this._error.textContent += `\n\nVega Lite:\n${JSON.stringify(this._vegaLite, null, 2)}`
+        con.renderVega(
+          Private.id++,
+          JSON.stringify(vega),
+          {},
+          (error: any, result: any) => {
+            if (error) {
+              // If there was an error, clear any image data,
+              // and set the text content of the error node.
+              this._setImageData('');
+              this._error.textContent = error.message;
+              if (this._vegaLite) {
+                this._error.textContent += `\n\nVega Lite:\n${JSON.stringify(
+                  this._vegaLite,
+                  null,
+                  2
+                )}`;
+              }
+              this._error.textContent += `\n\nVega:\n${JSON.stringify(
+                vega,
+                null,
+                2
+              )}`;
+              this._rendered.reject(error.message);
+            } else {
+              // Set the image data.
+              this._setImageData(result.image);
+              // Clear any error message.
+              this._error.textContent = '';
+              this._rendered.resolve(result.image);
             }
-            this._error.textContent += `\n\nVega:\n${JSON.stringify(vega, null, 2)}`
-            this._rendered.reject(error.message);
-          } else {
-            // Set the image data.
-            this._setImageData(result.image);
-            // Clear any error message.
-            this._error.textContent = '';
-            this._rendered.resolve(result.image);
           }
-        });
+        );
       });
   }
   /**
@@ -109,6 +117,5 @@ class MapDVega extends Widget {
  * A namespace for private data.
  */
 namespace Private {
-  export
-  let id = 0;
+  export let id = 0;
 }
