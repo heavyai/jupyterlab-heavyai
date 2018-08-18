@@ -32,7 +32,7 @@ export class MapDViewer extends DocumentWidget<Widget> {
     this.toolbar.addItem(
       'Render',
       new ToolbarButton({
-        className: 'jp-RunIcon',
+        iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
           this._render();
         },
@@ -42,7 +42,7 @@ export class MapDViewer extends DocumentWidget<Widget> {
     this.toolbar.addItem(
       'Connect',
       new ToolbarButton({
-        className: 'mapd-MapD-logo',
+        iconClassName: 'mapd-MapD-logo jp-Icon jp-Icon-16',
         onClick: () => {
           showConnectionDialog(this._connection).then(connection => {
             this._connection = connection;

@@ -65,6 +65,7 @@ export class MapDExplorer extends MainAreaWidget<MapDGrid> {
           default:
             break;
         }
+        break;
       default:
         break;
     }
@@ -550,7 +551,7 @@ namespace Private {
     toolbar.addItem(
       'Query',
       new ToolbarButton({
-        className: 'jp-RunIcon',
+        iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
           widget.query = queryEditor.editor.model.value.text;
         },
@@ -560,7 +561,7 @@ namespace Private {
     toolbar.addItem(
       'Connect',
       new ToolbarButton({
-        className: 'mapd-MapD-logo',
+        iconClassName: 'mapd-MapD-logo jp-Icon jp-Icon-16',
         onClick: () => {
           showConnectionDialog(widget.connection).then(connection => {
             widget.connection = connection;
