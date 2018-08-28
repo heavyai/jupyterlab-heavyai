@@ -1,0 +1,20 @@
+language: python
+python:
+  - "3.6"
+
+install:
+  - pip install \
+    vdom \
+    git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe \
+    pymapd==0.3.2 \
+    altair==2.0.1 \
+    jupyterlab==0.32.1 \
+    pyyaml
+
+before_script:
+  - jlpm
+  - jlpm build
+  - jupyter labextension install
+
+script:
+  - jupyter nbconvert --execute *.ipynb

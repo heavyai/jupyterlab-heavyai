@@ -1,5 +1,7 @@
 # jupyterlab-mapd
 
+[![Build Status](https://travis-ci.com/Quansight/jupyter-mapd-renderer.svg?branch=master)](https://travis-ci.com/Quansight/jupyter-mapd-renderer)
+
 Connect to MapD, query their databases, and render the MapD-flavored Vega specification,
 all within JupyterLab
 
@@ -23,11 +25,19 @@ jupyter labextension install jupyterlab-mapd
 To install from source, run the following in a terminal:
 
 ```bash
+pip install \
+    vdom \
+    git+https://github.com/Quansight/ibis.git@0d1d81400a7a06943f3c99037c348c26942b0ffe \
+    pymapd==0.3.2 \
+    altair==2.0.1 \
+    jupyterlab==0.32.1 \
+    pyyaml
+
 git clone https://github.com/Quansight/jupyter-mapd-renderer
 cd jupyter-mapd-renderer
-jlpm install
-jlpm run build
-jupyter labextension install .
+jlpm
+jlpm build
+jupyter labextension install
 ```
 
 ## Edit the default database connection
