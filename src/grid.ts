@@ -156,8 +156,8 @@ export class MapDGrid extends Widget {
     this._grid = new DataGrid({
       style: this._gridStyle,
       baseRowSize: 24,
-      baseColumnSize: 96,
-      baseColumnHeaderSize: 24,
+      baseColumnSize: 192,
+      baseColumnHeaderSize: 36,
       baseRowHeaderSize: 64
     });
     this._grid.cellRenderers.set('body', {}, bodyRenderer);
@@ -395,9 +395,8 @@ export class MapDTableModel extends DataModel {
 
     if (this.query) {
       this._streaming = Private.shouldChunkRequests(this._query);
-      return Private.getFields(this._connection, this._query)
-        .then(names => {
-          this._fieldNames = names;
+      return Private.validateQuery(this._connection, this._query)
+        .then(() => {
           this.emitChanged({ type: 'model-reset' });
           if (this._streaming) {
             this._fetchBlock(0);
@@ -433,9 +432,13 @@ export class MapDTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
-    Private.makeQuery(this._connection, query).then(res => {
+    Private.makeQuery(this._connection, query).then((res: any) => {
       this._pending.delete(index);
-      this._dataBlocks[index] = res;
+      if (!this._fieldNames.length) {
+        this._fieldNames = res.fields.map((field: any) => field.name as string);
+        this.emitChanged({ type: 'model-reset' });
+      }
+      this._dataBlocks[index] = res.results;
       if (index <= maxIndex || this._tableLength !== -1) {
         // In this case, we are not appending, so emit a changed
         // signal.
@@ -444,14 +447,14 @@ export class MapDTableModel extends DataModel {
           region: 'body',
           rowIndex: offset,
           columnIndex: 0,
-          rowSpan: res.length,
+          rowSpan: res.results.length,
           columnSpan: this._fieldNames.length
         });
       } else {
-        if (res.length < BLOCK_SIZE) {
+        if (res.results.length < BLOCK_SIZE) {
           // If the length of the result is less than the block size,
           // we have found the table length. Set that.
-          this._tableLength = offset + res.length;
+          this._tableLength = offset + res.results.length;
           this._maxBlock = index;
         }
         // Emit a rows-inserted signal.
@@ -459,7 +462,7 @@ export class MapDTableModel extends DataModel {
           type: 'rows-inserted',
           region: 'body',
           index: offset,
-          span: res.length
+          span: res.results.length
         });
       }
     });
@@ -492,27 +495,29 @@ export class MapDTableModel extends DataModel {
   private _fetchDataset(): void {
     Private.makeQuery(this._connection, this._query, {
       limit: DEFAULT_LIMIT
-    }).then(res => {
-      this._tableLength = res.length;
+    }).then((res: any) => {
+      this._fieldNames = res.fields.map((field: any) => field.name as string);
+      this.emitChanged({ type: 'model-reset' });
+      this._tableLength = res.results.length;
       // If the dataset already exists, emit a cells-changed signal.
       // Otherwise, emit a 'rows-inserted' signal.
       if (this._dataset) {
-        this._dataset = res;
+        this._dataset = res.results;
         this.emitChanged({
           type: 'cells-changed',
           region: 'body',
           rowIndex: 0,
           columnIndex: 0,
-          rowSpan: res.length,
+          rowSpan: res.results.length,
           columnSpan: this._fieldNames.length
         });
       } else {
-        this._dataset = res;
+        this._dataset = res.results;
         this.emitChanged({
           type: 'rows-inserted',
           region: 'body',
           index: 0,
-          span: res.length
+          span: res.results.length
         });
       }
     });
@@ -596,18 +601,6 @@ namespace Private {
   }
 
   /**
-   * Validate a query, getting the fields that will be returned by the query.
-   */
-  export function getFields(
-    connection: IMapDConnectionData,
-    query: string
-  ): Promise<string[]> {
-    return validateQuery(connection, query).then(res => {
-      return res.map(item => item.name as string);
-    });
-  }
-
-  /**
    * Query the MapD backend.
    */
   export function makeQuery(
@@ -615,6 +608,7 @@ namespace Private {
     query: string,
     options: Object = {}
   ): Promise<ReadonlyArray<JSONObject>> {
+    options = { returnTiming: true, ...options };
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
       new MapdCon()
         .protocol(connection.protocol)
@@ -646,7 +640,7 @@ namespace Private {
   /**
    * Validate a query with the MapD backend.
    */
-  function validateQuery(
+  export function validateQuery(
     connection: IMapDConnectionData,
     query: string
   ): Promise<ReadonlyArray<JSONObject>> {
