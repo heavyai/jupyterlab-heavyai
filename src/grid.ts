@@ -156,8 +156,8 @@ export class MapDGrid extends Widget {
     this._grid = new DataGrid({
       style: this._gridStyle,
       baseRowSize: 24,
-      baseColumnSize: 96,
-      baseColumnHeaderSize: 24,
+      baseColumnSize: 192,
+      baseColumnHeaderSize: 36,
       baseRowHeaderSize: 64
     });
     this._grid.cellRenderers.set('body', {}, bodyRenderer);
