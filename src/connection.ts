@@ -84,6 +84,7 @@ export class MapDConnectionDialog extends Widget
 
     this._user.placeholder = 'User name';
     this._password.placeholder = 'Password';
+    this._password.setAttribute('type', 'password');
     this._database.placeholder = 'Database name';
     this._host.placeholder = 'Host name';
     this._protocol.placeholder = 'Protocol';
