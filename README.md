@@ -9,7 +9,7 @@ all within JupyterLab
 
 Requirements:
 
-- JupyterLab v0.32
+- JupyterLab v0.34
 - Access to a MapD server
 
 To install the `jupyterlab-mapd` extension, run the following in a terminal:
