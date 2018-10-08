@@ -8,7 +8,8 @@ import { JSONObject } from '@phosphor/coreutils';
 
 import { PanelLayout, Widget } from '@phosphor/widgets';
 
-import '@mapd/connector';
+declare const require: any;
+require('@mapd/connector/dist/browser-connector');
 
 declare const MapdCon: any;
 
