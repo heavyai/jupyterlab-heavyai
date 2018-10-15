@@ -57,7 +57,7 @@ export const EXTENSIONS = [
   '.vega.json'
 ];
 
-const PLUGIN_ID = 'jupyterlab-mapd:plugin';
+const PLUGIN_ID = 'jupyterlab-omnisci:plugin';
 
 /**
  * The MapD-Vega file type.
