@@ -408,7 +408,7 @@ export class MapDTableModel extends DataModel {
     this._pending.clear();
     this._streaming = false;
 
-    if (this.query) {
+    if (this.query && this.connection) {
       this._streaming = Private.shouldChunkRequests(this._query);
       return Private.validateQuery(this._connection, this._query)
         .then(() => {
