@@ -142,26 +142,22 @@ export class MapDGrid extends Widget {
     this._model = new MapDTableModel();
 
     // Create the grid
-    const headerRenderer = new TextRenderer({
-      font: 'bold 14px sans-serif',
-      horizontalAlignment: 'left'
-    });
-    const bodyRenderer = new TextRenderer({
+    const renderer = new TextRenderer({
+      textColor: '#111111',
       horizontalAlignment: 'right'
     });
-    this._gridStyle = {
+    const gridStyle: DataGrid.IStyle = {
       ...DataGrid.defaultStyle,
       rowBackgroundColor: i => (i % 2 === 0 ? 'rgba(34, 167, 240, 0.2)' : '')
     };
     this._grid = new DataGrid({
-      style: this._gridStyle,
+      style: gridStyle,
       baseRowSize: 24,
-      baseColumnSize: 192,
+      baseColumnSize: 144,
       baseColumnHeaderSize: 36,
       baseRowHeaderSize: 64
     });
-    this._grid.cellRenderers.set('body', {}, bodyRenderer);
-    this._grid.cellRenderers.set('column-header', {}, headerRenderer);
+    this._grid.defaultRenderer = renderer;
     this._grid.model = this._model;
     this._content.addWidget(this._grid);
     this._content.hide(); // Initially hide the grid until we set the query.
@@ -178,6 +174,26 @@ export class MapDGrid extends Widget {
   }
   set connection(value: IMapDConnectionData) {
     this._updateModel(value, this._model.query);
+  }
+
+  /**
+   * The current style used by the grid viewer.
+   */
+  get style(): DataGrid.IStyle {
+    return this._grid.style;
+  }
+  set style(value: DataGrid.IStyle) {
+    this._grid.style = value;
+  }
+
+  /**
+   * The text renderer for the viewer.
+   */
+  get renderer(): TextRenderer {
+    return this._grid.defaultRenderer as TextRenderer;
+  }
+  set renderer(value: TextRenderer) {
+    this._grid.defaultRenderer = value;
   }
 
   /**
@@ -221,7 +237,6 @@ export class MapDGrid extends Widget {
 
   private _model: MapDTableModel;
   private _grid: DataGrid;
-  private _gridStyle: DataGrid.IStyle;
   private _content: StackedPanel;
   private _error: Widget;
   private _onModelChanged = new Signal<this, void>(this);

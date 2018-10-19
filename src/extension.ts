@@ -4,7 +4,7 @@ import {
   JupyterLabPlugin
 } from '@jupyterlab/application';
 
-import { InstanceTracker } from '@jupyterlab/apputils';
+import { InstanceTracker, IThemeManager } from '@jupyterlab/apputils';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
@@ -17,6 +17,8 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { ILauncher } from '@jupyterlab/launcher';
 
 import { IMainMenu } from '@jupyterlab/mainmenu';
+
+import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
 import { IMapDConnectionData, MapDCompletionConnector } from './connection';
 
@@ -83,7 +85,8 @@ const mapdPlugin: JupyterLabPlugin<void> = {
     ILauncher,
     ILayoutRestorer,
     IMainMenu,
-    ISettingRegistry
+    ISettingRegistry,
+    IThemeManager
   ],
   autoStart: true
 };
@@ -95,7 +98,8 @@ function activateMapDViewer(
   launcher: ILauncher,
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
-  settingRegistry: ISettingRegistry
+  settingRegistry: ISettingRegistry,
+  themeManager: IThemeManager
 ): void {
   const viewerNamespace = 'mapd-viewer-widget';
   const gridNamespace = 'mapd-grid-widget';
@@ -155,7 +159,26 @@ function activateMapDViewer(
         explorer.content.connection
       );
     });
+    // Set the theme for the new widget.
+    explorer.content.style = style;
+    explorer.content.renderer = renderer;
   });
+
+  // The current styles for the data grids.
+  let style: DataGrid.IStyle = Private.LIGHT_STYLE;
+  let renderer: TextRenderer = Private.LIGHT_RENDERER;
+
+  // Keep the themes up-to-date.
+  const updateThemes = () => {
+    const isLight = themeManager.isLight(themeManager.theme);
+    style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
+    renderer = isLight ? Private.LIGHT_RENDERER : Private.DARK_RENDERER;
+    gridTracker.forEach(grid => {
+      grid.content.style = style;
+      grid.content.renderer = renderer;
+    });
+  };
+  themeManager.themeChanged.connect(updateThemes);
 
   // Add grid completer command.
   app.commands.addCommand(CommandIDs.invokeCompleter, {
@@ -261,8 +284,49 @@ const plugin: JupyterLabPlugin<any> = mapdPlugin;
 export default plugin;
 
 /**
- * A namespace for private statics.
+ * A namespace for private data.
  */
 namespace Private {
+  /**
+   * A counter for widget ids.
+   */
   export let id = 0;
+
+  /**
+   * The light theme for the data grid.
+   */
+  export const LIGHT_STYLE: DataGrid.IStyle = {
+    ...DataGrid.defaultStyle,
+    voidColor: '#F3F3F3',
+    backgroundColor: 'white',
+    headerBackgroundColor: '#EEEEEE',
+    gridLineColor: 'rgba(20, 20, 20, 0.15)',
+    headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
+    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
+  };
+  /**
+   * The dark theme for the data grid.
+   */
+  export const DARK_STYLE: DataGrid.IStyle = {
+    voidColor: 'black',
+    backgroundColor: '#111111',
+    headerBackgroundColor: '#424242',
+    gridLineColor: 'rgba(235, 235, 235, 0.15)',
+    headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
+    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+  };
+  /**
+   * The light renderer for the data grid.
+   */
+  export const LIGHT_RENDERER = new TextRenderer({
+    textColor: '#111111',
+    horizontalAlignment: 'right'
+  });
+  /**
+   * The dark renderer for the data grid.
+   */
+  export const DARK_RENDERER = new TextRenderer({
+    textColor: '#F5F5F5',
+    horizontalAlignment: 'right'
+  });
 }
