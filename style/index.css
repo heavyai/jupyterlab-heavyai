@@ -1,5 +1,6 @@
 .mapd-ErrorMessage {
   background-color: var(--jp-rendermime-error-background);
+  color: var(--jp-ui-font-color1);
   white-space: pre-wrap;
 }
 
