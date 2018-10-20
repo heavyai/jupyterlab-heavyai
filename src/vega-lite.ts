@@ -37,7 +37,7 @@ export function compileToVega(vlSpec: any): any {
       delete properties.fill;
     }
 
-    //mapd has a shape string instead of object
+    // omnisci has a shape string instead of object
     if (properties.shape) {
       properties.shape = properties.shape.value;
     }

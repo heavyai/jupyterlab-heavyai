@@ -4,18 +4,18 @@ import { Widget } from '@phosphor/widgets';
 
 import { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 
-import { IMapDConnectionData } from './connection';
+import { IOmniSciConnectionData } from './connection';
 
-import { MapDVega } from './widget';
+import { OmniSciVega } from './widget';
 
 import { compileToVega } from './vega-lite';
 
 import '../style/index.css';
 
 /**
- * The MIME type for backend-rendered MapD.
+ * The MIME type for backend-rendered OmniSci.
  */
-export const MIME_TYPE = 'application/vnd.mapd.vega+json';
+export const MIME_TYPE = 'application/vnd.omnisci.vega+json';
 
 /**
  * The MIME type for png data.
@@ -23,11 +23,11 @@ export const MIME_TYPE = 'application/vnd.mapd.vega+json';
 export const IMAGE_MIME = 'image/png';
 
 /**
- * A class for rendering a MapD-generated image.
+ * A class for rendering a OmniSci-generated image.
  */
-export class RenderedMapD extends Widget implements IRenderMime.IRenderer {
+export class RenderedOmniSci extends Widget implements IRenderMime.IRenderer {
   /**
-   * Render MapD image into this widget's node.
+   * Render OmniSci image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     // If we have already rendered a widget, dispose of it.
@@ -47,11 +47,11 @@ export class RenderedMapD extends Widget implements IRenderMime.IRenderer {
     }
 
     // Get the data from the mimebundle
-    const data = model.data[MIME_TYPE] as IMapDMimeBundle;
+    const data = model.data[MIME_TYPE] as IOmniSciMimeBundle;
     const { connection, vega, vegalite } = data;
 
-    // Create a new MapDVega
-    this._widget = new MapDVega(
+    // Create a new OmniSciVega
+    this._widget = new OmniSciVega(
       vega || compileToVega(vegalite),
       connection,
       vegalite
@@ -72,18 +72,18 @@ export class RenderedMapD extends Widget implements IRenderMime.IRenderer {
     });
   }
 
-  private _widget: MapDVega | null = null;
+  private _widget: OmniSciVega | null = null;
 }
 
 /**
- * MapD renderer custom mimetype format.
+ * OmniSci renderer custom mimetype format.
  */
-interface IMapDMimeBundle extends JSONObject {
+interface IOmniSciMimeBundle extends JSONObject {
   /**
    * Connection data containing all of the info
    * we need to make the connection.
    */
-  connection: IMapDConnectionData;
+  connection: IOmniSciConnectionData;
 
   /**
    * The vega JSON object to render, including the SQL query.
@@ -96,18 +96,18 @@ interface IMapDMimeBundle extends JSONObject {
 }
 
 /**
- * A mime renderer factory for mapd-vega data.
+ * A mime renderer factory for omnisci-vega data.
  */
 export const rendererFactory: IRenderMime.IRendererFactory = {
   safe: false,
   mimeTypes: [MIME_TYPE],
   defaultRank: 10,
-  createRenderer: options => new RenderedMapD()
+  createRenderer: options => new RenderedOmniSci()
 };
 
 const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
   {
-    id: 'jupyterlab-mapd:factory',
+    id: 'jupyterlab-omnisci:factory',
     rendererFactory,
     dataType: 'string'
   }

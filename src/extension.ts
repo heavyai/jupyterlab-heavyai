@@ -21,31 +21,31 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
 import {
-  IMapDConnectionData,
-  MapDCompletionConnector,
+  IOmniSciConnectionData,
+  OmniSciCompletionConnector,
   showConnectionDialog
 } from './connection';
 
-import { MapDExplorer } from './grid';
+import { OmniSciExplorer } from './grid';
 
-import { MapDViewer, MapDViewerFactory } from './viewer';
+import { OmniSciViewer, OmniSciViewerFactory } from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.
  */
-const FACTORY = 'MapDVega';
+const FACTORY = 'OmniSciVega';
 
 /**
  * Command IDs for the extension.
  */
 namespace CommandIDs {
-  export const newGrid = 'mapd:new-grid';
+  export const newGrid = 'omnisci:new-grid';
 
-  export const invokeCompleter = 'mapd:invoke-completer';
+  export const invokeCompleter = 'omnisci:invoke-completer';
 
-  export const selectCompleter = 'mapd:select-completer';
+  export const selectCompleter = 'omnisci:select-completer';
 
-  export const setConnection = 'mapd:set-connection';
+  export const setConnection = 'omnisci:set-connection';
 }
 
 /**
@@ -58,9 +58,9 @@ export const VEGA_MIME_TYPE = 'application/vnd.vega.v3+json';
 
 export const EXTENSIONS = [
   '.vega',
-  '.mapd.vega',
-  '.mapd.vg.json',
-  '.mapd.vega.json',
+  '.omnisci.vega',
+  '.omnisci.vg.json',
+  '.omnisci.vega.json',
   '.vg.json',
   '.vega.json'
 ];
@@ -68,11 +68,11 @@ export const EXTENSIONS = [
 const PLUGIN_ID = 'jupyterlab-omnisci:plugin';
 
 /**
- * The MapD-Vega file type.
+ * The OmniSci-Vega file type.
  */
-const mapdFileType: Partial<DocumentRegistry.IFileType> = {
-  name: 'mapd-vega',
-  displayName: 'MapD Vega',
+const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
+  name: 'omnisci-vega',
+  displayName: 'OmniSci Vega',
   fileFormat: 'text',
   extensions: EXTENSIONS,
   mimeTypes: [VEGA_MIME_TYPE],
@@ -82,8 +82,8 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
 /**
  * The Omnisci file handler extension.
  */
-const mapdPlugin: JupyterLabPlugin<void> = {
-  activate: activateMapDViewer,
+const omnisciPlugin: JupyterLabPlugin<void> = {
+  activate: activateOmniSciViewer,
   id: PLUGIN_ID,
   requires: [
     ICompletionManager,
@@ -97,7 +97,7 @@ const mapdPlugin: JupyterLabPlugin<void> = {
   autoStart: true
 };
 
-function activateMapDViewer(
+function activateOmniSciViewer(
   app: JupyterLab,
   completionManager: ICompletionManager,
   editorServices: IEditorServices,
@@ -107,17 +107,17 @@ function activateMapDViewer(
   settingRegistry: ISettingRegistry,
   themeManager: IThemeManager
 ): void {
-  const viewerNamespace = 'mapd-viewer-widget';
-  const gridNamespace = 'mapd-grid-widget';
+  const viewerNamespace = 'omnisci-viewer-widget';
+  const gridNamespace = 'omnisci-grid-widget';
 
-  const factory = new MapDViewerFactory({
+  const factory = new OmniSciViewerFactory({
     name: FACTORY,
     modelName: 'text',
-    fileTypes: ['json', 'mapd-vega', 'vega3', 'vega3'],
-    defaultFor: ['mapd-vega'],
+    fileTypes: ['json', 'omnisci-vega', 'vega3', 'vega3'],
+    defaultFor: ['omnisci-vega'],
     readOnly: true
   });
-  const viewerTracker = new InstanceTracker<MapDViewer>({
+  const viewerTracker = new InstanceTracker<OmniSciViewer>({
     namespace: viewerNamespace
   });
 
@@ -128,11 +128,11 @@ function activateMapDViewer(
     name: widget => widget.context.path
   });
 
-  app.docRegistry.addFileType(mapdFileType);
+  app.docRegistry.addFileType(omnisciFileType);
   app.docRegistry.addWidgetFactory(factory);
 
   factory.widgetCreated.connect((sender, widget) => {
-    viewerTracker.add(widget as MapDViewer);
+    viewerTracker.add(widget as OmniSciViewer);
 
     const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
@@ -142,7 +142,7 @@ function activateMapDViewer(
     }
   });
 
-  const gridTracker = new InstanceTracker<MapDExplorer>({
+  const gridTracker = new InstanceTracker<OmniSciExplorer>({
     namespace: gridNamespace
   });
 
@@ -156,12 +156,14 @@ function activateMapDViewer(
   // Create a completion handler for each grid that is created.
   gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.input.editor;
-    const connector = new MapDCompletionConnector(explorer.content.connection);
+    const connector = new OmniSciCompletionConnector(
+      explorer.content.connection
+    );
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
     explorer.content.onModelChanged.connect(() => {
-      handle.connector = new MapDCompletionConnector(
+      handle.connector = new OmniSciCompletionConnector(
         explorer.content.connection
       );
     });
@@ -223,28 +225,28 @@ function activateMapDViewer(
   app.commands.addKeyBinding({
     command: CommandIDs.selectCompleter,
     keys: ['Enter'],
-    selector: `.mapd-MapD-toolbar .jp-Editor.jp-mod-completer-active`
+    selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-active`
   });
   app.commands.addKeyBinding({
     command: CommandIDs.invokeCompleter,
     keys: ['Tab'],
-    selector: `.mapd-MapD-toolbar .jp-Editor.jp-mod-completer-enabled`
+    selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-enabled`
   });
 
   app.commands.addCommand(CommandIDs.newGrid, {
-    label: 'MapD Explorer',
-    iconClass: 'mapd-MapD-logo',
+    label: 'OmniSci Explorer',
+    iconClass: 'omnisci-OmniSci-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
-      const grid = new MapDExplorer({
+      const grid = new OmniSciExplorer({
         editorFactory: editorServices.factoryService.newInlineEditor,
         connection: factory.defaultConnection
       });
       grid.content.query = query;
-      grid.id = `mapd-grid-widget-${++Private.id}`;
-      grid.title.label = `MapD Explorer ${Private.id}`;
+      grid.id = `omnisci-grid-widget-${++Private.id}`;
+      grid.title.label = `OmniSci Explorer ${Private.id}`;
       grid.title.closable = true;
-      grid.title.iconClass = 'mapd-MapD-logo';
+      grid.title.iconClass = 'omnisci-OmniSci-logo';
       gridTracker.add(grid);
       app.shell.addToMainArea(grid);
       app.shell.activateById(grid.id);
@@ -267,7 +269,7 @@ function activateMapDViewer(
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
     const defaultConnection = settings.get('defaultConnection').composite as
-      | IMapDConnectionData
+      | IOmniSciConnectionData
       | null
       | undefined;
     if (!defaultConnection) {
@@ -300,7 +302,7 @@ function activateMapDViewer(
 /**
  * Export the plugin as default.
  */
-const plugin: JupyterLabPlugin<any> = mapdPlugin;
+const plugin: JupyterLabPlugin<any> = omnisciPlugin;
 export default plugin;
 
 /**

@@ -1,4 +1,4 @@
-""" Functions for backend rendering with MapD """
+""" Functions for backend rendering with OmniSci """
 
 import ast
 import base64
@@ -15,10 +15,10 @@ except ImportError:
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
 
-class MapDBackendRenderer:
+class OmniSciBackendRenderer:
     """
     Class that produces a mimebundle that the notebook
-    mapd renderer can understand.
+    omnisci renderer can understand.
     """
     def __init__(self, connection, data=None, vl_data=None):
         """
@@ -29,7 +29,7 @@ class MapDBackendRenderer:
         =========
 
         connection: dict
-            A dictionary containing the connection data for the mapd
+            A dictionary containing the connection data for the omnisci
             server. Must include 'user', 'password', 'host', 'port',
             'dbname', and 'protocol'
 
@@ -47,8 +47,8 @@ class MapDBackendRenderer:
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """
-        Return a mimebundle with 'application/vnd.mapd.vega+json'
-        data, which is a custom mimetype for rendering mapd vega
+        Return a mimebundle with 'application/vnd.omnisci.vega+json'
+        data, which is a custom mimetype for rendering omnisci vega
         in Jupyter notebooks.
         """
         bundle = {
@@ -59,7 +59,7 @@ class MapDBackendRenderer:
         else:
             bundle['vegalite'] = self.vl_data
         return {
-            'application/vnd.mapd.vega+json': bundle
+            'application/vnd.omnisci.vega+json': bundle
         }
 
 def render_vega(connection, vega):
@@ -76,41 +76,41 @@ def render_vega(connection, vega):
 
 
 @register_cell_magic
-def mapd(line, cell):
+def omnisci(line, cell):
     """
-    Cell magic for rendering vega produced by the mapd backend.
+    Cell magic for rendering vega produced by the omnisci backend.
 
-    Usage: Initiate it with the line `%% mapd $connection_data`,
+    Usage: Initiate it with the line `%% omnisci $connection_data`,
     where `connection_data` is the dictionary containing the connection
-    data for the MapD server. The rest of the cell should be yaml-specified
+    data for the OmniSci server. The rest of the cell should be yaml-specified
     vega data.
     """
     connection_data = ast.literal_eval(line)
     vega = yaml.load(cell)
-    display(MapDBackendRenderer(connection_data, vega))
+    display(OmniSciBackendRenderer(connection_data, vega))
 
 @register_cell_magic
-def mapd_vl(line, cell):
+def omnisci_vl(line, cell):
     """
-    Cell magic for rendering vega lite produced by the mapd backend.
+    Cell magic for rendering vega lite produced by the omnisci backend.
 
-    Usage: Initiate it with the line `%% mapd $connection_data`,
+    Usage: Initiate it with the line `%% omnisci $connection_data`,
     where `connection_data` is the dictionary containing the connection
-    data for the MapD server. The rest of the cell should be yaml-specified
+    data for the OmniSci server. The rest of the cell should be yaml-specified
     vega lite data.
     """
     connection_data = ast.literal_eval(line)
     vl = yaml.load(cell)
-    display(MapDBackendRenderer(connection_data, vl_data=vl))
+    display(OmniSciBackendRenderer(connection_data, vl_data=vl))
  
-def mapd_mimetype(spec, conn):
+def omnisci_mimetype(spec, conn):
     """
-    Returns a mapd vega lite mimetype, assuming that the URL
+    Returns a omnisci vega lite mimetype, assuming that the URL
     for the vega spec is actually the SQL query
     """
     data = spec['data']
     data['sql'] = data.pop('url')
-    return {'application/vnd.mapd.vega+json': {
+    return {'application/vnd.omnisci.vega+json': {
         'vegalite': spec,
         'connection': {
             'host': conn.host,
@@ -123,4 +123,4 @@ def mapd_mimetype(spec, conn):
     }}
 
 if alt:
-    alt.renderers.register('mapd', mapd_mimetype)
+    alt.renderers.register('omnisci', omnisci_mimetype)

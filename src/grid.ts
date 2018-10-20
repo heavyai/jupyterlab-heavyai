@@ -12,7 +12,7 @@ import { MainAreaWidget, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 
 import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
-import { IMapDConnectionData, showConnectionDialog } from './connection';
+import { IOmniSciConnectionData, showConnectionDialog } from './connection';
 
 declare const MapdCon: any;
 
@@ -26,12 +26,12 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class MapDExplorer extends MainAreaWidget<MapDGrid> {
+export class OmniSciExplorer extends MainAreaWidget<OmniSciGrid> {
   /**
-   * Construct a new MapDExplorer widget.
+   * Construct a new OmniSciExplorer widget.
    */
-  constructor(options: MapDExplorer.IOptions) {
-    const content = new MapDGrid(options.connection);
+  constructor(options: OmniSciExplorer.IOptions) {
+    const content = new OmniSciGrid(options.connection);
     const toolbar = Private.createToolbar(content, options.editorFactory);
     super({ content, toolbar });
   }
@@ -101,11 +101,11 @@ export class MapDExplorer extends MainAreaWidget<MapDGrid> {
 }
 
 /**
- * A namespace for MapDExplorer statics.
+ * A namespace for OmniSciExplorer statics.
  */
-export namespace MapDExplorer {
+export namespace OmniSciExplorer {
   /**
-   * Options for creating a new MapDExplorer.
+   * Options for creating a new OmniSciExplorer.
    */
   export interface IOptions {
     /**
@@ -116,30 +116,30 @@ export namespace MapDExplorer {
     /**
      * An optional initial connection data structure.
      */
-    connection?: IMapDConnectionData;
+    connection?: IOmniSciConnectionData;
   }
 }
 
 /**
- * A widget that hosts a phosphor grid with a MapD dataset.
+ * A widget that hosts a phosphor grid with a OmniSci dataset.
  */
-export class MapDGrid extends Widget {
+export class OmniSciGrid extends Widget {
   /**
-   * Construct a new MapDGrid widget.
+   * Construct a new OmniSciGrid widget.
    */
-  constructor(connection?: IMapDConnectionData) {
+  constructor(connection?: IOmniSciConnectionData) {
     super();
     // Create the Layout
     this.layout = new PanelLayout();
     this._content = new StackedPanel();
-    this._content.addClass('mapd-MapDViewer-content');
+    this._content.addClass('omnisci-OmniSciViewer-content');
     this._error = new Widget({ node: document.createElement('pre') });
-    this._error.addClass('mapd-ErrorMessage');
+    this._error.addClass('omnisci-ErrorMessage');
     (this.layout as PanelLayout).addWidget(this._content);
     (this.layout as PanelLayout).addWidget(this._error);
 
     // Create the data model
-    this._model = new MapDTableModel();
+    this._model = new OmniSciTableModel();
 
     // Create the grid
     const renderer = new TextRenderer({
@@ -169,10 +169,10 @@ export class MapDGrid extends Widget {
   /**
    * The current connection data for the viewer.
    */
-  get connection(): IMapDConnectionData {
+  get connection(): IOmniSciConnectionData {
     return this._model.connection;
   }
-  set connection(value: IMapDConnectionData) {
+  set connection(value: IOmniSciConnectionData) {
     this._updateModel(value, this._model.query);
   }
 
@@ -210,7 +210,7 @@ export class MapDGrid extends Widget {
    * A change signal emitted when the connection or
    * query data change.
    */
-  get onModelChanged(): ISignal<MapDGrid, void> {
+  get onModelChanged(): ISignal<OmniSciGrid, void> {
     return this._onModelChanged;
   }
 
@@ -220,7 +220,10 @@ export class MapDGrid extends Widget {
    * If the update fails, either due to a connection failure or a query
    * validation failure, it shows the error in the panel.
    */
-  private _updateModel(connection: IMapDConnectionData, query: string): void {
+  private _updateModel(
+    connection: IOmniSciConnectionData,
+    query: string
+  ): void {
     const hasQuery = query !== '';
     this._model
       .updateModel(connection, query)
@@ -235,7 +238,7 @@ export class MapDGrid extends Widget {
     this._onModelChanged.emit(void 0);
   }
 
-  private _model: MapDTableModel;
+  private _model: OmniSciTableModel;
   private _grid: DataGrid;
   private _content: StackedPanel;
   private _error: Widget;
@@ -245,7 +248,7 @@ export class MapDGrid extends Widget {
 /**
  * A data model for a query.
  */
-export class MapDTableModel extends DataModel {
+export class OmniSciTableModel extends DataModel {
   /**
    * Construct a new data model.
    */
@@ -286,7 +289,7 @@ export class MapDTableModel extends DataModel {
   /**
    * The current connection data for the model.
    */
-  get connection(): IMapDConnectionData | undefined {
+  get connection(): IOmniSciConnectionData | undefined {
     return this._connection;
   }
 
@@ -378,7 +381,10 @@ export class MapDTableModel extends DataModel {
    *   and the connection and query data have been validated. It throws
    *   an error if the validation fails.
    */
-  updateModel(connection: IMapDConnectionData, query: string): Promise<void> {
+  updateModel(
+    connection: IOmniSciConnectionData,
+    query: string
+  ): Promise<void> {
     if (
       this._query === query &&
       connection &&
@@ -539,7 +545,7 @@ export class MapDTableModel extends DataModel {
   }
 
   private _query = '';
-  private _connection: IMapDConnectionData | undefined;
+  private _connection: IOmniSciConnectionData | undefined;
 
   private _fieldNames: string[];
   private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
@@ -552,11 +558,11 @@ export class MapDTableModel extends DataModel {
 
 namespace Private {
   export function createToolbar(
-    widget: MapDGrid,
+    widget: OmniSciGrid,
     editorFactory: CodeEditor.Factory
   ): Toolbar {
     const toolbar = new Toolbar();
-    toolbar.addClass('mapd-MapD-toolbar');
+    toolbar.addClass('omnisci-OmniSci-toolbar');
 
     // Create the query editor.
     const queryEditor = new CodeEditorWrapper({
@@ -581,7 +587,7 @@ namespace Private {
     toolbar.addItem(
       'Connect',
       new ToolbarButton({
-        iconClassName: 'mapd-MapD-logo jp-Icon jp-Icon-16',
+        iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
         onClick: () => {
           showConnectionDialog(
             'Set SQL Editor Connection',
@@ -590,7 +596,7 @@ namespace Private {
             widget.connection = connection;
           });
         },
-        tooltip: 'Enter MapD Connection Data'
+        tooltip: 'Enter OmniSci Connection Data'
       })
     );
 
@@ -619,10 +625,10 @@ namespace Private {
   }
 
   /**
-   * Query the MapD backend.
+   * Query the OmniSci backend.
    */
   export function makeQuery(
-    connection: IMapDConnectionData,
+    connection: IOmniSciConnectionData,
     query: string,
     options: Object = {}
   ): Promise<ReadonlyArray<JSONObject>> {
@@ -656,10 +662,10 @@ namespace Private {
   }
 
   /**
-   * Validate a query with the MapD backend.
+   * Validate a query with the OmniSci backend.
    */
   export function validateQuery(
-    connection: IMapDConnectionData,
+    connection: IOmniSciConnectionData,
     query: string
   ): Promise<ReadonlyArray<JSONObject>> {
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {

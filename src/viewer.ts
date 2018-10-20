@@ -13,14 +13,14 @@ import {
   IDocumentWidget
 } from '@jupyterlab/docregistry';
 
-import { IMapDConnectionData, showConnectionDialog } from './connection';
+import { IOmniSciConnectionData, showConnectionDialog } from './connection';
 
-import { MapDVega } from './widget';
+import { OmniSciVega } from './widget';
 
-export class MapDViewer extends DocumentWidget<Widget> {
+export class OmniSciViewer extends DocumentWidget<Widget> {
   constructor(
     context: DocumentRegistry.Context,
-    connection?: IMapDConnectionData
+    connection?: IOmniSciConnectionData
   ) {
     super({
       context,
@@ -28,8 +28,8 @@ export class MapDViewer extends DocumentWidget<Widget> {
       content: new Widget()
     });
 
-    this.toolbar.addClass('mapd-MapD-toolbar');
-    this.addClass('mapd-MapDViewer-content');
+    this.toolbar.addClass('omnisci-OmniSci-toolbar');
+    this.addClass('omnisci-OmniSciViewer-content');
 
     this.toolbar.addItem(
       'Render',
@@ -44,7 +44,7 @@ export class MapDViewer extends DocumentWidget<Widget> {
     this.toolbar.addItem(
       'Connect',
       new ToolbarButton({
-        iconClassName: 'mapd-MapD-logo jp-Icon jp-Icon-16',
+        iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
         onClick: () => {
           const name = PathExt.basename(this.context.path);
           showConnectionDialog(
@@ -54,7 +54,7 @@ export class MapDViewer extends DocumentWidget<Widget> {
             this._connection = connection;
           });
         },
-        tooltip: 'Enter MapD Connection Data'
+        tooltip: 'Enter OmniSci Connection Data'
       })
     );
   }
@@ -62,10 +62,10 @@ export class MapDViewer extends DocumentWidget<Widget> {
   /**
    * The current connection data for the viewer.
    */
-  get connection(): IMapDConnectionData {
+  get connection(): IOmniSciConnectionData {
     return this._connection;
   }
-  set connection(value: IMapDConnectionData) {
+  set connection(value: IOmniSciConnectionData) {
     this._connection = value;
   }
 
@@ -77,7 +77,7 @@ export class MapDViewer extends DocumentWidget<Widget> {
   }
 
   /**
-   * Render MapD into this widget's node.
+   * Render OmniSci into this widget's node.
    */
   private _render(): Promise<void> {
     if (this._widget) {
@@ -92,7 +92,7 @@ export class MapDViewer extends DocumentWidget<Widget> {
       return Promise.resolve(void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
-    this._widget = new MapDVega(data, this._connection);
+    this._widget = new OmniSciVega(data, this._connection);
     this.content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
     this.content.node.appendChild(spinner.node);
@@ -110,14 +110,14 @@ export class MapDViewer extends DocumentWidget<Widget> {
   }
 
   private _ready = new PromiseDelegate<void>();
-  private _widget: MapDVega | null = null;
-  private _connection: IMapDConnectionData | undefined;
+  private _widget: OmniSciVega | null = null;
+  private _connection: IOmniSciConnectionData | undefined;
 }
 
 /**
  * A widget factory for images.
  */
-export class MapDViewerFactory extends ABCWidgetFactory<
+export class OmniSciViewerFactory extends ABCWidgetFactory<
   IDocumentWidget<Widget>,
   DocumentRegistry.IModel
 > {
@@ -126,19 +126,19 @@ export class MapDViewerFactory extends ABCWidgetFactory<
    */
   protected createNewWidget(
     context: DocumentRegistry.IContext<DocumentRegistry.IModel>
-  ): MapDViewer {
-    return new MapDViewer(context, this.defaultConnection);
+  ): OmniSciViewer {
+    return new OmniSciViewer(context, this.defaultConnection);
   }
 
   /**
    * The current default connection data for viewers.
    */
-  get defaultConnection(): IMapDConnectionData {
+  get defaultConnection(): IOmniSciConnectionData {
     return this._defaultConnection;
   }
-  set defaultConnection(value: IMapDConnectionData) {
+  set defaultConnection(value: IOmniSciConnectionData) {
     this._defaultConnection = value;
   }
 
-  private _defaultConnection: IMapDConnectionData | undefined;
+  private _defaultConnection: IOmniSciConnectionData | undefined;
 }
