@@ -20,7 +20,11 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
-import { IMapDConnectionData, MapDCompletionConnector } from './connection';
+import {
+  IMapDConnectionData,
+  MapDCompletionConnector,
+  showConnectionDialog
+} from './connection';
 
 import { MapDExplorer } from './grid';
 
@@ -40,6 +44,8 @@ namespace CommandIDs {
   export const invokeCompleter = 'mapd:invoke-completer';
 
   export const selectCompleter = 'mapd:select-completer';
+
+  export const setConnection = 'mapd:set-connection';
 }
 
 /**
@@ -74,7 +80,7 @@ const mapdFileType: Partial<DocumentRegistry.IFileType> = {
 };
 
 /**
- * The pdf file handler extension.
+ * The Omnisci file handler extension.
  */
 const mapdPlugin: JupyterLabPlugin<void> = {
   activate: activateMapDViewer,
@@ -180,6 +186,16 @@ function activateMapDViewer(
   };
   themeManager.themeChanged.connect(updateThemes);
 
+  // Add an application-wide connection-setting command.
+  app.commands.addCommand(CommandIDs.setConnection, {
+    execute: () => {
+      showConnectionDialog(factory.defaultConnection).then(connection => {
+        settingRegistry.set(PLUGIN_ID, 'defaultConnection', connection);
+      });
+    },
+    label: 'Set Default MapD Connection...'
+  });
+
   // Add grid completer command.
   app.commands.addCommand(CommandIDs.invokeCompleter, {
     execute: () => {
@@ -235,7 +251,8 @@ function activateMapDViewer(
       return grid;
     }
   });
-  mainMenu.fileMenu.newMenu.addGroup([{ command: 'mapd:new-grid' }], 50);
+  mainMenu.fileMenu.newMenu.addGroup([{ command: CommandIDs.newGrid }], 50);
+  mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
 
   launcher.add({
     category: 'Other',
