@@ -189,11 +189,14 @@ function activateMapDViewer(
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
     execute: () => {
-      showConnectionDialog(factory.defaultConnection).then(connection => {
+      showConnectionDialog(
+        'Set Default Omnisci Connection',
+        factory.defaultConnection
+      ).then(connection => {
         settingRegistry.set(PLUGIN_ID, 'defaultConnection', connection);
       });
     },
-    label: 'Set Default MapD Connection...'
+    label: 'Set Default Omnisci Connection...'
   });
 
   // Add grid completer command.

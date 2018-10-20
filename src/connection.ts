@@ -52,10 +52,11 @@ export interface IMapDConnectionData extends JSONObject {
  * Show a dialog for entering MapD connection data.
  */
 export function showConnectionDialog(
+  title: string,
   oldConnection?: IMapDConnectionData
 ): Promise<IMapDConnectionData> {
   return showDialog<IMapDConnectionData>({
-    title: 'MapD Connection',
+    title,
     body: new MapDConnectionDialog(oldConnection),
     buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {

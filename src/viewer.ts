@@ -2,6 +2,8 @@ import { PromiseDelegate } from '@phosphor/coreutils';
 
 import { Widget } from '@phosphor/widgets';
 
+import { PathExt } from '@jupyterlab/coreutils';
+
 import { Spinner, ToolbarButton } from '@jupyterlab/apputils';
 
 import {
@@ -44,7 +46,11 @@ export class MapDViewer extends DocumentWidget<Widget> {
       new ToolbarButton({
         iconClassName: 'mapd-MapD-logo jp-Icon jp-Icon-16',
         onClick: () => {
-          showConnectionDialog(this._connection).then(connection => {
+          const name = PathExt.basename(this.context.path);
+          showConnectionDialog(
+            `Set Connection for ${name}`,
+            this._connection
+          ).then(connection => {
             this._connection = connection;
           });
         },

@@ -583,7 +583,10 @@ namespace Private {
       new ToolbarButton({
         iconClassName: 'mapd-MapD-logo jp-Icon jp-Icon-16',
         onClick: () => {
-          showConnectionDialog(widget.connection).then(connection => {
+          showConnectionDialog(
+            'Set SQL Editor Connection',
+            widget.connection
+          ).then(connection => {
             widget.connection = connection;
           });
         },
