@@ -20,6 +20,8 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 
 import { NotebookModel } from '@jupyterlab/notebook';
 
+import { PromiseDelegate } from '@phosphor/coreutils';
+
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
 import {
@@ -292,11 +294,13 @@ function activateOmniSciViewer(
     });
   };
 
+  const settingsLoaded = new PromiseDelegate<void>();
   // Fetch the initial state of the settings.
   Promise.all([settingRegistry.load(PLUGIN_ID), app.restored])
     .then(([settings]) => {
       settings.changed.connect(onSettingsUpdated);
       onSettingsUpdated(settings);
+      settingsLoaded.resolve(void 0);
     })
     .catch((reason: Error) => {
       console.error(reason.message);
@@ -304,24 +308,37 @@ function activateOmniSciViewer(
 
   // Fetch the state, which is used to determine whether to create
   // an initial populated notebook.
-  Promise.all([state.fetch(PLUGIN_ID), app.restored]).then(async ([result]) => {
-    // const initial = !!(result as { initialNotebook: boolean }).initialNotebook;
-    const initial = true;
-    state.save(PLUGIN_ID, { initialNotebook: false });
-    if (initial) {
-      const notebook = await app.commands.execute('notebook:create-new', {
-        kernelName: 'python3'
-      });
-      await notebook.context.ready;
-      const injectCode = (sender: NotebookModel) => {
-        if (notebook.content.model.cells.length === 1) {
-          notebook.content.model.cells.get(0).value.text = 'Hello, world';
-          notebook.content.model.contentChanged.disconnect(injectCode);
-        }
-      };
-      notebook.content.model.contentChanged.connect(injectCode);
+  Promise.all([state.fetch(PLUGIN_ID), settingsLoaded]).then(
+    async ([result]) => {
+      // const initial = !!(result as { initialNotebook: boolean }).initialNotebook;
+      const initial = true;
+      state.save(PLUGIN_ID, { initialNotebook: false });
+      if (initial) {
+        const notebook = await app.commands.execute('notebook:create-new', {
+          kernelName: 'python3'
+        });
+        await notebook.context.ready;
+        const injectCode = (sender: NotebookModel) => {
+          if (notebook.content.model.cells.length === 1) {
+            let value = Private.IBIS_TEMPLATE;
+            const connection = factory.defaultConnection;
+            if (!connection) {
+              return;
+            }
+            value = value.replace('{{host}}', connection.host);
+            value = value.replace('{{protocol}}', connection.protocol);
+            value = value.replace('{{password}}', connection.password);
+            value = value.replace('{{database}}', connection.dbName);
+            value = value.replace('{{user}}', connection.user);
+            value = value.replace('{{port}}', connection.port);
+            notebook.content.model.cells.get(0).value.text = value;
+            notebook.content.model.contentChanged.disconnect(injectCode);
+          }
+        };
+        notebook.content.model.contentChanged.connect(injectCode);
+      }
     }
-  });
+  );
 }
 
 /**
@@ -376,4 +393,17 @@ namespace Private {
     textColor: '#F5F5F5',
     horizontalAlignment: 'right'
   });
+
+  /**
+   * A template for an Ibis mapd client.
+   */
+  export const IBIS_TEMPLATE = `
+import ibis
+
+con = ibis.mapd.connect(
+    host='{{host}}', user='{{user}}', password='{{password}}',
+    port={{port}}, database='{{database}}', protocol='{{protocol}}'
+)
+
+con.list_tables()`.trim();
 }
