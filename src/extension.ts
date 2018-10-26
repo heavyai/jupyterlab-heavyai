@@ -10,13 +10,17 @@ import { IEditorServices } from '@jupyterlab/codeeditor';
 
 import { ICompletionManager } from '@jupyterlab/completer';
 
-import { ISettingRegistry } from '@jupyterlab/coreutils';
+import { ISettingRegistry, IStateDB } from '@jupyterlab/coreutils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { ILauncher } from '@jupyterlab/launcher';
 
 import { IMainMenu } from '@jupyterlab/mainmenu';
+
+import { NotebookModel } from '@jupyterlab/notebook';
+
+import { PromiseDelegate } from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
@@ -92,6 +96,7 @@ const omnisciPlugin: JupyterLabPlugin<void> = {
     ILayoutRestorer,
     IMainMenu,
     ISettingRegistry,
+    IStateDB,
     IThemeManager
   ],
   autoStart: true
@@ -105,6 +110,7 @@ function activateOmniSciViewer(
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry,
+  state: IStateDB,
   themeManager: IThemeManager
 ): void {
   const viewerNamespace = 'omnisci-viewer-widget';
@@ -288,15 +294,62 @@ function activateOmniSciViewer(
     });
   };
 
+  const settingsLoaded = new PromiseDelegate<void>();
   // Fetch the initial state of the settings.
   Promise.all([settingRegistry.load(PLUGIN_ID), app.restored])
     .then(([settings]) => {
       settings.changed.connect(onSettingsUpdated);
       onSettingsUpdated(settings);
+      settingsLoaded.resolve(void 0);
     })
     .catch((reason: Error) => {
       console.error(reason.message);
     });
+
+  // Fetch the state, which is used to determine whether to create
+  // an initial populated notebook.
+  Promise.all([state.fetch(PLUGIN_ID), settingsLoaded]).then(
+    async ([result]) => {
+      // Determine whether to launch an initial notebook, then immediately
+      // set that value to false. This state setting is intended to be set
+      // by outside actors, rather than as true state restoration.
+      const initial = !!(result as { initialNotebook: boolean })
+        .initialNotebook;
+      state.save(PLUGIN_ID, { initialNotebook: false });
+
+      if (initial) {
+        const notebook = await app.commands.execute('notebook:create-new', {
+          kernelName: 'python3'
+        });
+        await notebook.context.ready;
+
+        // Define a function for injecting code into the notebook
+        // on content changed. This is a somewhat ugly hack, as
+        // the notebook model is not entirely ready when the context
+        // is ready. Instead, it waits for a new stack frame to add
+        // the initial cell. So as a workaround, we wait until there
+        // is exactly one cell, then inject our code, then disconnect.
+        const injectCode = (sender: NotebookModel) => {
+          if (notebook.content.model.cells.length === 1) {
+            let value = Private.IBIS_TEMPLATE;
+            const connection = factory.defaultConnection;
+            if (!connection) {
+              return;
+            }
+            value = value.replace('{{host}}', connection.host);
+            value = value.replace('{{protocol}}', connection.protocol);
+            value = value.replace('{{password}}', connection.password);
+            value = value.replace('{{database}}', connection.dbName);
+            value = value.replace('{{user}}', connection.user);
+            value = value.replace('{{port}}', connection.port);
+            notebook.content.model.cells.get(0).value.text = value;
+            notebook.content.model.contentChanged.disconnect(injectCode);
+          }
+        };
+        notebook.content.model.contentChanged.connect(injectCode);
+      }
+    }
+  );
 }
 
 /**
@@ -351,4 +404,17 @@ namespace Private {
     textColor: '#F5F5F5',
     horizontalAlignment: 'right'
   });
+
+  /**
+   * A template for an Ibis mapd client.
+   */
+  export const IBIS_TEMPLATE = `
+import ibis
+
+con = ibis.mapd.connect(
+    host='{{host}}', user='{{user}}', password='{{password}}',
+    port={{port}}, database='{{database}}', protocol='{{protocol}}'
+)
+
+con.list_tables()`.trim();
 }
