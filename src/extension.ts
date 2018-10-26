@@ -310,14 +310,25 @@ function activateOmniSciViewer(
   // an initial populated notebook.
   Promise.all([state.fetch(PLUGIN_ID), settingsLoaded]).then(
     async ([result]) => {
-      // const initial = !!(result as { initialNotebook: boolean }).initialNotebook;
-      const initial = true;
+      // Determine whether to launch an initial notebook, then immediately
+      // set that value to false. This state setting is intended to be set
+      // by outside actors, rather than as true state restoration.
+      const initial = !!(result as { initialNotebook: boolean })
+        .initialNotebook;
       state.save(PLUGIN_ID, { initialNotebook: false });
+
       if (initial) {
         const notebook = await app.commands.execute('notebook:create-new', {
           kernelName: 'python3'
         });
         await notebook.context.ready;
+
+        // Define a function for injecting code into the notebook
+        // on content changed. This is a somewhat ugly hack, as
+        // the notebook model is not entirely ready when the context
+        // is ready. Instead, it waits for a new stack frame to add
+        // the initial cell. So as a workaround, we wait until there
+        // is exactly one cell, then inject our code, then disconnect.
         const injectCode = (sender: NotebookModel) => {
           if (notebook.content.model.cells.length === 1) {
             let value = Private.IBIS_TEMPLATE;
