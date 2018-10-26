@@ -1,39 +1,44 @@
-.mapd-ErrorMessage {
+.omnisci-ErrorMessage {
   background-color: var(--jp-rendermime-error-background);
   color: var(--jp-ui-font-color1);
   white-space: pre-wrap;
 }
 
-.mapd-MapDViewer-content {
+.omnisci-OmniSciViewer-content {
   height: 100%;
   width: 100%;
 }
 
-.mapd-MapDVega {
+.omnisci-OmniSciVega {
   height: 100%;
   width: 100%;
   overflow: auto;
 }
 
-.jp-Toolbar.mapd-MapD-toolbar {
+.jp-Toolbar.omnisci-OmniSci-toolbar {
   align-items: center;
   justify-content: right;
   height: 35px !important;
 }
 
-.jp-Toolbar.mapd-MapD-toolbar .jp-Editor {
+.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor {
   flex-grow: 1;
   font-size: 1em;
   font-family: monospace;
 }
 
-.jp-Toolbar.mapd-MapD-toolbar .jp-Editor.jp-mod-focused {
+.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {
   border: var(--jp-border-width) solid var(--jp-cell-editor-active-border-color);
   box-shadow: var(--jp-input-box-shadow);
   background-color: var(--jp-cell-editor-active-background);
 }
 
-.mapd-MapD-logo {
-  background-image: url('mapd-logo.svg');
+.omnisci-OmniSci-logo {
+  background-image: url('omnisci-logo.svg');
   background-size: 100%;
+}
+
+#setting-editor .omnisci-OmniSci-logo {
+  background-repeat: no-repeat;
+  background-position: center;
 }

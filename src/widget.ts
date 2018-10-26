@@ -2,7 +2,7 @@ import { JSONObject, PromiseDelegate } from '@phosphor/coreutils';
 
 import { Widget } from '@phosphor/widgets';
 
-import { IMapDConnectionData } from './connection';
+import { IOmniSciConnectionData } from './connection';
 
 declare const MapdCon: any;
 
@@ -12,22 +12,22 @@ declare const MapdCon: any;
 const IMAGE_MIME = 'image/png';
 
 /**
- * A class for rendering a MapD-generated image.
+ * A class for rendering a OmniSci-generated image.
  */
-export class MapDVega extends Widget {
+export class OmniSciVega extends Widget {
   /**
-   * Construct a new MapD widget.
+   * Construct a new OmniSci widget.
    */
   constructor(
     vega: JSONObject,
-    connection: IMapDConnectionData,
+    connection: IOmniSciConnectionData,
     vegaLite?: JSONObject
   ) {
     super();
-    this.addClass('mapd-MapDVega');
+    this.addClass('omnisci-OmniSciVega');
     this._img = document.createElement('img');
     this._error = document.createElement('pre');
-    this._error.className = 'mapd-ErrorMessage';
+    this._error.className = 'omnisci-ErrorMessage';
     this.node.appendChild(this._img);
     this.node.appendChild(this._error);
 
@@ -108,7 +108,7 @@ export class MapDVega extends Widget {
   private _rendered = new PromiseDelegate<string>();
   private _vega: JSONObject;
   private _vegaLite: JSONObject;
-  private _connection: IMapDConnectionData;
+  private _connection: IOmniSciConnectionData;
   private _img: HTMLImageElement;
   private _error: HTMLElement;
 }

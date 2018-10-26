@@ -1,8 +1,8 @@
 {
-  "jupyter.lab.setting-icon-class": "mapd-MapD-logo",
-  "jupyter.lab.setting-icon-label": "MapD",
-  "title": "MapD",
-  "description": "MapD settings.",
+  "jupyter.lab.setting-icon-class": "omnisci-OmniSci-logo",
+  "jupyter.lab.setting-icon-label": "OmniSci",
+  "title": "OmniSci",
+  "description": "OmniSci settings.",
   "definitions": {
     "defaultConnection": {
       "properties": {
@@ -32,7 +32,7 @@
   "properties": {
     "defaultConnection": {
       "title": "Default Connection Configuration",
-      "description": "The default connection settings for MapD",
+      "description": "The default connection settings for OmniSci",
       "$ref": "#/definitions/defaultConnection",
       "default": {
         "user": "",

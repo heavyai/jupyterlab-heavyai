@@ -9,14 +9,15 @@ import { JSONObject } from '@phosphor/coreutils';
 import { PanelLayout, Widget } from '@phosphor/widgets';
 
 declare const require: any;
+// tslint:disable-next-line:no-var-requires
 require('@mapd/connector/dist/browser-connector');
 
 declare const MapdCon: any;
 
 /**
- * Connection data for the mapd browser client.
+ * Connection data for the omnisci browser client.
  */
-export interface IMapDConnectionData extends JSONObject {
+export interface IOmniSciConnectionData extends JSONObject {
   /**
    * The host of the connection, e.g. `metis.mapd.com`.
    */
@@ -49,14 +50,15 @@ export interface IMapDConnectionData extends JSONObject {
 }
 
 /**
- * Show a dialog for entering MapD connection data.
+ * Show a dialog for entering OmniSci connection data.
  */
 export function showConnectionDialog(
-  oldConnection?: IMapDConnectionData
-): Promise<IMapDConnectionData> {
-  return showDialog<IMapDConnectionData>({
-    title: 'MapD Connection',
-    body: new MapDConnectionDialog(oldConnection),
+  title: string,
+  oldConnection?: IOmniSciConnectionData
+): Promise<IOmniSciConnectionData> {
+  return showDialog<IOmniSciConnectionData>({
+    title,
+    body: new OmniSciConnectionDialog(oldConnection),
     buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {
     if (result.button.accept) {
@@ -68,11 +70,11 @@ export function showConnectionDialog(
 }
 
 /**
- * A dialog for entering MapD connection data.
+ * A dialog for entering OmniSci connection data.
  */
-export class MapDConnectionDialog extends Widget
-  implements Dialog.IBodyWidget<IMapDConnectionData> {
-  constructor(oldData?: IMapDConnectionData) {
+export class OmniSciConnectionDialog extends Widget
+  implements Dialog.IBodyWidget<IOmniSciConnectionData> {
+  constructor(oldData?: IOmniSciConnectionData) {
     super();
     let layout = (this.layout = new PanelLayout());
 
@@ -126,7 +128,7 @@ export class MapDConnectionDialog extends Widget
     layout.addWidget(new Widget({ node: this._port }));
   }
 
-  getValue(): IMapDConnectionData {
+  getValue(): IOmniSciConnectionData {
     return {
       user: this._user.value,
       password: this._password.value,
@@ -146,9 +148,9 @@ export class MapDConnectionDialog extends Widget
 }
 
 /**
- * A class for fetching completion data from a MapD connection.
+ * A class for fetching completion data from a OmniSci connection.
  */
-export class MapDCompletionConnector extends DataConnector<
+export class OmniSciCompletionConnector extends DataConnector<
   CompletionHandler.IReply,
   void,
   CompletionHandler.IRequest
@@ -156,13 +158,13 @@ export class MapDCompletionConnector extends DataConnector<
   /**
    * Construct a new completion connector.
    */
-  constructor(connection: IMapDConnectionData) {
+  constructor(connection: IOmniSciConnectionData) {
     super();
     this._connection = connection;
   }
 
   /**
-   * Fetch completion data from the MapD backend.
+   * Fetch completion data from the OmniSci backend.
    */
   fetch(
     request: CompletionHandler.IRequest
@@ -208,5 +210,5 @@ export class MapDCompletionConnector extends DataConnector<
     });
   }
 
-  private _connection: IMapDConnectionData;
+  private _connection: IOmniSciConnectionData;
 }
