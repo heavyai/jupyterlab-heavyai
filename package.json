@@ -48,7 +48,7 @@
     "@phosphor/datagrid": "^0.1.5",
     "@phosphor/widgets": "^1.6.0",
     "vega": "3.x",
-    "vega-lite": "2.x"
+    "vega-lite": "3.0.0-rc8"
   },
   "devDependencies": {
     "husky": "^0.14.3",
@@ -68,7 +68,7 @@
   },
   "jupyterlab": {
     "extension": "lib/extension",
-    "mimeExtension": "lib/mimextension",
+    "mimeExtension": "lib/extract-vega-lite",
     "schemaDir": "schema"
   }
 }
