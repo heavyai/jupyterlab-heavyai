@@ -25,6 +25,7 @@
   flex-grow: 1;
   font-size: 1em;
   font-family: monospace;
+  background-color: var(--jp-layout-color0);
 }
 
 .jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {

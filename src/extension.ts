@@ -318,9 +318,14 @@ function activateOmniSciViewer(
       state.save(PLUGIN_ID, { initialNotebook: false });
 
       if (initial) {
+        // Create the notebook.
         const notebook = await app.commands.execute('notebook:create-new', {
           kernelName: 'python3'
         });
+        // Move the notebook so it is in a split pane with the primary tab.
+        // It has already been added, so this just has the effect of moving it.
+        app.shell.addToMainArea(notebook, { mode: 'split-left' });
+
         await notebook.context.ready;
 
         // Define a function for injecting code into the notebook
