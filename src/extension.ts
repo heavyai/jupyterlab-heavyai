@@ -311,8 +311,10 @@ function activateOmniSciVegaViewer(
       // Determine whether to launch an initial notebook, then immediately
       // set that value to false. This state setting is intended to be set
       // by outside actors, rather than as true state restoration.
-      const initial = !!(result as { initialNotebook: boolean })
-        .initialNotebook;
+      let initial = false;
+      if (result) {
+        initial = !!(result as { initialNotebook: boolean }).initialNotebook;
+      }
       state.save(PLUGIN_ID, { initialNotebook: false });
 
       if (initial) {
