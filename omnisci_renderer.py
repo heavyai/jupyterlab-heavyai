@@ -124,3 +124,15 @@ def omnisci_mimetype(spec, conn):
 
 if alt:
     alt.renderers.register('omnisci', omnisci_mimetype)
+
+
+new_spec = None
+
+def target_func(comm, msg):
+    @comm.on_msg
+    def _recv(msg):
+        global new_spec
+        new_spec = msg['content']['data']
+    comm.send(SPEC)
+
+get_ipython().kernel.comm_manager.register_target('some-unique-iddd', target_func)

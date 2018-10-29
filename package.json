@@ -68,7 +68,6 @@
   },
   "jupyterlab": {
     "extension": "lib/extension",
-    "mimeExtension": "lib/extract-vega-lite",
     "schemaDir": "schema"
   }
 }

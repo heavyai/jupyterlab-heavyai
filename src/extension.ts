@@ -34,6 +34,7 @@ import { OmniSciExplorer } from './grid';
 
 import { OmniSciViewer, OmniSciViewerFactory } from './viewer';
 
+import ExtractPlugin from './extract-vega-lite';
 /**
  * The name of the factory that creates pdf widgets.
  */
@@ -360,8 +361,8 @@ function activateOmniSciViewer(
 /**
  * Export the plugin as default.
  */
-const plugin: JupyterLabPlugin<any> = omnisciPlugin;
-export default plugin;
+export const plugin: JupyterLabPlugin<any> = omnisciPlugin;
+export default [ExtractPlugin];
 
 /**
  * A namespace for private data.
