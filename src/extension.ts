@@ -163,14 +163,14 @@ function activateOmniSciViewer(
   gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.input.editor;
     const connector = new OmniSciCompletionConnector(
-      explorer.content.connection
+      explorer.content.connectionData
     );
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
     explorer.content.onModelChanged.connect(() => {
       handle.connector = new OmniSciCompletionConnector(
-        explorer.content.connection
+        explorer.content.connectionData
       );
     });
     // Set the theme for the new widget.
@@ -246,7 +246,7 @@ function activateOmniSciViewer(
       const query = (args['initialQuery'] as string) || '';
       const grid = new OmniSciExplorer({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        connection: factory.defaultConnection
+        connectionData: factory.defaultConnection
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;
@@ -288,8 +288,8 @@ function activateOmniSciViewer(
       }
     });
     gridTracker.forEach(grid => {
-      if (!grid.content.connection) {
-        grid.content.connection = defaultConnection;
+      if (!grid.content.connectionData) {
+        grid.content.connectionData = defaultConnection;
       }
     });
   };

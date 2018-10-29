@@ -12,9 +12,12 @@ import { MainAreaWidget, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
 
 import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
-import { IOmniSciConnectionData, showConnectionDialog } from './connection';
-
-declare const MapdCon: any;
+import {
+  IOmniSciConnectionData,
+  makeConnection,
+  OmniSciConnection,
+  showConnectionDialog
+} from './connection';
 
 /**
  * The default block size whenn streaming blocks of the query results.
@@ -31,7 +34,7 @@ export class OmniSciExplorer extends MainAreaWidget<OmniSciGrid> {
    * Construct a new OmniSciExplorer widget.
    */
   constructor(options: OmniSciExplorer.IOptions) {
-    const content = new OmniSciGrid(options.connection);
+    const content = new OmniSciGrid(options.connectionData);
     const toolbar = Private.createToolbar(content, options.editorFactory);
     super({ content, toolbar });
   }
@@ -116,7 +119,7 @@ export namespace OmniSciExplorer {
     /**
      * An optional initial connection data structure.
      */
-    connection?: IOmniSciConnectionData;
+    connectionData?: IOmniSciConnectionData;
   }
 }
 
@@ -127,7 +130,7 @@ export class OmniSciGrid extends Widget {
   /**
    * Construct a new OmniSciGrid widget.
    */
-  constructor(connection?: IOmniSciConnectionData) {
+  constructor(connectionData?: IOmniSciConnectionData) {
     super();
     // Create the Layout
     this.layout = new PanelLayout();
@@ -163,16 +166,16 @@ export class OmniSciGrid extends Widget {
     this._content.hide(); // Initially hide the grid until we set the query.
 
     // Initialize the data model.
-    this._updateModel(connection, '');
+    this._updateModel(connectionData, '');
   }
 
   /**
    * The current connection data for the viewer.
    */
-  get connection(): IOmniSciConnectionData {
-    return this._model.connection;
+  get connectionData(): IOmniSciConnectionData {
+    return this._model.connectionData;
   }
-  set connection(value: IOmniSciConnectionData) {
+  set connectionData(value: IOmniSciConnectionData) {
     this._updateModel(value, this._model.query);
   }
 
@@ -203,7 +206,7 @@ export class OmniSciGrid extends Widget {
     return this._model.query;
   }
   set query(value: string) {
-    this._updateModel(this._model.connection, value);
+    this._updateModel(this._model.connectionData, value);
   }
 
   /**
@@ -221,12 +224,12 @@ export class OmniSciGrid extends Widget {
    * validation failure, it shows the error in the panel.
    */
   private _updateModel(
-    connection: IOmniSciConnectionData,
+    connectionData: IOmniSciConnectionData,
     query: string
   ): void {
     const hasQuery = query !== '';
     this._model
-      .updateModel(connection, query)
+      .updateModel(connectionData, query)
       .then(() => {
         this._content.setHidden(!hasQuery);
         this._error.node.textContent = '';
@@ -289,8 +292,8 @@ export class OmniSciTableModel extends DataModel {
   /**
    * The current connection data for the model.
    */
-  get connection(): IOmniSciConnectionData | undefined {
-    return this._connection;
+  get connectionData(): IOmniSciConnectionData | undefined {
+    return this._connectionData;
   }
 
   /**
@@ -382,19 +385,19 @@ export class OmniSciTableModel extends DataModel {
    *   an error if the validation fails.
    */
   updateModel(
-    connection: IOmniSciConnectionData,
+    connectionData: IOmniSciConnectionData,
     query: string
   ): Promise<void> {
     if (
       this._query === query &&
-      connection &&
-      this._connection &&
-      JSONExt.deepEqual(connection, this._connection)
+      connectionData &&
+      this._connectionData &&
+      JSONExt.deepEqual(connectionData, this._connectionData)
     ) {
       return Promise.resolve(void 0);
     }
     this._query = query;
-    this._connection = connection;
+    this._connectionData = connectionData;
     return this._updateModel();
   }
 
@@ -414,16 +417,19 @@ export class OmniSciTableModel extends DataModel {
     this._pending.clear();
     this._streaming = false;
 
-    if (this.query && this.connection) {
+    if (this.query && this.connectionData) {
       this._streaming = Private.shouldChunkRequests(this._query);
-      return Private.validateQuery(this._connection, this._query)
-        .then(() => {
-          this.emitChanged({ type: 'model-reset' });
-          if (this._streaming) {
-            this._fetchBlock(0);
-          } else {
-            this._fetchDataset();
-          }
+      this._connectionPromise = makeConnection(this.connectionData);
+      return this._connectionPromise
+        .then(connection => {
+          return Private.validateQuery(connection, this._query).then(() => {
+            this.emitChanged({ type: 'model-reset' });
+            if (this._streaming) {
+              this._fetchBlock(0);
+            } else {
+              this._fetchDataset();
+            }
+          });
         })
         .catch(err => {
           this.emitChanged({ type: 'model-reset' });
@@ -453,39 +459,43 @@ export class OmniSciTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
-    Private.makeQuery(this._connection, query).then((res: any) => {
-      this._pending.delete(index);
-      if (!this._fieldNames.length) {
-        this._fieldNames = res.fields.map((field: any) => field.name as string);
-        this.emitChanged({ type: 'model-reset' });
-      }
-      this._dataBlocks[index] = res.results;
-      if (index <= maxIndex || this._tableLength !== -1) {
-        // In this case, we are not appending, so emit a changed
-        // signal.
-        this.emitChanged({
-          type: 'cells-changed',
-          region: 'body',
-          rowIndex: offset,
-          columnIndex: 0,
-          rowSpan: res.results.length,
-          columnSpan: this._fieldNames.length
-        });
-      } else {
-        if (res.results.length < BLOCK_SIZE) {
-          // If the length of the result is less than the block size,
-          // we have found the table length. Set that.
-          this._tableLength = offset + res.results.length;
-          this._maxBlock = index;
+    this._connectionPromise.then(connection => {
+      Private.makeQuery(connection, query).then((res: any) => {
+        this._pending.delete(index);
+        if (!this._fieldNames.length) {
+          this._fieldNames = res.fields.map(
+            (field: any) => field.name as string
+          );
+          this.emitChanged({ type: 'model-reset' });
         }
-        // Emit a rows-inserted signal.
-        this.emitChanged({
-          type: 'rows-inserted',
-          region: 'body',
-          index: offset,
-          span: res.results.length
-        });
-      }
+        this._dataBlocks[index] = res.results;
+        if (index <= maxIndex || this._tableLength !== -1) {
+          // In this case, we are not appending, so emit a changed
+          // signal.
+          this.emitChanged({
+            type: 'cells-changed',
+            region: 'body',
+            rowIndex: offset,
+            columnIndex: 0,
+            rowSpan: res.results.length,
+            columnSpan: this._fieldNames.length
+          });
+        } else {
+          if (res.results.length < BLOCK_SIZE) {
+            // If the length of the result is less than the block size,
+            // we have found the table length. Set that.
+            this._tableLength = offset + res.results.length;
+            this._maxBlock = index;
+          }
+          // Emit a rows-inserted signal.
+          this.emitChanged({
+            type: 'rows-inserted',
+            region: 'body',
+            index: offset,
+            span: res.results.length
+          });
+        }
+      });
     });
   }
 
@@ -514,38 +524,41 @@ export class OmniSciTableModel extends DataModel {
    * limited by DEFAULT_LIMIT.
    */
   private _fetchDataset(): void {
-    Private.makeQuery(this._connection, this._query, {
-      limit: DEFAULT_LIMIT
-    }).then((res: any) => {
-      this._fieldNames = res.fields.map((field: any) => field.name as string);
-      this.emitChanged({ type: 'model-reset' });
-      this._tableLength = res.results.length;
-      // If the dataset already exists, emit a cells-changed signal.
-      // Otherwise, emit a 'rows-inserted' signal.
-      if (this._dataset) {
-        this._dataset = res.results;
-        this.emitChanged({
-          type: 'cells-changed',
-          region: 'body',
-          rowIndex: 0,
-          columnIndex: 0,
-          rowSpan: res.results.length,
-          columnSpan: this._fieldNames.length
-        });
-      } else {
-        this._dataset = res.results;
-        this.emitChanged({
-          type: 'rows-inserted',
-          region: 'body',
-          index: 0,
-          span: res.results.length
-        });
-      }
+    this._connectionPromise.then(connection => {
+      Private.makeQuery(connection, this._query, {
+        limit: DEFAULT_LIMIT
+      }).then((res: any) => {
+        this._fieldNames = res.fields.map((field: any) => field.name as string);
+        this.emitChanged({ type: 'model-reset' });
+        this._tableLength = res.results.length;
+        // If the dataset already exists, emit a cells-changed signal.
+        // Otherwise, emit a 'rows-inserted' signal.
+        if (this._dataset) {
+          this._dataset = res.results;
+          this.emitChanged({
+            type: 'cells-changed',
+            region: 'body',
+            rowIndex: 0,
+            columnIndex: 0,
+            rowSpan: res.results.length,
+            columnSpan: this._fieldNames.length
+          });
+        } else {
+          this._dataset = res.results;
+          this.emitChanged({
+            type: 'rows-inserted',
+            region: 'body',
+            index: 0,
+            span: res.results.length
+          });
+        }
+      });
     });
   }
 
   private _query = '';
-  private _connection: IOmniSciConnectionData | undefined;
+  private _connectionData: IOmniSciConnectionData | undefined;
+  private _connectionPromise: Promise<OmniSciConnection> | undefined;
 
   private _fieldNames: string[];
   private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
@@ -591,9 +604,9 @@ namespace Private {
         onClick: () => {
           showConnectionDialog(
             'Set SQL Editor Connection',
-            widget.connection
-          ).then(connection => {
-            widget.connection = connection;
+            widget.connectionData
+          ).then(connectionData => {
+            widget.connectionData = connectionData;
           });
         },
         tooltip: 'Enter OmniSci Connection Data'
@@ -628,36 +641,23 @@ namespace Private {
    * Query the OmniSci backend.
    */
   export function makeQuery(
-    connection: IOmniSciConnectionData,
+    connection: OmniSciConnection,
     query: string,
     options: Object = {}
   ): Promise<ReadonlyArray<JSONObject>> {
     options = { returnTiming: true, ...options };
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
-      new MapdCon()
-        .protocol(connection.protocol)
-        .host(connection.host)
-        .port(connection.port)
-        .dbName(connection.dbName)
-        .user(connection.user)
-        .password(connection.password)
-        .connect((error: any, con: any) => {
-          if (error) {
-            reject(error);
+      connection.query(
+        query,
+        options,
+        (err: any, result: ReadonlyArray<JSONObject>) => {
+          if (err) {
+            reject(err);
           } else {
-            con.query(
-              query,
-              options,
-              (err: any, result: ReadonlyArray<JSONObject>) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(result);
-                }
-              }
-            );
+            resolve(result);
           }
-        });
+        }
+      );
     });
   }
 
@@ -665,30 +665,17 @@ namespace Private {
    * Validate a query with the OmniSci backend.
    */
   export function validateQuery(
-    connection: IOmniSciConnectionData,
+    connection: OmniSciConnection,
     query: string
   ): Promise<ReadonlyArray<JSONObject>> {
     return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
-      new MapdCon()
-        .protocol(connection.protocol)
-        .host(connection.host)
-        .port(connection.port)
-        .dbName(connection.dbName)
-        .user(connection.user)
-        .password(connection.password)
-        .connect((error: any, con: any) => {
-          if (error) {
-            reject(error);
-          } else {
-            con
-              .validateQuery(query)
-              .then((result: ReadonlyArray<JSONObject>) => {
-                resolve(result);
-              })
-              .catch((err: any) => {
-                reject(err);
-              });
-          }
+      connection
+        .validateQuery(query)
+        .then((result: ReadonlyArray<JSONObject>) => {
+          resolve(result);
+        })
+        .catch((err: any) => {
+          reject(err);
         });
     });
   }
