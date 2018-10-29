@@ -32,7 +32,7 @@ import {
 
 import { OmniSciExplorer } from './grid';
 
-import { OmniSciViewer, OmniSciViewerFactory } from './viewer';
+import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.
@@ -87,7 +87,7 @@ const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
  * The Omnisci file handler extension.
  */
 const omnisciPlugin: JupyterLabPlugin<void> = {
-  activate: activateOmniSciViewer,
+  activate: activateOmniSciVegaViewer,
   id: PLUGIN_ID,
   requires: [
     ICompletionManager,
@@ -102,7 +102,7 @@ const omnisciPlugin: JupyterLabPlugin<void> = {
   autoStart: true
 };
 
-function activateOmniSciViewer(
+function activateOmniSciVegaViewer(
   app: JupyterLab,
   completionManager: ICompletionManager,
   editorServices: IEditorServices,
@@ -116,14 +116,14 @@ function activateOmniSciViewer(
   const viewerNamespace = 'omnisci-viewer-widget';
   const gridNamespace = 'omnisci-grid-widget';
 
-  const factory = new OmniSciViewerFactory({
+  const factory = new OmniSciVegaViewerFactory({
     name: FACTORY,
     modelName: 'text',
-    fileTypes: ['json', 'omnisci-vega', 'vega3', 'vega3'],
+    fileTypes: ['json', 'omnisci-vega', 'vega3', 'vega4'],
     defaultFor: ['omnisci-vega'],
     readOnly: true
   });
-  const viewerTracker = new InstanceTracker<OmniSciViewer>({
+  const viewerTracker = new InstanceTracker<OmniSciVegaViewer>({
     namespace: viewerNamespace
   });
 
@@ -138,7 +138,7 @@ function activateOmniSciViewer(
   app.docRegistry.addWidgetFactory(factory);
 
   factory.widgetCreated.connect((sender, widget) => {
-    viewerTracker.add(widget as OmniSciViewer);
+    viewerTracker.add(widget);
 
     const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
@@ -199,7 +199,7 @@ function activateOmniSciViewer(
     execute: () => {
       showConnectionDialog(
         'Set Default Omnisci Connection',
-        factory.defaultConnection
+        factory.defaultConnectionData
       ).then(connection => {
         settingRegistry.set(PLUGIN_ID, 'defaultConnection', connection);
       });
@@ -246,7 +246,7 @@ function activateOmniSciViewer(
       const query = (args['initialQuery'] as string) || '';
       const grid = new OmniSciExplorer({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        connectionData: factory.defaultConnection
+        connectionData: factory.defaultConnectionData
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;
@@ -274,22 +274,20 @@ function activateOmniSciViewer(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const defaultConnection = settings.get('defaultConnection').composite as
-      | IOmniSciConnectionData
-      | null
-      | undefined;
-    if (!defaultConnection) {
+    const defaultConnectionData = settings.get('defaultConnection')
+      .composite as IOmniSciConnectionData | null | undefined;
+    if (!defaultConnectionData) {
       return;
     }
-    factory.defaultConnection = defaultConnection;
+    factory.defaultConnectionData = defaultConnectionData;
     viewerTracker.forEach(viewer => {
-      if (!viewer.connection) {
-        viewer.connection = defaultConnection;
+      if (!viewer.connectionData) {
+        viewer.connectionData = defaultConnectionData;
       }
     });
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
-        grid.content.connectionData = defaultConnection;
+        grid.content.connectionData = defaultConnectionData;
       }
     });
   };
@@ -337,7 +335,7 @@ function activateOmniSciViewer(
         const injectCode = (sender: NotebookModel) => {
           if (notebook.content.model.cells.length === 1) {
             let value = Private.IBIS_TEMPLATE;
-            const connection = factory.defaultConnection;
+            const connection = factory.defaultConnectionData;
             if (!connection) {
               return;
             }

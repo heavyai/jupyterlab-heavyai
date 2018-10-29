@@ -33,7 +33,7 @@ export class OmniSciVega extends Widget {
     this.node.appendChild(this._img);
     this.node.appendChild(this._error);
 
-    this._connection = makeConnection(connectionData);
+    this._connectionPromise = makeConnection(connectionData);
     this._vega = vega;
 
     // _vegaLite is just for debugging, in case we get an error, we can show it.
@@ -48,7 +48,7 @@ export class OmniSciVega extends Widget {
   private _renderData(): Promise<void> {
     const vega = this._vega;
     return new Promise<void>((resolve, reject) => {
-      return this._connection
+      return this._connectionPromise
         .catch(error => {
           if (error) {
             // If there was an error, clear any image data,
@@ -106,7 +106,7 @@ export class OmniSciVega extends Widget {
   private _rendered = new PromiseDelegate<string>();
   private _vega: JSONObject;
   private _vegaLite: JSONObject;
-  private _connection: Promise<OmniSciConnection>;
+  private _connectionPromise: Promise<OmniSciConnection>;
   private _img: HTMLImageElement;
   private _error: HTMLElement;
 }
