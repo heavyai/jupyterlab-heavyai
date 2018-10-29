@@ -15,6 +15,11 @@ require('@mapd/connector/dist/browser-connector');
 declare const MapdCon: any;
 
 /**
+ * A type stub for a connection object.
+ */
+export type OmniSciConnection = any;
+
+/**
  * Connection data for the omnisci browser client.
  */
 export interface IOmniSciConnectionData extends JSONObject {
@@ -66,6 +71,30 @@ export function showConnectionDialog(
     } else {
       return oldConnection;
     }
+  });
+}
+
+/**
+ * Make a connection to the Omnisci backend.
+ */
+export function makeConnection(
+  data: IOmniSciConnectionData
+): Promise<OmniSciConnection> {
+  return new Promise<OmniSciConnection>((resolve, reject) => {
+    new MapdCon()
+      .protocol(data.protocol)
+      .host(data.host)
+      .port(data.port)
+      .dbName(data.dbName)
+      .user(data.user)
+      .password(data.password)
+      .connect((error: any, con: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(con);
+        }
+      });
   });
 }
 
@@ -158,9 +187,11 @@ export class OmniSciCompletionConnector extends DataConnector<
   /**
    * Construct a new completion connector.
    */
-  constructor(connection: IOmniSciConnectionData) {
+  constructor(data: IOmniSciConnectionData | undefined) {
     super();
-    this._connection = connection;
+    if (data) {
+      this._connection = makeConnection(data);
+    }
   }
 
   /**
@@ -169,25 +200,19 @@ export class OmniSciCompletionConnector extends DataConnector<
   fetch(
     request: CompletionHandler.IRequest
   ): Promise<CompletionHandler.IReply | undefined> {
-    const connection = this._connection;
-    return new Promise<CompletionHandler.IReply>((resolve, reject) => {
-      new MapdCon()
-        .protocol(connection.protocol)
-        .host(connection.host)
-        .port(connection.port)
-        .dbName(connection.dbName)
-        .user(connection.user)
-        .password(connection.password)
-        .connect((error: any, con: any) => {
-          if (error) {
-            reject(error);
-          } else {
+    if (!this._connection) {
+      return Promise.resolve(void 0);
+    }
+    return new Promise<CompletionHandler.IReply | undefined>(
+      (resolve, reject) => {
+        this._connection
+          .then(con => {
             con.getCompletionHints(
               request.text,
               { cursor: request.offset },
               (err: any, result: any) => {
                 if (err) {
-                  reject(err);
+                  throw err;
                 } else if (result && result[0] && result[0].hints) {
                   const matches = result
                     .map((hintObject: any) => hintObject.hints)
@@ -205,10 +230,16 @@ export class OmniSciCompletionConnector extends DataConnector<
                 }
               }
             );
-          }
-        });
-    });
+          })
+          .catch(err => {
+            console.warn(
+              'There was an error making a connection to the backend'
+            );
+            console.warn(err);
+            return void 0;
+          });
+      }
+    );
   }
-
-  private _connection: IOmniSciConnectionData;
+  private _connection: Promise<OmniSciConnection> | undefined = undefined;
 }

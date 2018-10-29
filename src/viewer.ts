@@ -9,27 +9,27 @@ import { Spinner, ToolbarButton } from '@jupyterlab/apputils';
 import {
   ABCWidgetFactory,
   DocumentRegistry,
-  DocumentWidget,
-  IDocumentWidget
+  DocumentWidget
 } from '@jupyterlab/docregistry';
 
 import { IOmniSciConnectionData, showConnectionDialog } from './connection';
 
 import { OmniSciVega } from './widget';
 
-export class OmniSciViewer extends DocumentWidget<Widget> {
+export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   constructor(
     context: DocumentRegistry.Context,
-    connection?: IOmniSciConnectionData
+    connectionData?: IOmniSciConnectionData
   ) {
     super({
       context,
       reveal: context.ready.then(() => this._render()),
       content: new Widget()
     });
+    this._connectionData = connectionData;
 
     this.toolbar.addClass('omnisci-OmniSci-toolbar');
-    this.addClass('omnisci-OmniSciViewer-content');
+    this.addClass('omnisci-OmniSciVegaViewer-content');
 
     this.toolbar.addItem(
       'Render',
@@ -49,9 +49,9 @@ export class OmniSciViewer extends DocumentWidget<Widget> {
           const name = PathExt.basename(this.context.path);
           showConnectionDialog(
             `Set Connection for ${name}`,
-            this._connection
-          ).then(connection => {
-            this._connection = connection;
+            this._connectionData
+          ).then(connectionData => {
+            this._connectionData = connectionData;
           });
         },
         tooltip: 'Enter OmniSci Connection Data'
@@ -62,11 +62,11 @@ export class OmniSciViewer extends DocumentWidget<Widget> {
   /**
    * The current connection data for the viewer.
    */
-  get connection(): IOmniSciConnectionData {
-    return this._connection;
+  get connectionData(): IOmniSciConnectionData {
+    return this._connectionData;
   }
-  set connection(value: IOmniSciConnectionData) {
-    this._connection = value;
+  set connectionData(value: IOmniSciConnectionData) {
+    this._connectionData = value;
   }
 
   /**
@@ -88,11 +88,11 @@ export class OmniSciViewer extends DocumentWidget<Widget> {
 
     const text = this.context.model.toString();
     // If there is no data or no connection, do nothing
-    if (!text || !this._connection) {
+    if (!text || !this._connectionData) {
       return Promise.resolve(void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
-    this._widget = new OmniSciVega(data, this._connection);
+    this._widget = new OmniSciVega(data, this._connectionData);
     this.content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
     this.content.node.appendChild(spinner.node);
@@ -111,14 +111,14 @@ export class OmniSciViewer extends DocumentWidget<Widget> {
 
   private _ready = new PromiseDelegate<void>();
   private _widget: OmniSciVega | null = null;
-  private _connection: IOmniSciConnectionData | undefined;
+  private _connectionData: IOmniSciConnectionData | undefined;
 }
 
 /**
  * A widget factory for images.
  */
-export class OmniSciViewerFactory extends ABCWidgetFactory<
-  IDocumentWidget<Widget>,
+export class OmniSciVegaViewerFactory extends ABCWidgetFactory<
+  OmniSciVegaViewer,
   DocumentRegistry.IModel
 > {
   /**
@@ -126,19 +126,19 @@ export class OmniSciViewerFactory extends ABCWidgetFactory<
    */
   protected createNewWidget(
     context: DocumentRegistry.IContext<DocumentRegistry.IModel>
-  ): OmniSciViewer {
-    return new OmniSciViewer(context, this.defaultConnection);
+  ): OmniSciVegaViewer {
+    return new OmniSciVegaViewer(context, this.defaultConnectionData);
   }
 
   /**
    * The current default connection data for viewers.
    */
-  get defaultConnection(): IOmniSciConnectionData {
-    return this._defaultConnection;
+  get defaultConnectionData(): IOmniSciConnectionData {
+    return this._defaultConnectionData;
   }
-  set defaultConnection(value: IOmniSciConnectionData) {
-    this._defaultConnection = value;
+  set defaultConnectionData(value: IOmniSciConnectionData) {
+    this._defaultConnectionData = value;
   }
 
-  private _defaultConnection: IOmniSciConnectionData | undefined;
+  private _defaultConnectionData: IOmniSciConnectionData | undefined;
 }
