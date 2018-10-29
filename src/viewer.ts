@@ -19,13 +19,14 @@ import { OmniSciVega } from './widget';
 export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   constructor(
     context: DocumentRegistry.Context,
-    connection?: IOmniSciConnectionData
+    connectionData?: IOmniSciConnectionData
   ) {
     super({
       context,
       reveal: context.ready.then(() => this._render()),
       content: new Widget()
     });
+    this._connectionData = connectionData;
 
     this.toolbar.addClass('omnisci-OmniSci-toolbar');
     this.addClass('omnisci-OmniSciVegaViewer-content');
