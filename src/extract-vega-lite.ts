@@ -11,7 +11,7 @@ import { IDisposable, DisposableDelegate } from '@phosphor/disposable';
 import { extractTransforms, config } from 'vega-lite';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 
-const PLUGIN_ID = 'jupyterlab-omnisci:extract-vega-lite-plugin-2';
+const PLUGIN_ID = 'jupyterlab-omnisci:extract-vega-lite-plugin';
 
 const plugin: JupyterLabPlugin<void> = {
   activate,
@@ -20,10 +20,9 @@ const plugin: JupyterLabPlugin<void> = {
 };
 export default plugin;
 
-const COMM_TARGET = 'some-unique-iddd';
+const COMM_TARGET = 'extract-vega-lite';
 
 function commTarget(comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) {
-  console.log('comm target');
   const spec: any = msg.content.data;
   const config_ = config.initConfig({});
   const extractedSpec = extractTransforms(spec, config_);
@@ -33,20 +32,21 @@ function createNew(
   nb: NotebookPanel,
   context: DocumentRegistry.IContext<INotebookModel>
 ): IDisposable {
-  console.log('creating new');
   context.session.kernelChanged.connect((_, { newValue, oldValue }) => {
-    console.log('kernel changing');
-    if (!newValue) {
-      return;
+    if (oldValue) {
+      oldValue.removeCommTarget(COMM_TARGET, commTarget);
     }
-    console.log(`registering target for ${COMM_TARGET}`);
-    newValue.registerCommTarget(COMM_TARGET, commTarget);
+
+    if (newValue) {
+      newValue.registerCommTarget(COMM_TARGET, commTarget);
+    }
   });
   return new DisposableDelegate(() => {
-    console.log('disposing');
+    if (context.session.kernel) {
+      context.session.kernel.removeCommTarget(COMM_TARGET, commTarget);
+    }
   });
 }
 function activate(app: JupyterLab) {
-  console.log('activating');
   app.docRegistry.addWidgetExtension('Notebook', { createNew });
 }

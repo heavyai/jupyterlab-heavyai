@@ -6,3 +6,8 @@ dependencies:
   - jupyterlab=0.35.3
   - altair
   - black
+  - pyyaml
+  - mypy
+  - pyflake
+  - pip:
+    - vdom

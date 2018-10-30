@@ -13,7 +13,8 @@ export function compileToVega(vlSpec: any): any {
   delete vlSpec.data.sql;
   vlSpec.data.name = 'mapd_data';
 
-  const vSpec = compile(vlSpec, { config: { invalidValues: null } }).spec;
+  const vSpec = compile(vlSpec, { config: { invalidValues: null } })
+    .spec as any;
 
   // manually remove transformation from vega spec
   // until https://github.com/vega/vega-lite/issues/3665 is merged

@@ -67,7 +67,8 @@
     ]
   },
   "jupyterlab": {
-    "extension": "lib/extension",
+    "extension": "lib/plugins",
+    "mimeExtension": "lib/mimextension",
     "schemaDir": "schema"
   }
 }
