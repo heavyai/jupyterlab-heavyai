@@ -61,6 +61,7 @@ export class OmniSciVega extends Widget {
           this._setImageData('');
           this._error.textContent = error;
           this._rendered.reject(error);
+          console.error(error);
           return;
         }
         con.renderVega(
@@ -86,6 +87,7 @@ export class OmniSciVega extends Widget {
                 2
               )}`;
               this._rendered.reject(error.message);
+              console.error(error, { vega, vegaLite: this._vegaLite });
             } else {
               // Set the image data.
               this._setImageData(result.image);

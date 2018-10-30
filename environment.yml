@@ -14,4 +14,4 @@ dependencies:
     - vdom
     - vega_datasets
     - pymapd
-    - ibis
+    - git+https://github.com/Quansight/ibis.git@add_rowid_op#egg=ibis-framework

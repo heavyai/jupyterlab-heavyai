@@ -18,8 +18,7 @@ export function compileToVega(vlSpec: any): any {
 
   // manually remove transformation from vega spec
   // until https://github.com/vega/vega-lite/issues/3665 is merged
-  vSpec.data[0].name = vSpec.data.pop().name;
-  vSpec.data[0].sql = sql;
+  vSpec.data = [{ name: vSpec.data.pop().name, sql }];
 
   for (const mark of vSpec.marks) {
     // mapd uses mark.properties instead of mark.encode.update
