@@ -13,3 +13,4 @@ __pycache__
 .bash_history
 .config
 .mypy_cache
+.vscode
