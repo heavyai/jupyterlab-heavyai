@@ -12,3 +12,4 @@ __pycache__
 .yarnrc
 .bash_history
 .config
+.mypy_cache

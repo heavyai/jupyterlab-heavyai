@@ -12,3 +12,4 @@ dependencies:
   - flake8
   - pip:
     - vdom
+    - vega_datasets

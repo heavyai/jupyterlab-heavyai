@@ -151,6 +151,18 @@ class VegaLite(IPython.display.DisplayObject):
 EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 
 
-def display_vega_lite_extracted(spec: VegaLite):
+def extract_vega_renderer(spec):
     display_id = display(VegaLite(EMPTY_SPEC), display_id=True)
-    extract_spec(spec.data, lambda s: display_id.update(VegaLite(s)))
+    extract_spec(spec, lambda s: display_id.update(VegaLite(s)))
+    return {"text/plain": None}
+
+
+def extract_vega_renderer_json(spec):
+    display_id = display(IPython.display.JSON({}), display_id=True)
+    extract_spec(spec, lambda s: display_id.update(IPython.display.JSON(s)))
+    return {"text/plain": None}
+
+
+if alt:
+    alt.renderers.register("extract", extract_vega_renderer)
+    alt.renderers.register("extract-json", extract_vega_renderer_json)
