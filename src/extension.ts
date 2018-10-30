@@ -360,7 +360,7 @@ function activateOmniSciViewer(
 /**
  * Export the plugin as default.
  */
-export const plugin: JupyterLabPlugin<any> = omnisciPlugin;
+const plugin: JupyterLabPlugin<any> = omnisciPlugin;
 export default plugin;
 
 /**
