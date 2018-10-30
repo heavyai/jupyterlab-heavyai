@@ -13,3 +13,5 @@ dependencies:
   - pip:
     - vdom
     - vega_datasets
+    - pymapd
+    - ibis
