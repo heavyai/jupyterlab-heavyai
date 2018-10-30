@@ -8,6 +8,7 @@ dependencies:
   - black
   - pyyaml
   - mypy
-  - pyflake
+  - pylint
+  - flake8
   - pip:
     - vdom
