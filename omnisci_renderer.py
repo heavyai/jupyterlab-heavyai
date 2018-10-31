@@ -154,7 +154,7 @@ EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 def extract_vega_renderer(spec):
     display_id = display(VegaLite(EMPTY_SPEC), display_id=True)
     extract_spec(spec, lambda s: display_id.update(VegaLite(s)))
-    return {"text/plain": None}
+    return {"text/plain": ""}
 
 
 def extract_vega_renderer_json(spec):
