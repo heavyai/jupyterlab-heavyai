@@ -160,7 +160,7 @@ def extract_vega_renderer(spec):
 def extract_vega_renderer_json(spec):
     display_id = display(IPython.display.JSON({}), display_id=True)
     extract_spec(spec, lambda s: display_id.update(IPython.display.JSON(s)))
-    return {"text/plain": None}
+    return {"text/plain": ""}
 
 
 if alt:
