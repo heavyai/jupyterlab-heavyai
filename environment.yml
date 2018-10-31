@@ -1,0 +1,17 @@
+name: jupyterlab-omnisci
+channels:
+  - conda-forge
+dependencies:
+  - python=3.6
+  - jupyterlab=0.35.3
+  - altair
+  - black
+  - pyyaml
+  - mypy
+  - pylint
+  - flake8
+  - pip:
+    - vdom
+    - vega_datasets
+    - pymapd
+    - git+https://github.com/Quansight/ibis.git@add_rowid_op#egg=ibis-framework

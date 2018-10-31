@@ -13,12 +13,12 @@ export function compileToVega(vlSpec: any): any {
   delete vlSpec.data.sql;
   vlSpec.data.name = 'mapd_data';
 
-  const vSpec = compile(vlSpec, { config: { invalidValues: null } }).spec;
+  const vSpec = compile(vlSpec, { config: { invalidValues: null } })
+    .spec as any;
 
   // manually remove transformation from vega spec
   // until https://github.com/vega/vega-lite/issues/3665 is merged
-  vSpec.data[0].name = vSpec.data.pop().name;
-  vSpec.data[0].sql = sql;
+  vSpec.data = [{ name: vSpec.data.pop().name, sql }];
 
   for (const mark of vSpec.marks) {
     // mapd uses mark.properties instead of mark.encode.update
