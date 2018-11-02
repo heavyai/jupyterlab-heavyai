@@ -15,6 +15,26 @@
   overflow: auto;
 }
 
+.omnisci-OmniSciSQLEditor {
+  min-height: 256px;
+  min-width: 256px;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
+.omnisci-OmniSciGrid {
+  height: calc(100% - 35px);
+  width: 100%;
+  overflow: auto;
+}
+
+.omnisci-OmniSciGrid-content {
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+}
+
 .jp-Toolbar.omnisci-OmniSci-toolbar {
   align-items: center;
   justify-content: right;

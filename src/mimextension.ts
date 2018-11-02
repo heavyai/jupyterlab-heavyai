@@ -2,20 +2,29 @@ import { JSONObject } from '@phosphor/coreutils';
 
 import { Widget } from '@phosphor/widgets';
 
+import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
+
 import { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 
 import { IOmniSciConnectionData } from './connection';
 
 import { OmniSciVega } from './widget';
 
+import { OmniSciSQLEditor } from './grid';
+
 import { compileToVega } from './vega-lite';
 
 import '../style/index.css';
 
 /**
- * The MIME type for backend-rendered OmniSci.
+ * The MIME type for backend-rendered vega.
  */
-export const MIME_TYPE = 'application/vnd.omnisci.vega+json';
+export const VEGA_MIME_TYPE = 'application/vnd.omnisci.vega+json';
+
+/**
+ * The MIME type for a SQL editor.
+ */
+export const SQL_EDITOR_MIME_TYPE = 'application/vnd.omnisci.sqleditor+json';
 
 /**
  * The MIME type for png data.
@@ -25,7 +34,8 @@ export const IMAGE_MIME = 'image/png';
 /**
  * A class for rendering a OmniSci-generated image.
  */
-export class RenderedOmniSci extends Widget implements IRenderMime.IRenderer {
+export class RenderedOmniSciVega extends Widget
+  implements IRenderMime.IRenderer {
   /**
    * Render OmniSci image into this widget's node.
    */
@@ -47,7 +57,7 @@ export class RenderedOmniSci extends Widget implements IRenderMime.IRenderer {
     }
 
     // Get the data from the mimebundle
-    const data = model.data[MIME_TYPE] as IOmniSciMimeBundle;
+    const data = model.data[VEGA_MIME_TYPE] as IOmniSciVegaMimeBundle;
     const { connection, vega, vegalite } = data;
 
     // Create a new OmniSciVega
@@ -78,7 +88,7 @@ export class RenderedOmniSci extends Widget implements IRenderMime.IRenderer {
 /**
  * OmniSci renderer custom mimetype format.
  */
-interface IOmniSciMimeBundle extends JSONObject {
+interface IOmniSciVegaMimeBundle extends JSONObject {
   /**
    * Connection data containing all of the info
    * we need to make the connection.
@@ -96,19 +106,84 @@ interface IOmniSciMimeBundle extends JSONObject {
 }
 
 /**
+ * A class for rendering a OmniSci-generated image.
+ */
+export class RenderedOmniSciSQLEditor extends Widget
+  implements IRenderMime.IRenderer {
+  /**
+   * Render OmniSci image into this widget's node.
+   */
+  renderModel(model: IRenderMime.IMimeModel): Promise<void> {
+    // If we have already rendered a widget, dispose of it.
+    if (this._widget) {
+      this._widget.parent = null;
+      this._widget.dispose();
+      this._widget = null;
+    }
+
+    // Get the data from the mimebundle
+    const data = model.data[
+      SQL_EDITOR_MIME_TYPE
+    ] as IOmniSciSQLEditorMimeBundle;
+
+    // Create a new OmniSciVega
+    this._widget = new OmniSciSQLEditor({
+      editorFactory: Private.editorFactory,
+      connectionData: data.connection
+    });
+    this._widget.content.query = data.query || '';
+    this.node.appendChild(this._widget.node);
+
+    return Promise.resolve(void 0);
+  }
+
+  private _widget: OmniSciSQLEditor | null = null;
+}
+
+/**
+ * OmniSci renderer custom mimetype format.
+ */
+interface IOmniSciSQLEditorMimeBundle extends JSONObject {
+  /**
+   * Connection data containing all of the info
+   * we need to make the connection.
+   */
+  connection: IOmniSciConnectionData;
+
+  /**
+   * The initial SQL query.
+   */
+  query?: string;
+}
+/**
  * A mime renderer factory for omnisci-vega data.
  */
-export const rendererFactory: IRenderMime.IRendererFactory = {
+export const vegaRendererFactory: IRenderMime.IRendererFactory = {
   safe: false,
-  mimeTypes: [MIME_TYPE],
+  mimeTypes: [VEGA_MIME_TYPE],
   defaultRank: 10,
-  createRenderer: options => new RenderedOmniSci()
+  createRenderer: options => new RenderedOmniSciVega()
+};
+
+/**
+ * A mime renderer factory for omnisci-sql-editor data.
+ */
+export const sqlEditorRendererFactory: IRenderMime.IRendererFactory = {
+  safe: false,
+  mimeTypes: [SQL_EDITOR_MIME_TYPE],
+  defaultRank: 10,
+  createRenderer: options => new RenderedOmniSciSQLEditor()
 };
 
 const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
   {
-    id: 'jupyterlab-omnisci:factory',
-    rendererFactory,
+    id: 'jupyterlab-omnisci:vega-factory',
+    rendererFactory: vegaRendererFactory,
+    dataType: 'string'
+  },
+  {
+    id: 'jupyterlab-omnisci:sqleditor-factory',
+    rendererFactory: sqlEditorRendererFactory,
     dataType: 'string'
   }
 ];
@@ -119,6 +194,8 @@ export default extensions;
  * A namespace for private data.
  */
 namespace Private {
+  const editorServices = new CodeMirrorEditorFactory();
+  export const editorFactory = editorServices.newInlineEditor;
   /**
    * Create an image node from a base64-encoded image.
    */

@@ -30,7 +30,7 @@ import {
   showConnectionDialog
 } from './connection';
 
-import { OmniSciExplorer } from './grid';
+import { OmniSciSQLEditor } from './grid';
 
 import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
 
@@ -148,7 +148,7 @@ function activateOmniSciVegaViewer(
     }
   });
 
-  const gridTracker = new InstanceTracker<OmniSciExplorer>({
+  const gridTracker = new InstanceTracker<OmniSciSQLEditor>({
     namespace: gridNamespace
   });
 
@@ -240,17 +240,17 @@ function activateOmniSciVegaViewer(
   });
 
   app.commands.addCommand(CommandIDs.newGrid, {
-    label: 'OmniSci Explorer',
+    label: 'OmniSci SQL Editor',
     iconClass: 'omnisci-OmniSci-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
-      const grid = new OmniSciExplorer({
+      const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
         connectionData: factory.defaultConnectionData
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;
-      grid.title.label = `OmniSci Explorer ${Private.id}`;
+      grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
       gridTracker.add(grid);

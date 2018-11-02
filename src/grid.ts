@@ -29,14 +29,15 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class OmniSciExplorer extends MainAreaWidget<OmniSciGrid> {
+export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
   /**
-   * Construct a new OmniSciExplorer widget.
+   * Construct a new OmniSciSQLEditor widget.
    */
-  constructor(options: OmniSciExplorer.IOptions) {
+  constructor(options: OmniSciSQLEditor.IOptions) {
     const content = new OmniSciGrid(options.connectionData);
     const toolbar = Private.createToolbar(content, options.editorFactory);
     super({ content, toolbar });
+    this.addClass('omnisci-OmniSciSQLEditor');
   }
 
   /**
@@ -104,11 +105,11 @@ export class OmniSciExplorer extends MainAreaWidget<OmniSciGrid> {
 }
 
 /**
- * A namespace for OmniSciExplorer statics.
+ * A namespace for OmniSciSQLEditor statics.
  */
-export namespace OmniSciExplorer {
+export namespace OmniSciSQLEditor {
   /**
-   * Options for creating a new OmniSciExplorer.
+   * Options for creating a new OmniSciSQLEditor.
    */
   export interface IOptions {
     /**
@@ -132,10 +133,11 @@ export class OmniSciGrid extends Widget {
    */
   constructor(connectionData?: IOmniSciConnectionData) {
     super();
+    this.addClass('omnisci-OmniSciGrid');
     // Create the Layout
     this.layout = new PanelLayout();
     this._content = new StackedPanel();
-    this._content.addClass('omnisci-OmniSciViewer-content');
+    this._content.addClass('omnisci-OmniSciGrid-content');
     this._error = new Widget({ node: document.createElement('pre') });
     this._error.addClass('omnisci-ErrorMessage');
     (this.layout as PanelLayout).addWidget(this._content);
