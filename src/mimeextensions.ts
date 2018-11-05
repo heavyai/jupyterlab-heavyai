@@ -1,5 +1,7 @@
 import { JSONObject } from '@phosphor/coreutils';
 
+import { ISignal, Signal } from '@phosphor/signaling';
+
 import { StackedLayout, Widget } from '@phosphor/widgets';
 
 import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
@@ -117,36 +119,36 @@ export class RenderedOmniSciSQLEditor extends Widget
     super();
     this.layout = new StackedLayout();
     this.addClass('omnisci-RenderedOmniSciSqlEditor');
+    this._widget = new OmniSciSQLEditor({
+      editorFactory: Private.editorFactory
+    });
+    (this.layout as StackedLayout).addWidget(this._widget);
+  }
+
+  /**
+   * Get the underlying SQL editor.
+   */
+  get widget(): OmniSciSQLEditor {
+    return this._widget;
   }
 
   /**
    * Render OmniSci image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
-    // If we have already rendered a widget, dispose of it.
-    if (this._widget) {
-      this._widget.parent = null;
-      this._widget.dispose();
-      this._widget = null;
-    }
-
     // Get the data from the mimebundle
     const data = model.data[
       SQL_EDITOR_MIME_TYPE
     ] as IOmniSciSQLEditorMimeBundle;
-
-    // Create a new OmniSciVega
-    this._widget = new OmniSciSQLEditor({
-      editorFactory: Private.editorFactory,
-      connectionData: data.connection
-    });
+    if (!data) {
+      return;
+    }
+    this._widget.content.connectionData = data.connection;
     this._widget.content.query = data.query || '';
-    (this.layout as StackedLayout).addWidget(this._widget);
-
     return Promise.resolve(void 0);
   }
 
-  private _widget: OmniSciSQLEditor | null = null;
+  private _widget: OmniSciSQLEditor;
 }
 
 /**
@@ -175,13 +177,33 @@ export const vegaRendererFactory: IRenderMime.IRendererFactory = {
 };
 
 /**
+ * An interface for a SQL editor renderer factory that also exposes
+ * a signal that fires when a renderer is created. We can subscribe
+ * to this signal in the regular extensions in order to do some extra
+ * work like setting up theming and completers. This is a slight abuse
+ * of the mimerenderer system.
+ */
+export interface ISQLEditorRendererFactory
+  extends IRenderMime.IRendererFactory {
+  rendererCreated: ISignal<void, RenderedOmniSciSQLEditor>;
+}
+/**
  * A mime renderer factory for omnisci-sql-editor data.
  */
-export const sqlEditorRendererFactory: IRenderMime.IRendererFactory = {
+export const sqlEditorRendererFactory: ISQLEditorRendererFactory = {
   safe: false,
   mimeTypes: [SQL_EDITOR_MIME_TYPE],
   defaultRank: 10,
-  createRenderer: options => new RenderedOmniSciSQLEditor()
+  createRenderer: options => {
+    const rendered = new RenderedOmniSciSQLEditor();
+    rendered.id = `sql-editor-mime-renderer-${++Private.id}`;
+    (sqlEditorRendererFactory.rendererCreated as Signal<
+      any,
+      RenderedOmniSciSQLEditor
+    >).emit(rendered);
+    return rendered;
+  },
+  rendererCreated: new Signal<any, RenderedOmniSciSQLEditor>({})
 };
 
 const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
@@ -203,8 +225,20 @@ export default extensions;
  * A namespace for private data.
  */
 namespace Private {
+  /**
+   * An incrementing DOM id for sql editor mime renderers.
+   * The completer needs a DOM ID for attaching, so we must add one here.
+   */
+  export let id = 0;
+
+  /**
+   * A default codemirror editor factory for the SQL editor.
+   * Since we cannot request the IEditorServices token with a mimeextension,
+   * this is a workaround.
+   */
   const editorServices = new CodeMirrorEditorFactory();
   export const editorFactory = editorServices.newInlineEditor;
+
   /**
    * Create an image node from a base64-encoded image.
    */

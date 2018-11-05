@@ -24,6 +24,8 @@ import { PromiseDelegate } from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
+import { Widget } from '@phosphor/widgets';
+
 import {
   IOmniSciConnectionData,
   OmniSciCompletionConnector,
@@ -33,6 +35,11 @@ import {
 import { OmniSciSQLEditor } from './grid';
 
 import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
+
+import {
+  RenderedOmniSciSQLEditor,
+  sqlEditorRendererFactory
+} from './mimeextensions';
 
 /**
  * The name of the factory that creates pdf widgets.
@@ -115,6 +122,7 @@ function activateOmniSciVegaViewer(
 ): void {
   const viewerNamespace = 'omnisci-viewer-widget';
   const gridNamespace = 'omnisci-grid-widget';
+  const mimeGridNamespace = 'omnisci-mime-grid-widget';
 
   const factory = new OmniSciVegaViewerFactory({
     name: FACTORY,
@@ -191,8 +199,44 @@ function activateOmniSciVegaViewer(
       grid.content.style = style;
       grid.content.renderer = renderer;
     });
+    mimeGridTracker.forEach(mimeGrid => {
+      mimeGrid.widget.content.style = style;
+      mimeGrid.widget.content.renderer = renderer;
+    });
   };
   themeManager.themeChanged.connect(updateThemes);
+
+  // This is a workaround for some of the limitations of mimerenderer extensions.
+  // We want to hook up the theming information and tab-completions to the SQL
+  // editor mime renderer, but that requires some full-extension machinery.
+  // So we extend the renderer factory with a "created" signal, and when that
+  // fires, do some extra work in the real extension.
+  const mimeGridTracker = new InstanceTracker<RenderedOmniSciSQLEditor>({
+    namespace: mimeGridNamespace
+  });
+  // Add the new renderer to an instance tracker when it is created.
+  // This will track whether that instance has focus or not.
+  sqlEditorRendererFactory.rendererCreated.connect((sender, mime) => {
+    mimeGridTracker.add(mime);
+  });
+  // When a new grid widget is added, hook up the machinery for
+  // completions and theming.
+  mimeGridTracker.widgetAdded.connect((sender, mime) => {
+    const editor = mime.widget.input.editor;
+    const connector = new OmniSciCompletionConnector(
+      mime.widget.content.connectionData
+    );
+    const parent = mime;
+    const handle = completionManager.register({ connector, editor, parent });
+
+    mime.widget.content.onModelChanged.connect(() => {
+      handle.connector = new OmniSciCompletionConnector(
+        mime.widget.content.connectionData
+      );
+    });
+    mime.widget.content.style = style;
+    mime.widget.content.renderer = renderer;
+  });
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
@@ -210,9 +254,15 @@ function activateOmniSciVegaViewer(
   // Add grid completer command.
   app.commands.addCommand(CommandIDs.invokeCompleter, {
     execute: () => {
-      const explorer = gridTracker.currentWidget;
-      if (explorer) {
-        return app.commands.execute('completer:invoke', { id: explorer.id });
+      let anchor: Widget | undefined;
+      const current = app.shell.currentWidget;
+      if (current && current === gridTracker.currentWidget) {
+        anchor = gridTracker.currentWidget;
+      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+        anchor = mimeGridTracker.currentWidget;
+      }
+      if (anchor) {
+        return app.commands.execute('completer:invoke', { id: anchor.id });
       }
     }
   });
@@ -220,9 +270,15 @@ function activateOmniSciVegaViewer(
   // Add grid completer select command.
   app.commands.addCommand(CommandIDs.selectCompleter, {
     execute: () => {
-      const explorer = gridTracker.currentWidget;
-      if (explorer) {
-        return app.commands.execute('completer:select', { id: explorer.id });
+      let anchor: Widget | undefined;
+      const current = app.shell.currentWidget;
+      if (current && current === gridTracker.currentWidget) {
+        anchor = gridTracker.currentWidget;
+      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+        anchor = mimeGridTracker.currentWidget;
+      }
+      if (anchor) {
+        return app.commands.execute('completer:select', { id: anchor.id });
       }
     }
   });
