@@ -585,6 +585,7 @@ namespace Private {
       model: new CodeEditor.Model(),
       factory: editorFactory
     });
+    queryEditor.editor.setOption('lineWrap', 'on');
     queryEditor.editor.model.value.text = '';
     queryEditor.editor.model.mimeType = 'text/x-sql';
 

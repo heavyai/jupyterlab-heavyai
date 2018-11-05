@@ -1,3 +1,7 @@
+:root {
+  --omnisci-toolbar-height: calc(72px + var(--jp-border-width));
+}
+
 .omnisci-ErrorMessage {
   background-color: var(--jp-rendermime-error-background);
   color: var(--jp-ui-font-color1);
@@ -22,6 +26,8 @@
 }
 
 .omnisci-OmniSciGrid {
+  top: var(--omnisci-toolbar-height) !important;
+  height: calc(100% - var(--omnisci-toolbar-height)) !important;
 }
 
 .omnisci-OmniSciGrid-content {
@@ -32,17 +38,26 @@
   min-height: 512px;
 }
 
+.jp-Notebook .jp-Cell .jp-OutputArea .omnisci-OmniSciGrid-content {
+  height: calc(100% - var(--omnisci-toolbar-height)) !important;
+}
+
 .jp-Toolbar.omnisci-OmniSci-toolbar {
-  align-items: center;
   justify-content: right;
-  height: 35px !important;
+  align-items: center;
+  height: var(--omnisci-toolbar-height) !important;
+}
+
+.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Toolbar-item {
+  height: auto;
 }
 
 .jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor {
-  flex-grow: 1;
+  flex: 1 1 auto;
   font-size: 1em;
   font-family: monospace;
   background-color: var(--jp-layout-color0);
+  border: var(--jp-border-width) solid var(--jp-border-color0);
 }
 
 .jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {
