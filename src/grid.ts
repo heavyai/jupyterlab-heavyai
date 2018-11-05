@@ -428,9 +428,9 @@ export class OmniSciTableModel extends DataModel {
           return Private.validateQuery(connection, this._query).then(() => {
             this.emitChanged({ type: 'model-reset' });
             if (this._streaming) {
-              this._fetchBlock(0);
+              return this._fetchBlock(0);
             } else {
-              this._fetchDataset();
+              return this._fetchDataset();
             }
           });
         })
@@ -447,7 +447,7 @@ export class OmniSciTableModel extends DataModel {
   /**
    * Fetch a block with a given index into memory.
    */
-  private _fetchBlock(index: number): void {
+  private _fetchBlock(index: number): Promise<void> {
     // If we are already fetching this block, do nothing.
     if (this._pending.has(index)) {
       return;
@@ -462,8 +462,8 @@ export class OmniSciTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
-    this._connectionPromise.then(connection => {
-      Private.makeQuery(connection, query).then((res: any) => {
+    return this._connectionPromise.then(connection => {
+      return Private.makeQuery(connection, query).then((res: any) => {
         this._pending.delete(index);
         if (!this._fieldNames.length) {
           this._fieldNames = res.fields.map(
@@ -526,9 +526,9 @@ export class OmniSciTableModel extends DataModel {
    * If we are not chunking the data, then just load the whole thing,
    * limited by DEFAULT_LIMIT.
    */
-  private _fetchDataset(): void {
-    this._connectionPromise.then(connection => {
-      Private.makeQuery(connection, this._query, {
+  private _fetchDataset(): Promise<void> {
+    return this._connectionPromise.then(connection => {
+      return Private.makeQuery(connection, this._query, {
         limit: DEFAULT_LIMIT
       }).then((res: any) => {
         this._fieldNames = res.fields.map((field: any) => field.name as string);
