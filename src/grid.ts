@@ -4,7 +4,7 @@ import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
 
 import { Message } from '@phosphor/messaging';
 
-import { StackedPanel, Widget } from '@phosphor/widgets';
+import { Panel, StackedPanel, Widget } from '@phosphor/widgets';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
@@ -127,7 +127,7 @@ export namespace OmniSciSQLEditor {
 /**
  * A widget that hosts a phosphor grid with a OmniSci dataset.
  */
-export class OmniSciGrid extends StackedPanel {
+export class OmniSciGrid extends Panel {
   /**
    * Construct a new OmniSciGrid widget.
    */

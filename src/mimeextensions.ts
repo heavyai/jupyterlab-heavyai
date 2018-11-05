@@ -2,7 +2,7 @@ import { JSONObject } from '@phosphor/coreutils';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
-import { StackedLayout, Widget } from '@phosphor/widgets';
+import { SingletonLayout, Widget } from '@phosphor/widgets';
 
 import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
 
@@ -117,12 +117,12 @@ export class RenderedOmniSciSQLEditor extends Widget
    */
   constructor() {
     super();
-    this.layout = new StackedLayout();
-    this.addClass('omnisci-RenderedOmniSciSqlEditor');
+    this.layout = new SingletonLayout();
+    this.addClass('omnisci-RenderedOmniSciSQLEditor');
     this._widget = new OmniSciSQLEditor({
       editorFactory: Private.editorFactory
     });
-    (this.layout as StackedLayout).addWidget(this._widget);
+    (this.layout as SingletonLayout).widget = this._widget;
   }
 
   /**
