@@ -4,7 +4,7 @@ import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
 
 import { Message } from '@phosphor/messaging';
 
-import { PanelLayout, StackedPanel, Widget } from '@phosphor/widgets';
+import { StackedPanel, Widget } from '@phosphor/widgets';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
@@ -127,7 +127,7 @@ export namespace OmniSciSQLEditor {
 /**
  * A widget that hosts a phosphor grid with a OmniSci dataset.
  */
-export class OmniSciGrid extends Widget {
+export class OmniSciGrid extends StackedPanel {
   /**
    * Construct a new OmniSciGrid widget.
    */
@@ -135,13 +135,12 @@ export class OmniSciGrid extends Widget {
     super();
     this.addClass('omnisci-OmniSciGrid');
     // Create the Layout
-    this.layout = new PanelLayout();
     this._content = new StackedPanel();
     this._content.addClass('omnisci-OmniSciGrid-content');
     this._error = new Widget({ node: document.createElement('pre') });
     this._error.addClass('omnisci-ErrorMessage');
-    (this.layout as PanelLayout).addWidget(this._content);
-    (this.layout as PanelLayout).addWidget(this._error);
+    this.addWidget(this._content);
+    this.addWidget(this._error);
 
     // Create the data model
     this._model = new OmniSciTableModel();
@@ -234,10 +233,12 @@ export class OmniSciGrid extends Widget {
       .updateModel(connectionData, query)
       .then(() => {
         this._content.setHidden(!hasQuery);
+        this._error.hide();
         this._error.node.textContent = '';
       })
       .catch((err: any) => {
         this._content.hide();
+        this._error.show();
         this._error.node.textContent = err ? err.message || err : 'Error';
       });
     this._onModelChanged.emit(void 0);

@@ -1,6 +1,6 @@
 import { JSONObject } from '@phosphor/coreutils';
 
-import { Widget } from '@phosphor/widgets';
+import { StackedLayout, Widget } from '@phosphor/widgets';
 
 import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
 
@@ -111,6 +111,15 @@ interface IOmniSciVegaMimeBundle extends JSONObject {
 export class RenderedOmniSciSQLEditor extends Widget
   implements IRenderMime.IRenderer {
   /**
+   * Construct the rendered sql editor widget.
+   */
+  constructor() {
+    super();
+    this.layout = new StackedLayout();
+    this.addClass('omnisci-RenderedOmniSciSqlEditor');
+  }
+
+  /**
    * Render OmniSci image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
@@ -132,7 +141,7 @@ export class RenderedOmniSciSQLEditor extends Widget
       connectionData: data.connection
     });
     this._widget.content.query = data.query || '';
-    this.node.appendChild(this._widget.node);
+    (this.layout as StackedLayout).addWidget(this._widget);
 
     return Promise.resolve(void 0);
   }
