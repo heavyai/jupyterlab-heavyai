@@ -1,5 +1,5 @@
-import extension from './extension';
+import plugins from './extension';
 
 import vegaLitePlugin from './extract-vega-lite';
 
-export default [extension, vegaLitePlugin];
+export default [...plugins, vegaLitePlugin];
