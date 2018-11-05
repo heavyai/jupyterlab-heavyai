@@ -39,14 +39,21 @@ export const IMAGE_MIME = 'image/png';
 export class RenderedOmniSciVega extends Widget
   implements IRenderMime.IRenderer {
   /**
+   * Construct the rendered vega widget.
+   */
+  constructor() {
+    super();
+    this.layout = new SingletonLayout();
+  }
+
+  /**
    * Render OmniSci image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
+    const layout = this.layout as SingletonLayout;
     // If we have already rendered a widget, dispose of it.
-    if (this._widget) {
-      this._widget.parent = null;
-      this._widget.dispose();
-      this._widget = null;
+    if (layout.widget) {
+      layout.widget = null;
     }
 
     // If there is png image data in the mimebundle,
@@ -54,7 +61,7 @@ export class RenderedOmniSciVega extends Widget
     // request to the backend.
     const imageData = model.data[IMAGE_MIME] as string;
     if (imageData) {
-      this.node.appendChild(Private.createImageNode(imageData));
+      layout.widget = new Widget({ node: Private.createImageNode(imageData) });
       return Promise.resolve(void 0);
     }
 
@@ -63,13 +70,13 @@ export class RenderedOmniSciVega extends Widget
     const { connection, vega, vegalite } = data;
 
     // Create a new OmniSciVega
-    this._widget = new OmniSciVega(
+    const vegaWidget = new OmniSciVega(
       vega || compileToVega(vegalite),
       connection,
       vegalite
     );
-    this.node.appendChild(this._widget.node);
-    return this._widget.renderedImage.then(data => {
+    layout.widget = vegaWidget;
+    return vegaWidget.renderedImage.then(data => {
       // Set the mime data for the png.
       // This allows us to re-use the image if
       // we are loading from disk.
@@ -83,8 +90,6 @@ export class RenderedOmniSciVega extends Widget
       return void 0;
     });
   }
-
-  private _widget: OmniSciVega | null = null;
 }
 
 /**
