@@ -4,7 +4,7 @@ import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
 
 import { Message } from '@phosphor/messaging';
 
-import { PanelLayout, StackedPanel, Widget } from '@phosphor/widgets';
+import { Panel, StackedPanel, Widget } from '@phosphor/widgets';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
@@ -29,14 +29,15 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class OmniSciExplorer extends MainAreaWidget<OmniSciGrid> {
+export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
   /**
-   * Construct a new OmniSciExplorer widget.
+   * Construct a new OmniSciSQLEditor widget.
    */
-  constructor(options: OmniSciExplorer.IOptions) {
+  constructor(options: OmniSciSQLEditor.IOptions) {
     const content = new OmniSciGrid(options.connectionData);
     const toolbar = Private.createToolbar(content, options.editorFactory);
     super({ content, toolbar });
+    this.addClass('omnisci-OmniSciSQLEditor');
   }
 
   /**
@@ -104,11 +105,11 @@ export class OmniSciExplorer extends MainAreaWidget<OmniSciGrid> {
 }
 
 /**
- * A namespace for OmniSciExplorer statics.
+ * A namespace for OmniSciSQLEditor statics.
  */
-export namespace OmniSciExplorer {
+export namespace OmniSciSQLEditor {
   /**
-   * Options for creating a new OmniSciExplorer.
+   * Options for creating a new OmniSciSQLEditor.
    */
   export interface IOptions {
     /**
@@ -126,20 +127,20 @@ export namespace OmniSciExplorer {
 /**
  * A widget that hosts a phosphor grid with a OmniSci dataset.
  */
-export class OmniSciGrid extends Widget {
+export class OmniSciGrid extends Panel {
   /**
    * Construct a new OmniSciGrid widget.
    */
   constructor(connectionData?: IOmniSciConnectionData) {
     super();
+    this.addClass('omnisci-OmniSciGrid');
     // Create the Layout
-    this.layout = new PanelLayout();
     this._content = new StackedPanel();
-    this._content.addClass('omnisci-OmniSciViewer-content');
+    this._content.addClass('omnisci-OmniSciGrid-content');
     this._error = new Widget({ node: document.createElement('pre') });
     this._error.addClass('omnisci-ErrorMessage');
-    (this.layout as PanelLayout).addWidget(this._content);
-    (this.layout as PanelLayout).addWidget(this._error);
+    this.addWidget(this._content);
+    this.addWidget(this._error);
 
     // Create the data model
     this._model = new OmniSciTableModel();
@@ -232,10 +233,12 @@ export class OmniSciGrid extends Widget {
       .updateModel(connectionData, query)
       .then(() => {
         this._content.setHidden(!hasQuery);
+        this._error.hide();
         this._error.node.textContent = '';
       })
       .catch((err: any) => {
         this._content.hide();
+        this._error.show();
         this._error.node.textContent = err ? err.message || err : 'Error';
       });
     this._onModelChanged.emit(void 0);
@@ -425,9 +428,9 @@ export class OmniSciTableModel extends DataModel {
           return Private.validateQuery(connection, this._query).then(() => {
             this.emitChanged({ type: 'model-reset' });
             if (this._streaming) {
-              this._fetchBlock(0);
+              return this._fetchBlock(0);
             } else {
-              this._fetchDataset();
+              return this._fetchDataset();
             }
           });
         })
@@ -444,7 +447,7 @@ export class OmniSciTableModel extends DataModel {
   /**
    * Fetch a block with a given index into memory.
    */
-  private _fetchBlock(index: number): void {
+  private _fetchBlock(index: number): Promise<void> {
     // If we are already fetching this block, do nothing.
     if (this._pending.has(index)) {
       return;
@@ -459,8 +462,8 @@ export class OmniSciTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
-    this._connectionPromise.then(connection => {
-      Private.makeQuery(connection, query).then((res: any) => {
+    return this._connectionPromise.then(connection => {
+      return Private.makeQuery(connection, query).then((res: any) => {
         this._pending.delete(index);
         if (!this._fieldNames.length) {
           this._fieldNames = res.fields.map(
@@ -523,9 +526,9 @@ export class OmniSciTableModel extends DataModel {
    * If we are not chunking the data, then just load the whole thing,
    * limited by DEFAULT_LIMIT.
    */
-  private _fetchDataset(): void {
-    this._connectionPromise.then(connection => {
-      Private.makeQuery(connection, this._query, {
+  private _fetchDataset(): Promise<void> {
+    return this._connectionPromise.then(connection => {
+      return Private.makeQuery(connection, this._query, {
         limit: DEFAULT_LIMIT
       }).then((res: any) => {
         this._fieldNames = res.fields.map((field: any) => field.name as string);
@@ -582,6 +585,7 @@ namespace Private {
       model: new CodeEditor.Model(),
       factory: editorFactory
     });
+    queryEditor.editor.setOption('lineWrap', 'on');
     queryEditor.editor.model.value.text = '';
     queryEditor.editor.model.mimeType = 'text/x-sql';
 

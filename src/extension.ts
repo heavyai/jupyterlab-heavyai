@@ -24,15 +24,22 @@ import { PromiseDelegate } from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
+import { Widget } from '@phosphor/widgets';
+
 import {
   IOmniSciConnectionData,
   OmniSciCompletionConnector,
   showConnectionDialog
 } from './connection';
 
-import { OmniSciExplorer } from './grid';
+import { OmniSciSQLEditor } from './grid';
 
 import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
+
+import {
+  RenderedOmniSciSQLEditor,
+  sqlEditorRendererFactory
+} from './mimeextensions';
 
 /**
  * The name of the factory that creates pdf widgets.
@@ -69,8 +76,72 @@ export const EXTENSIONS = [
   '.vega.json'
 ];
 
-const PLUGIN_ID = 'jupyterlab-omnisci:plugin';
+const CONNECTION_PLUGIN_ID = 'jupyterlab-omnisci:connection';
 
+const VEGA_PLUGIN_ID = 'jupyterlab-omnisci:vega';
+
+const SQL_EDITOR_PLUGIN_ID = 'jupyterlab-omnisci:sql-editor';
+
+const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
+
+/**
+ * The Omnisci connection handler extension.
+ */
+const omnisciConnectionPlugin: JupyterLabPlugin<void> = {
+  activate: activateOmniSciConnection,
+  id: CONNECTION_PLUGIN_ID,
+  requires: [IMainMenu, ISettingRegistry],
+  autoStart: true
+};
+
+function activateOmniSciConnection(
+  app: JupyterLab,
+  mainMenu: IMainMenu,
+  settingRegistry: ISettingRegistry
+): void {
+  let defaultConnectionData: IOmniSciConnectionData;
+
+  // Add an application-wide connection-setting command.
+  app.commands.addCommand(CommandIDs.setConnection, {
+    execute: () => {
+      showConnectionDialog(
+        'Set Default Omnisci Connection',
+        defaultConnectionData
+      ).then(connection => {
+        settingRegistry.set(
+          CONNECTION_PLUGIN_ID,
+          'defaultConnection',
+          connection
+        );
+      });
+    },
+    label: 'Set Default Omnisci Connection...'
+  });
+
+  // Update the default connection data for viewers that don't already
+  // have it defined.
+  const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
+    const connectionData = settings.get('defaultConnection').composite as
+      | IOmniSciConnectionData
+      | null
+      | undefined;
+    if (!connectionData) {
+      return;
+    }
+    defaultConnectionData = connectionData;
+  };
+
+  // Fetch the initial state of the settings.
+  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
+    .then(([settings]) => {
+      settings.changed.connect(onSettingsUpdated);
+      onSettingsUpdated(settings);
+    })
+    .catch((reason: Error) => {
+      console.error(reason.message);
+    });
+  mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
+}
 /**
  * The OmniSci-Vega file type.
  */
@@ -84,37 +155,21 @@ const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
 };
 
 /**
- * The Omnisci file handler extension.
+ * The Omnisci vega file handler extension.
  */
-const omnisciPlugin: JupyterLabPlugin<void> = {
+const omnisciVegaPlugin: JupyterLabPlugin<void> = {
   activate: activateOmniSciVegaViewer,
-  id: PLUGIN_ID,
-  requires: [
-    ICompletionManager,
-    IEditorServices,
-    ILauncher,
-    ILayoutRestorer,
-    IMainMenu,
-    ISettingRegistry,
-    IStateDB,
-    IThemeManager
-  ],
+  id: VEGA_PLUGIN_ID,
+  requires: [ILayoutRestorer, ISettingRegistry],
   autoStart: true
 };
 
 function activateOmniSciVegaViewer(
   app: JupyterLab,
-  completionManager: ICompletionManager,
-  editorServices: IEditorServices,
-  launcher: ILauncher,
   restorer: ILayoutRestorer,
-  mainMenu: IMainMenu,
-  settingRegistry: ISettingRegistry,
-  state: IStateDB,
-  themeManager: IThemeManager
+  settingRegistry: ISettingRegistry
 ): void {
   const viewerNamespace = 'omnisci-viewer-widget';
-  const gridNamespace = 'omnisci-grid-widget';
 
   const factory = new OmniSciVegaViewerFactory({
     name: FACTORY,
@@ -148,7 +203,67 @@ function activateOmniSciVegaViewer(
     }
   });
 
-  const gridTracker = new InstanceTracker<OmniSciExplorer>({
+  // Update the default connection data for viewers that don't already
+  // have it defined.
+  const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
+    const defaultConnectionData = settings.get('defaultConnection')
+      .composite as IOmniSciConnectionData | null | undefined;
+    if (!defaultConnectionData) {
+      return;
+    }
+    factory.defaultConnectionData = defaultConnectionData;
+    viewerTracker.forEach(viewer => {
+      if (!viewer.connectionData) {
+        viewer.connectionData = defaultConnectionData;
+      }
+    });
+  };
+
+  // Fetch the initial state of the settings.
+  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
+    .then(([settings]) => {
+      settings.changed.connect(onSettingsUpdated);
+      onSettingsUpdated(settings);
+    })
+    .catch((reason: Error) => {
+      console.error(reason.message);
+    });
+}
+
+/**
+ * The Omnisci SQL editor extension.
+ */
+const omnisciGridPlugin: JupyterLabPlugin<void> = {
+  activate: activateOmniSciGridViewer,
+  id: SQL_EDITOR_PLUGIN_ID,
+  requires: [
+    ICompletionManager,
+    IEditorServices,
+    ILauncher,
+    ILayoutRestorer,
+    IMainMenu,
+    ISettingRegistry,
+    IStateDB,
+    IThemeManager
+  ],
+  autoStart: true
+};
+
+function activateOmniSciGridViewer(
+  app: JupyterLab,
+  completionManager: ICompletionManager,
+  editorServices: IEditorServices,
+  launcher: ILauncher,
+  restorer: ILayoutRestorer,
+  mainMenu: IMainMenu,
+  settingRegistry: ISettingRegistry,
+  state: IStateDB,
+  themeManager: IThemeManager
+): void {
+  const gridNamespace = 'omnisci-grid-widget';
+  const mimeGridNamespace = 'omnisci-mime-grid-widget';
+
+  const gridTracker = new InstanceTracker<OmniSciSQLEditor>({
     namespace: gridNamespace
   });
 
@@ -191,28 +306,57 @@ function activateOmniSciVegaViewer(
       grid.content.style = style;
       grid.content.renderer = renderer;
     });
+    mimeGridTracker.forEach(mimeGrid => {
+      mimeGrid.widget.content.style = style;
+      mimeGrid.widget.content.renderer = renderer;
+    });
   };
   themeManager.themeChanged.connect(updateThemes);
 
-  // Add an application-wide connection-setting command.
-  app.commands.addCommand(CommandIDs.setConnection, {
-    execute: () => {
-      showConnectionDialog(
-        'Set Default Omnisci Connection',
-        factory.defaultConnectionData
-      ).then(connection => {
-        settingRegistry.set(PLUGIN_ID, 'defaultConnection', connection);
-      });
-    },
-    label: 'Set Default Omnisci Connection...'
+  // This is a workaround for some of the limitations of mimerenderer extensions.
+  // We want to hook up the theming information and tab-completions to the SQL
+  // editor mime renderer, but that requires some full-extension machinery.
+  // So we extend the renderer factory with a "created" signal, and when that
+  // fires, do some extra work in the real extension.
+  const mimeGridTracker = new InstanceTracker<RenderedOmniSciSQLEditor>({
+    namespace: mimeGridNamespace
+  });
+  // Add the new renderer to an instance tracker when it is created.
+  // This will track whether that instance has focus or not.
+  sqlEditorRendererFactory.rendererCreated.connect((sender, mime) => {
+    mimeGridTracker.add(mime);
+  });
+  // When a new grid widget is added, hook up the machinery for
+  // completions and theming.
+  mimeGridTracker.widgetAdded.connect((sender, mime) => {
+    const editor = mime.widget.input.editor;
+    const connector = new OmniSciCompletionConnector(
+      mime.widget.content.connectionData
+    );
+    const parent = mime;
+    const handle = completionManager.register({ connector, editor, parent });
+
+    mime.widget.content.onModelChanged.connect(() => {
+      handle.connector = new OmniSciCompletionConnector(
+        mime.widget.content.connectionData
+      );
+    });
+    mime.widget.content.style = style;
+    mime.widget.content.renderer = renderer;
   });
 
   // Add grid completer command.
   app.commands.addCommand(CommandIDs.invokeCompleter, {
     execute: () => {
-      const explorer = gridTracker.currentWidget;
-      if (explorer) {
-        return app.commands.execute('completer:invoke', { id: explorer.id });
+      let anchor: Widget | undefined;
+      const current = app.shell.currentWidget;
+      if (current && current === gridTracker.currentWidget) {
+        anchor = gridTracker.currentWidget;
+      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+        anchor = mimeGridTracker.currentWidget;
+      }
+      if (anchor) {
+        return app.commands.execute('completer:invoke', { id: anchor.id });
       }
     }
   });
@@ -220,9 +364,15 @@ function activateOmniSciVegaViewer(
   // Add grid completer select command.
   app.commands.addCommand(CommandIDs.selectCompleter, {
     execute: () => {
-      const explorer = gridTracker.currentWidget;
-      if (explorer) {
-        return app.commands.execute('completer:select', { id: explorer.id });
+      let anchor: Widget | undefined;
+      const current = app.shell.currentWidget;
+      if (current && current === gridTracker.currentWidget) {
+        anchor = gridTracker.currentWidget;
+      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+        anchor = mimeGridTracker.currentWidget;
+      }
+      if (anchor) {
+        return app.commands.execute('completer:select', { id: anchor.id });
       }
     }
   });
@@ -239,18 +389,20 @@ function activateOmniSciVegaViewer(
     selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-enabled`
   });
 
+  let defaultConnectionData: IOmniSciConnectionData | undefined;
+
   app.commands.addCommand(CommandIDs.newGrid, {
-    label: 'OmniSci Explorer',
+    label: 'OmniSci SQL Editor',
     iconClass: 'omnisci-OmniSci-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
-      const grid = new OmniSciExplorer({
+      const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        connectionData: factory.defaultConnectionData
+        connectionData: defaultConnectionData
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;
-      grid.title.label = `OmniSci Explorer ${Private.id}`;
+      grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
       gridTracker.add(grid);
@@ -263,7 +415,6 @@ function activateOmniSciVegaViewer(
     }
   });
   mainMenu.fileMenu.newMenu.addGroup([{ command: CommandIDs.newGrid }], 50);
-  mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
 
   launcher.add({
     category: 'Other',
@@ -274,17 +425,14 @@ function activateOmniSciVegaViewer(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const defaultConnectionData = settings.get('defaultConnection')
-      .composite as IOmniSciConnectionData | null | undefined;
-    if (!defaultConnectionData) {
+    const connectionData = settings.get('defaultConnection').composite as
+      | IOmniSciConnectionData
+      | null
+      | undefined;
+    if (!connectionData) {
       return;
     }
-    factory.defaultConnectionData = defaultConnectionData;
-    viewerTracker.forEach(viewer => {
-      if (!viewer.connectionData) {
-        viewer.connectionData = defaultConnectionData;
-      }
-    });
+    defaultConnectionData = connectionData;
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
         grid.content.connectionData = defaultConnectionData;
@@ -294,7 +442,7 @@ function activateOmniSciVegaViewer(
 
   const settingsLoaded = new PromiseDelegate<void>();
   // Fetch the initial state of the settings.
-  Promise.all([settingRegistry.load(PLUGIN_ID), app.restored])
+  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
     .then(([settings]) => {
       settings.changed.connect(onSettingsUpdated);
       onSettingsUpdated(settings);
@@ -303,10 +451,45 @@ function activateOmniSciVegaViewer(
     .catch((reason: Error) => {
       console.error(reason.message);
     });
+}
+
+/**
+ * The Omnisci inital notebook extension.
+ */
+const omnisciInitialNotebookPlugin: JupyterLabPlugin<void> = {
+  activate: activateOmniSciInitialNotebook,
+  id: INITIAL_NOTEBOOK_PLUGIN_ID,
+  requires: [ISettingRegistry, IStateDB],
+  autoStart: true
+};
+
+function activateOmniSciInitialNotebook(
+  app: JupyterLab,
+  settingRegistry: ISettingRegistry,
+  state: IStateDB
+): void {
+  const settingsLoaded = new PromiseDelegate<void>();
+  let defaultConnectionData: IOmniSciConnectionData | undefined;
+  // Fetch the initial state of the settings.
+  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
+    .then(([settings]) => {
+      const connectionData = settings.get('defaultConnection').composite as
+        | IOmniSciConnectionData
+        | null
+        | undefined;
+      if (!connectionData) {
+        return;
+      }
+      defaultConnectionData = connectionData;
+      settingsLoaded.resolve(void 0);
+    })
+    .catch((reason: Error) => {
+      console.error(reason.message);
+    });
 
   // Fetch the state, which is used to determine whether to create
   // an initial populated notebook.
-  Promise.all([state.fetch(PLUGIN_ID), settingsLoaded]).then(
+  Promise.all([state.fetch(INITIAL_NOTEBOOK_PLUGIN_ID), settingsLoaded]).then(
     async ([result]) => {
       // Determine whether to launch an initial notebook, then immediately
       // set that value to false. This state setting is intended to be set
@@ -315,7 +498,7 @@ function activateOmniSciVegaViewer(
       if (result) {
         initial = !!(result as { initialNotebook: boolean }).initialNotebook;
       }
-      state.save(PLUGIN_ID, { initialNotebook: false });
+      state.save(INITIAL_NOTEBOOK_PLUGIN_ID, { initialNotebook: false });
 
       if (initial) {
         // Create the notebook.
@@ -337,7 +520,7 @@ function activateOmniSciVegaViewer(
         const injectCode = (sender: NotebookModel) => {
           if (notebook.content.model.cells.length === 1) {
             let value = Private.IBIS_TEMPLATE;
-            const connection = factory.defaultConnectionData;
+            const connection = defaultConnectionData;
             if (!connection) {
               return;
             }
@@ -360,8 +543,13 @@ function activateOmniSciVegaViewer(
 /**
  * Export the plugin as default.
  */
-const plugin: JupyterLabPlugin<any> = omnisciPlugin;
-export default plugin;
+const plugins: JupyterLabPlugin<any>[] = [
+  omnisciConnectionPlugin,
+  omnisciVegaPlugin,
+  omnisciGridPlugin,
+  omnisciInitialNotebookPlugin
+];
+export default plugins;
 
 /**
  * A namespace for private data.
