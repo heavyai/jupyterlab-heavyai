@@ -82,7 +82,7 @@ export class OmniSciVega extends Widget {
                   null,
                   2
                 )}`;
-                this._rendered.reject(error.message);
+                this._rendered.reject(error);
               } else {
                 // Set the image data.
                 this._setImageData(result.image);

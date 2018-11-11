@@ -76,19 +76,21 @@ export class RenderedOmniSciVega extends Widget
       vegalite
     );
     layout.widget = vegaWidget;
-    return vegaWidget.renderedImage.then(data => {
-      // Set the mime data for the png.
-      // This allows us to re-use the image if
-      // we are loading from disk.
-      model.setData({
-        data: {
-          'image/png': data,
-          ...model.data
-        },
-        metadata: model.metadata
-      });
-      return void 0;
-    });
+    return vegaWidget.renderedImage
+      .then(data => {
+        // Set the mime data for the png.
+        // This allows us to re-use the image if
+        // we are loading from disk.
+        model.setData({
+          data: {
+            'image/png': data,
+            ...model.data
+          },
+          metadata: model.metadata
+        });
+        return void 0;
+      })
+      .catch(() => void 0); // Catch errors, the default error rendering is OK.
   }
 }
 
