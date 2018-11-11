@@ -18,7 +18,7 @@ from IPython.display import display
 import IPython.display
 
 
-class OmniSciBackendRenderer:
+class OmniSciVegaRenderer:
     """
     Class that produces a mimebundle that the notebook
     omnisci renderer can understand.
@@ -74,7 +74,7 @@ def render_vega(connection, vega):
 
 
 @register_cell_magic
-def omnisci(line, cell):
+def omnisci_vega(line, cell):
     """
     Cell magic for rendering vega produced by the omnisci backend.
 
@@ -85,11 +85,11 @@ def omnisci(line, cell):
     """
     connection_data = ast.literal_eval(line)
     vega = yaml.load(cell)
-    display(OmniSciBackendRenderer(connection_data, vega))
+    display(OmniSciVegaRenderer(connection_data, vega))
 
 
 @register_cell_magic
-def omnisci_vl(line, cell):
+def omnisci_vegalite(line, cell):
     """
     Cell magic for rendering vega lite produced by the omnisci backend.
 
@@ -100,7 +100,7 @@ def omnisci_vl(line, cell):
     """
     connection_data = ast.literal_eval(line)
     vl = yaml.load(cell)
-    display(OmniSciBackendRenderer(connection_data, vl_data=vl))
+    display(OmniSciVegaRenderer(connection_data, vl_data=vl))
 
 
 def omnisci_mimetype(spec, conn):
@@ -125,15 +125,13 @@ def omnisci_mimetype(spec, conn):
     }
 
 
-if alt:
-    alt.renderers.register("omnisci", omnisci_mimetype)
 
-
+# A comm id used to establish a link between python code
+# and frontend vega-lite transforms.
 COMM_ID = "extract-vega-lite"
 
 
 def extract_spec(spec, callback):
-
     my_comm = Comm(target_name=COMM_ID, data=spec)
 
     @my_comm.on_msg
@@ -143,26 +141,43 @@ def extract_spec(spec, callback):
 
 class VegaLite(IPython.display.DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
-        from altair.vegalite.v2.display import default_renderer
+        if alt:
+            from altair.vegalite.v2.display import default_renderer
+            return default_renderer(self.data)
+        else:
+            return {"text/plain": ""}
 
-        return default_renderer(self.data)
 
-
+# A placeholder vega spec that will be replaced once the
+# transform has been completed and returned via the comm channel.
 EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 
 
 def extract_vega_renderer(spec):
+    """
+    Create a placeholder spec and return it to the frontend.
+    Also communicate with the frontend vega transform functionality
+    over a comm channel. Once it has returned, update the placeholder
+    with the actual vega spec.
+    """
     display_id = display(VegaLite(EMPTY_SPEC), display_id=True)
     extract_spec(spec, lambda s: display_id.update(VegaLite(s)))
     return {"text/plain": ""}
 
 
 def extract_vega_renderer_json(spec):
+    """
+    Create a placeholder spec and return it to the frontend.
+    Also communicate with the frontend vega transform functionality
+    over a comm channel. Once it has returned, update the placeholder
+    with the actual vega spec.
+    """
     display_id = display(IPython.display.JSON({}), display_id=True)
     extract_spec(spec, lambda s: display_id.update(IPython.display.JSON(s)))
     return {"text/plain": ""}
 
 
 if alt:
+    alt.renderers.register("omnisci", omnisci_mimetype)
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
