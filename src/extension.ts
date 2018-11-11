@@ -527,7 +527,7 @@ function activateOmniSciInitialNotebook(
             value = value.replace('{{host}}', connection.host);
             value = value.replace('{{protocol}}', connection.protocol);
             value = value.replace('{{password}}', connection.password);
-            value = value.replace('{{database}}', connection.dbName);
+            value = value.replace('{{database}}', connection.dbname);
             value = value.replace('{{user}}', connection.user);
             value = value.replace('{{port}}', connection.port);
             notebook.content.model.cells.get(0).value.text = value;

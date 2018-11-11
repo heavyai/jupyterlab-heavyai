@@ -46,7 +46,7 @@ export interface IOmniSciConnectionData extends JSONObject {
   /**
    * The database name.
    */
-  dbName: string;
+  dbname: string;
 
   /**
    * The password for the connection.
@@ -85,7 +85,7 @@ export function makeConnection(
       .protocol(data.protocol)
       .host(data.host)
       .port(data.port)
-      .dbName(data.dbName)
+      .dbName(data.dbname)
       .user(data.user)
       .password(data.password)
       .connect((error: any, con: any) => {
@@ -124,7 +124,7 @@ export class OmniSciConnectionDialog extends Widget
     if (oldData) {
       this._user.value = oldData.user;
       this._password.value = oldData.password;
-      this._database.value = oldData.dbName;
+      this._database.value = oldData.dbname;
       this._host.value = oldData.host;
       this._protocol.value = oldData.protocol;
       this._port.value = oldData.port;
@@ -161,7 +161,7 @@ export class OmniSciConnectionDialog extends Widget
     return {
       user: this._user.value,
       password: this._password.value,
-      dbName: this._database.value,
+      dbname: this._database.value,
       host: this._host.value,
       protocol: this._protocol.value,
       port: this._port.value
