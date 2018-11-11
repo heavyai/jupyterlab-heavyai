@@ -20,7 +20,7 @@ import IPython.display
 
 class OmniSciVegaRenderer:
     """
-    Class that produces a mimebundle that the notebook
+    Class that produces a vega mimebundle that the notebook
     omnisci renderer can understand.
     """
 
@@ -40,12 +40,12 @@ class OmniSciVegaRenderer:
         data: dict
             Vega data to render.
         
-        data: dict
+        vl_data: dict
             Vega lite data to render.
         """
         if (not (data or vl_data)) or (data and vl_data):
             raise RuntimeError("Either vega or vega lite data must be specified")
-        self.connection = connection
+        self.connection = _make_connection(connection)
         self.data = data
         self.vl_data = vl_data
 
@@ -62,6 +62,38 @@ class OmniSciVegaRenderer:
             bundle["vegalite"] = self.vl_data
         return {"application/vnd.omnisci.vega+json": bundle}
 
+class OmniSciSQLEditorRenderer:
+    """
+    Class that produces a sql editor mimebundle that the notebook
+    omnisci renderer can understand.
+    """
+
+    def __init__(self, connection, query):
+        """
+        Initialize the SQL editor.
+
+        Parameters
+        =========
+
+        connection: dict
+            A dictionary containing the connection data for the omnisci
+            server. Must include 'user', 'password', 'host', 'port',
+            'dbname', and 'protocol'
+
+        query: string
+            An initial query for the SQL editor.
+        """
+        self.connection = _make_connection(connection)
+        self.query = query
+
+    def _repr_mimebundle_(self, include=None, exclude=None):
+        """
+        Return a mimebundle with 'application/vnd.omnisci.vega+json'
+        data, which is a custom mimetype for rendering omnisci vega
+        in Jupyter notebooks.
+        """
+        data = {"connection": self.connection, "query": self.query}
+        return {"application/vnd.omnisci.sqleditor+json": data}
 
 @register_cell_magic
 def omnisci_vega(line, cell):
@@ -93,6 +125,19 @@ def omnisci_vegalite(line, cell):
     display(OmniSciVegaRenderer(connection_data, vl_data=vl))
 
 
+@register_cell_magic
+def omnisci_sqleditor(line, cell):
+    """
+    Cell magic for rendering a SQL editor. 
+
+    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    where `connection_data` is the dictionary containing the connection
+    data for the OmniSci server. The rest of the cell should be 
+    a SQL query for the initial value of the editor.
+    """
+    connection_data = ast.literal_eval(line)
+    display(OmniSciSQLEditorRenderer(connection_data, cell))
+
 def omnisci_mimetype(spec, conn):
     """
     Returns a omnisci vega lite mimetype, assuming that the URL
@@ -108,7 +153,7 @@ def omnisci_mimetype(spec, conn):
                 "protocol": conn.protocol,
                 "port": conn.port,
                 "user": conn.user,
-                "dbName": conn.db_name,
+                "dbname": conn.db_name,
                 "password": conn.password,
             },
         }
@@ -171,3 +216,31 @@ if alt:
     alt.renderers.register("omnisci", omnisci_mimetype)
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
+
+def _make_connection(connection):
+    """
+    Given a connection client, return a dictionary with connection
+    data for the client. If it is already a dictionary, return that.
+
+    Works for Ibis clients, pymapd clients, and dictionaries.
+    """
+    if type(connection) == 'ibis.mapd.client.MapDClient':
+        return dict(
+                host=connection.host,
+                port=connection.port,
+                dbname=connection.db_name,
+                password=connection.password,
+                protocol=connection.protocol,
+                user=connection.user
+                )
+    elif type(connection) == 'pymapd.connection.Connection':
+        return dict(
+                host=connection._host,
+                port=connection._port,
+                dbname=connection._dbname,
+                password=connection._password,
+                protocol=connection._protocol,
+                user=connection._user
+                )
+    else:
+        return connection
