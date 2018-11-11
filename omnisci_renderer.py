@@ -63,16 +63,6 @@ class OmniSciVegaRenderer:
         return {"application/vnd.omnisci.vega+json": bundle}
 
 
-def render_vega(connection, vega):
-    _widget_count = 1
-    nonce = str(uuid.uuid1())
-    result = connection._client.render_vega(
-        connection._session, _widget_count, vega, 1, nonce
-    )
-    data = base64.b64encode(result.image).decode()
-    return vdom.img([], src=f"data:image/png;base64,{data}")
-
-
 @register_cell_magic
 def omnisci_vega(line, cell):
     """
