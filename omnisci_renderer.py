@@ -6,6 +6,8 @@ import uuid
 import yaml
 
 import vdom
+import ibis
+import pymapd
 
 try:
     import altair as alt
@@ -32,10 +34,11 @@ class OmniSciVegaRenderer:
         Parameters
         =========
 
-        connection: dict
+        connection: dict or ibis connection
             A dictionary containing the connection data for the omnisci
             server. Must include 'user', 'password', 'host', 'port',
-            'dbname', and 'protocol'
+            'dbname', and 'protocol'.
+            Alternatively, an ibis connection to the omnisci databse.
 
         data: dict
             Vega data to render.
@@ -68,23 +71,27 @@ class OmniSciSQLEditorRenderer:
     omnisci renderer can understand.
     """
 
-    def __init__(self, connection, query):
+    def __init__(self, connection, query=''):
         """
         Initialize the SQL editor.
 
         Parameters
         =========
 
-        connection: dict
+        connection: dict or ibis connection
             A dictionary containing the connection data for the omnisci
             server. Must include 'user', 'password', 'host', 'port',
-            'dbname', and 'protocol'
+            'dbname', and 'protocol'.
+            Alternatively, an ibis connection to the omnisci databse.
 
-        query: string
+        query: string or ibis expression.
             An initial query for the SQL editor.
         """
         self.connection = _make_connection(connection)
-        self.query = query
+        if isinstance(query, str):
+            self.query = query
+        elif hasattr(query, 'compile') and hasattr(query.compile, '__call__'):
+            self.query = query.compile()
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """
@@ -222,9 +229,9 @@ def _make_connection(connection):
     Given a connection client, return a dictionary with connection
     data for the client. If it is already a dictionary, return that.
 
-    Works for Ibis clients, pymapd clients, and dictionaries.
+    Works for Ibis clients, pymapd connections, and dictionaries.
     """
-    if type(connection) == 'ibis.mapd.client.MapDClient':
+    if isinstance(connection, ibis.mapd.MapDClient):
         return dict(
                 host=connection.host,
                 port=connection.port,
@@ -233,7 +240,7 @@ def _make_connection(connection):
                 protocol=connection.protocol,
                 user=connection.user
                 )
-    elif type(connection) == 'pymapd.connection.Connection':
+    elif isinstance(connection, pymapd.Connection):
         return dict(
                 host=connection._host,
                 port=connection._port,

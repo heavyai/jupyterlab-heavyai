@@ -22,12 +22,12 @@ setup(
         'vdom',
         'pymapd',
         'pyyaml',
-        'jupyterlab'
+        'jupyterlab',
+        'ibis-framework',
     ],  # Optional
     extras_require={  # Optional
         'altair': [
             'altair',
-            'ibis-framework'
         ],
     },
 )
