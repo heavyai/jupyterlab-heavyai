@@ -65,13 +65,14 @@ class OmniSciVegaRenderer:
             bundle["vegalite"] = self.vl_data
         return {"application/vnd.omnisci.vega+json": bundle}
 
+
 class OmniSciSQLEditorRenderer:
     """
     Class that produces a sql editor mimebundle that the notebook
     omnisci renderer can understand.
     """
 
-    def __init__(self, connection, query=''):
+    def __init__(self, connection, query=""):
         """
         Initialize the SQL editor.
 
@@ -90,7 +91,7 @@ class OmniSciSQLEditorRenderer:
         self.connection = _make_connection(connection)
         if isinstance(query, str):
             self.query = query
-        elif hasattr(query, 'compile') and hasattr(query.compile, '__call__'):
+        elif hasattr(query, "compile") and hasattr(query.compile, "__call__"):
             self.query = query.compile()
 
     def _repr_mimebundle_(self, include=None, exclude=None):
@@ -101,6 +102,7 @@ class OmniSciSQLEditorRenderer:
         """
         data = {"connection": self.connection, "query": self.query}
         return {"application/vnd.omnisci.sqleditor+json": data}
+
 
 @register_cell_magic
 def omnisci_vega(line, cell):
@@ -145,6 +147,7 @@ def omnisci_sqleditor(line, cell):
     connection_data = ast.literal_eval(line)
     display(OmniSciSQLEditorRenderer(connection_data, cell))
 
+
 def omnisci_mimetype(spec, conn):
     """
     Returns a omnisci vega lite mimetype, assuming that the URL
@@ -167,7 +170,6 @@ def omnisci_mimetype(spec, conn):
     }
 
 
-
 # A comm id used to establish a link between python code
 # and frontend vega-lite transforms.
 COMM_ID = "extract-vega-lite"
@@ -185,6 +187,7 @@ class VegaLite(IPython.display.DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
         if alt:
             from altair.vegalite.v2.display import default_renderer
+
             return default_renderer(self.data)
         else:
             return {"text/plain": ""}
@@ -224,6 +227,7 @@ if alt:
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
 
+
 def _make_connection(connection):
     """
     Given a connection client, return a dictionary with connection
@@ -233,21 +237,21 @@ def _make_connection(connection):
     """
     if isinstance(connection, ibis.mapd.MapDClient):
         return dict(
-                host=connection.host,
-                port=connection.port,
-                dbname=connection.db_name,
-                password=connection.password,
-                protocol=connection.protocol,
-                user=connection.user
-                )
+            host=connection.host,
+            port=connection.port,
+            dbname=connection.db_name,
+            password=connection.password,
+            protocol=connection.protocol,
+            user=connection.user,
+        )
     elif isinstance(connection, pymapd.Connection):
         return dict(
-                host=connection._host,
-                port=connection._port,
-                dbname=connection._dbname,
-                password=connection._password,
-                protocol=connection._protocol,
-                user=connection._user
-                )
+            host=connection._host,
+            port=connection._port,
+            dbname=connection._dbname,
+            password=connection._password,
+            protocol=connection._protocol,
+            user=connection._user,
+        )
     else:
         return connection
