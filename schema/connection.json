@@ -12,7 +12,7 @@
         "password": {
           "type": "string"
         },
-        "dbName": {
+        "dbname": {
           "type": "string"
         },
         "host": {
@@ -37,7 +37,7 @@
       "default": {
         "user": "",
         "password": "",
-        "dbName": "",
+        "dbname": "",
         "host": "",
         "protocol": "",
         "port": ""

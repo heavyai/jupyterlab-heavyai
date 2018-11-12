@@ -14,3 +14,5 @@ __pycache__
 .config
 .mypy_cache
 .vscode
+*.egg-info
+**/altair-data-*
