@@ -1,6 +1,6 @@
-# jupyterlab-mapd
+# jupyterlab-omnisci
 
-Connect to MapD, query their databases, and render the MapD-flavored Vega specification,
+Connect to OmniSci, query their databases, and render the OmniSci-flavored Vega specification,
 all within JupyterLab
 
 ![example](./screenshot.png)
@@ -9,13 +9,13 @@ all within JupyterLab
 
 Requirements:
 
-- JupyterLab v0.34
-- Access to a MapD server
+- JupyterLab v0.35
+- Access to an OmniSci Immerse server
 
-To install the `jupyterlab-mapd` extension, run the following in a terminal:
+To install the `jupyterlab-omnisci` extension, run the following in a terminal:
 
 ```bash
-jupyter labextension install jupyterlab-mapd
+jupyter labextension install jupyterlab-omnisci
 ```
 
 ## Installing from source
@@ -23,8 +23,8 @@ jupyter labextension install jupyterlab-mapd
 To install from source, run the following in a terminal:
 
 ```bash
-git clone https://github.com/Quansight/jupyter-mapd-renderer
-cd jupyter-mapd-renderer
+git clone https://github.com/Quansight/jupyterlab-omnisci
+cd jupyterlab-omnisci
 jlpm install
 jlpm run build
 jupyter labextension install .
@@ -41,8 +41,8 @@ In JupyterLab, click **Settings > Advanced Settings** to modify the default data
 You can start developing on this locally with Docker
 
 ```bash
-git clone https://github.com/Quansight/jupyter-mapd-renderer
-cd jupyter-mapd-renderer
+git clone https://github.com/Quansight/jupyterlab-omnisci
+cd jupyterlab-omnisci
 docker-compose up
 ```
 
