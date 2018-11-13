@@ -281,10 +281,9 @@ def extract_vega_renderer_ibis(spec):
     # spec["data"] = {"values": []}
 
     def spec_transform(extracted_spec):
-        _curent_ibis_expression, extract_spec = _curent_ibis_expression(
-            _curent_ibis_expression, extract_spec
-        )
-        df = _curent_ibis_expression.execute()
+        global _curent_ibis_expression
+        expr, extracted_spec = update_spec(_curent_ibis_expression, extracted_spec)
+        df = expr.execute()
         extracted_spec["data"] = alt.utils.data.to_json(df)
         return extracted_spec
 
