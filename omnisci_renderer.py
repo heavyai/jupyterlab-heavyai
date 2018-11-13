@@ -13,6 +13,8 @@ try:
     import altair as alt
 except ImportError:
     alt = None
+else:
+    import pandas as pd
 
 from ipykernel.comm import Comm
 from IPython.core.magic import register_cell_magic
@@ -197,7 +199,8 @@ class VegaLite(IPython.display.DisplayObject):
 # transform has been completed and returned via the comm channel.
 EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 
-def extract_vega_renderer(spec):
+
+def extract_vega_renderer(spec, spec_transform=lambda s: s):
     """
     Create a placeholder spec and return it to the frontend.
     Also communicate with the frontend vega transform functionality
@@ -205,11 +208,11 @@ def extract_vega_renderer(spec):
     with the actual vega spec.
     """
     display_id = display(VegaLite(EMPTY_SPEC), display_id=True)
-    extract_spec(spec, lambda s: display_id.update(VegaLite(s)))
+    extract_spec(spec, lambda s: display_id.update(VegaLite(spec_transform(s))))
     return {"text/plain": ""}
 
 
-def extract_vega_renderer_json(spec):
+def extract_vega_renderer_json(spec, spec_transform=lambda s: s):
     """
     Create a placeholder spec and return it to the frontend.
     Also communicate with the frontend vega transform functionality
@@ -217,8 +220,17 @@ def extract_vega_renderer_json(spec):
     with the actual vega spec.
     """
     display_id = display(IPython.display.JSON({}), display_id=True)
-    extract_spec(spec, lambda s: display_id.update(IPython.display.JSON(s)))
+    extract_spec(
+        spec, lambda s: display_id.update(IPython.display.JSON(spec_transform(s)))
+    )
     return {"text/plain": ""}
+
+
+# Currently we save the ibix expression of the current query globally.
+# Ideally, we should be able to pass this through, but it is currently
+# hard because the data has to be a str or number of values, not an ibis expression.
+_curent_ibis_expression = None
+
 
 def monkeypatch_altair():
     """
@@ -228,22 +240,65 @@ def monkeypatch_altair():
     original_chart_init = alt.Chart.__init__
 
     def updated_chart_init(self, data=None, *args, **kwargs):
+        global _curent_ibis_expression
         if data is not None and isinstance(data, ibis.Expr):
-            new_data = data.execute()
-            new_data._ibis = data 
-            data = new_data
+            _curent_ibis_expression = data
+            data = data.execute()
         final = original_chart_init(self, data=data, *args, **kwargs)
         return final
 
     alt.Chart.__init__ = updated_chart_init
 
 
+# def as_ibis(data):
+#     """
+#     An altair data transformer that takes in a data
+#     """
+#     if not isinstance(data, pd.DataFrame) or not hasattr(data, "_ibis"):
+#         raise NotImplementedError(f"Data should be pandas DF with _ibis attr not {type(data)} ")
+#         # return alt.utils.data.to_json(data)
+#     return data._ibis
+
+
+def update_spec(ibis_expression, spec):
+    """
+    Takes in an ibis expression and a spec and should return an updated ibis expression
+    and updated spec
+
+    TODO: Fill this in by extracting transforms
+    """
+    return ibis_expression, spec
+
+
+def extract_vega_renderer_ibis(spec):
+    # expr = spec["data"]
+
+    # # if we the data isn't an expression, just render this normall
+    # if not isinstance(expr, ibis.Expr):
+    #     # return extract_vega_renderer_json(spec)
+    #     raise NotImplementedError(f"Data on spec should be ibis expression not {type(expr)} ")
+
+    # spec["data"] = {"values": []}
+
+    def spec_transform(extracted_spec):
+        _curent_ibis_expression, extract_spec = _curent_ibis_expression(
+            _curent_ibis_expression, extract_spec
+        )
+        df = _curent_ibis_expression.execute()
+        extracted_spec["data"] = alt.utils.data.to_json(df)
+        return extracted_spec
+
+    return extract_vega_renderer(spec, spec_transform=spec_transform)
+
+
 if alt:
     alt.renderers.register("omnisci", omnisci_mimetype)
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
-
+    alt.renderers.register("extract-ibis", extract_vega_renderer_ibis)
+    # alt.data_transformers.register("ibis-json", as_ibis)
     monkeypatch_altair()
+
 
 def _make_connection(connection):
     """
