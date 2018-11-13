@@ -197,7 +197,6 @@ class VegaLite(IPython.display.DisplayObject):
 # transform has been completed and returned via the comm channel.
 EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 
-
 def extract_vega_renderer(spec):
     """
     Create a placeholder spec and return it to the frontend.
@@ -221,12 +220,30 @@ def extract_vega_renderer_json(spec):
     extract_spec(spec, lambda s: display_id.update(IPython.display.JSON(s)))
     return {"text/plain": ""}
 
+def monkeypatch_altair():
+    """
+    Needed until https://github.com/altair-viz/altair/issues/843 is fixed to let Altair
+    handle ibis inputs
+    """
+    original_chart_init = alt.Chart.__init__
+
+    def updated_chart_init(self, data=None, *args, **kwargs):
+        if data is not None and isinstance(data, ibis.Expr):
+            new_data = data.execute()
+            new_data._ibis = data 
+            data = new_data
+        final = original_chart_init(self, data=data, *args, **kwargs)
+        return final
+
+    alt.Chart.__init__ = updated_chart_init
+
 
 if alt:
     alt.renderers.register("omnisci", omnisci_mimetype)
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
 
+    monkeypatch_altair()
 
 def _make_connection(connection):
     """
