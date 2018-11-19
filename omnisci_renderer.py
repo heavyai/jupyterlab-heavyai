@@ -250,41 +250,47 @@ def monkeypatch_altair():
     alt.Chart.__init__ = updated_chart_init
 
 
-# def as_ibis(data):
-#     """
-#     An altair data transformer that takes in a data
-#     """
-#     if not isinstance(data, pd.DataFrame) or not hasattr(data, "_ibis"):
-#         raise NotImplementedError(f"Data should be pandas DF with _ibis attr not {type(data)} ")
-#         # return alt.utils.data.to_json(data)
-#     return data._ibis
+def translate_op(op: str) -> str:
+    return {"mean": "mean", "average": "mean"}.get(op, op)
 
 
-def update_spec(ibis_expression, spec):
+def vl_aggregate_to_grouping_expr(expr: ibis.Expr, a: dict) -> ibis.Expr:
+    if "field" in a:
+        expr = expr["field"]
+    op = translate_op(a["op"])
+    expr = getattr(expr, op)()
+    return expr.name(a["as"])
+
+
+def update_spec(expr: ibis.Expr, spec: dict):
     """
     Takes in an ibis expression and a spec and should return an updated ibis expression
     and updated spec
 
     TODO: Fill this in by extracting transforms
     """
-    return ibis_expression, spec
+    original_expr = expr
+    # logic modified from
+    # https://github.com/vega/vega-lite-transforms2sql/blob/3b360144305a6cec79792036049e8a920e4d2c9e/transforms2sql.ts#L7
+    for transform in spec.get("transform", []):
+        groupby = transform.pop("groupby", None)
+        if groupby:
+            expr = expr.groupby(groupby)
+
+        aggregate = transform.pop("aggregate", None)
+        if aggregate:
+            expr = expr.aggregate([vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate])
+
+    return expr, spec
 
 
 def extract_vega_renderer_ibis(spec):
-    # expr = spec["data"]
-
-    # # if we the data isn't an expression, just render this normall
-    # if not isinstance(expr, ibis.Expr):
-    #     # return extract_vega_renderer_json(spec)
-    #     raise NotImplementedError(f"Data on spec should be ibis expression not {type(expr)} ")
-
-    # spec["data"] = {"values": []}
-
     def spec_transform(extracted_spec):
         global _curent_ibis_expression
         expr, extracted_spec = update_spec(_curent_ibis_expression, extracted_spec)
         df = expr.execute()
         extracted_spec["data"] = alt.utils.data.to_json(df)
+        extracted_spec["_query"] = expr.compile()
         return extracted_spec
 
     return extract_vega_renderer(spec, spec_transform=spec_transform)
@@ -295,8 +301,29 @@ if alt:
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
     alt.renderers.register("extract-ibis", extract_vega_renderer_ibis)
-    # alt.data_transformers.register("ibis-json", as_ibis)
     monkeypatch_altair()
+
+
+def display_chart(chart):
+    display("json")
+    alt.renderers.enable("json")
+    display(chart)
+
+    display("default")
+    alt.renderers.enable("default")
+    display(chart)
+
+    display("extract-json")
+    alt.renderers.enable("extract-json")
+    chart._repr_mimebundle_(None, None)
+
+    display("extract")
+    alt.renderers.enable("extract")
+    chart._repr_mimebundle_(None, None)
+
+    display("extract-ibis")
+    alt.renderers.enable("extract-ibis")
+    chart._repr_mimebundle_(None, None)
 
 
 def _make_connection(connection):
