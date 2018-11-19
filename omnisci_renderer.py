@@ -256,7 +256,7 @@ def translate_op(op: str) -> str:
 
 def vl_aggregate_to_grouping_expr(expr: ibis.Expr, a: dict) -> ibis.Expr:
     if "field" in a:
-        expr = expr["field"]
+        expr = expr[a["field"]]
     op = translate_op(a["op"])
     expr = getattr(expr, op)()
     return expr.name(a["as"])
