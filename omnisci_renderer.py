@@ -266,8 +266,6 @@ def update_spec(expr: ibis.Expr, spec: dict):
     """
     Takes in an ibis expression and a spec and should return an updated ibis expression
     and updated spec
-
-    TODO: Fill this in by extracting transforms
     """
     original_expr = expr
     # logic modified from
