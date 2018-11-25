@@ -1,11 +1,8 @@
 """ Functions for backend rendering with OmniSci """
 
 import ast
-import base64
-import uuid
 import yaml
 
-import vdom
 import ibis
 import pymapd
 
@@ -18,7 +15,7 @@ else:
 
 from ipykernel.comm import Comm
 from IPython.core.magic import register_cell_magic
-from IPython.display import display
+from IPython.display import display, Code
 import IPython.display
 
 
@@ -226,10 +223,8 @@ def extract_vega_renderer_json(spec, spec_transform=lambda s: s):
     return {"text/plain": ""}
 
 
-# Currently we save the ibix expression of the current query globally.
-# Ideally, we should be able to pass this through, but it is currently
-# hard because the data has to be a str or number of values, not an ibis expression.
-_curent_ibis_expression = None
+# We also globall define the the number of rows to grab when using altair with mapd.
+ALTAIR_IBIS_LIMIT = 1
 
 
 def monkeypatch_altair():
@@ -240,14 +235,31 @@ def monkeypatch_altair():
     original_chart_init = alt.Chart.__init__
 
     def updated_chart_init(self, data=None, *args, **kwargs):
-        global _curent_ibis_expression
         if data is not None and isinstance(data, ibis.Expr):
-            _curent_ibis_expression = data
-            data = data.execute()
-        final = original_chart_init(self, data=data, *args, **kwargs)
-        return final
+            expr = data
+            data = expr.limit(ALTAIR_IBIS_LIMIT).execute()
+            data.ibis = expr
+        return original_chart_init(self, data=data, *args, **kwargs)
 
     alt.Chart.__init__ = updated_chart_init
+
+
+_i = 0
+_name_to_ibis = {}
+
+
+def ibis_transformation(data):
+    """
+    turn a pandas DF with the Ibis query that made it attached to it into
+    a valid Vega Lite data dict. Since this has to be JSON serializiable
+    (because of how Altair is set up), we create a unique name and
+    save the ibis expression globally with that name so we can pick it up later.
+    """
+    assert isinstance(data, pd.DataFrame)
+    global _i
+    name = f"ibis_{_i}"
+    _name_to_ibis[name] = data.ibis
+    return {"name": name}
 
 
 def translate_op(op: str) -> str:
@@ -277,18 +289,32 @@ def update_spec(expr: ibis.Expr, spec: dict):
 
         aggregate = transform.pop("aggregate", None)
         if aggregate:
-            expr = expr.aggregate([vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate])
+            expr = expr.aggregate(
+                [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
+            )
 
     return expr, spec
 
 
+def extract_vega_renderer_ibis_sql(spec):
+    ibis_expression = _name_to_ibis.pop(spec["data"]["name"])
+    display_id = display(Code(""), display_id=True)
+
+    def on_spec(extracted_spec):
+        expr, _ = update_spec(ibis_expression, extracted_spec)
+        display_id.update(Code(expr.compile()))
+
+    extract_spec(spec, on_spec)
+    return {"text/plain": ""}
+
+
 def extract_vega_renderer_ibis(spec):
-    def spec_transform(extracted_spec):
-        global _curent_ibis_expression
-        expr, extracted_spec = update_spec(_curent_ibis_expression, extracted_spec)
+    ibis_expression = _name_to_ibis.pop(spec["data"]["name"])
+
+    def spec_transform(extracted_spec, ibis_expression=ibis_expression):
+        expr, extracted_spec = update_spec(ibis_expression, extracted_spec)
         df = expr.execute()
         extracted_spec["data"] = alt.utils.data.to_json(df)
-        extracted_spec["_query"] = expr.compile()
         return extracted_spec
 
     return extract_vega_renderer(spec, spec_transform=spec_transform)
@@ -299,27 +325,26 @@ if alt:
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
     alt.renderers.register("extract-ibis", extract_vega_renderer_ibis)
+    alt.renderers.register("extract-ibis-sql", extract_vega_renderer_ibis_sql)
+
+    alt.data_transformers.register("ibis", ibis_transformation)
     monkeypatch_altair()
 
 
 def display_chart(chart):
-    display("json")
+    display(Code('alt.renderers.enable("json")'))
     alt.renderers.enable("json")
     display(chart)
 
-    display("default")
-    alt.renderers.enable("default")
-    display(chart)
-
-    display("extract-json")
+    display(Code('alt.renderers.enable("extract-json")'))
     alt.renderers.enable("extract-json")
     chart._repr_mimebundle_(None, None)
 
-    display("extract")
-    alt.renderers.enable("extract")
+    display(Code('alt.renderers.enable("extract-ibis-sql")'))
+    alt.renderers.enable("extract-ibis-sql")
     chart._repr_mimebundle_(None, None)
 
-    display("extract-ibis")
+    display(Code('alt.renderers.enable("extract-ibis")'))
     alt.renderers.enable("extract-ibis")
     chart._repr_mimebundle_(None, None)
 
