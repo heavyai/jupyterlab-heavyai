@@ -263,6 +263,7 @@ def ibis_transformation(data):
     assert isinstance(data, pd.DataFrame)
     global _i
     name = f"ibis_{_i}"
+    _i += 1
     _name_to_ibis[name] = data.ibis
     return {"name": name}
 
