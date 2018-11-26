@@ -223,8 +223,13 @@ def extract_vega_renderer_json(spec, spec_transform=lambda s: s):
     return {"text/plain": ""}
 
 
-# We also globall define the the number of rows to grab when using altair with mapd.
-ALTAIR_IBIS_LIMIT = 1
+def empty(expr):
+    """
+    Creates an empty DF for a ibis expression, based on the schema
+
+    https://github.com/ibis-project/ibis/issues/1676#issuecomment-441472528
+    """
+    return expr.schema().apply_to(pd.DataFrame(columns=expr.columns))
 
 
 def monkeypatch_altair():
@@ -237,7 +242,7 @@ def monkeypatch_altair():
     def updated_chart_init(self, data=None, *args, **kwargs):
         if data is not None and isinstance(data, ibis.Expr):
             expr = data
-            data = expr.limit(ALTAIR_IBIS_LIMIT).execute()
+            data = empty(expr)
             data.ibis = expr
         return original_chart_init(self, data=data, *args, **kwargs)
 
