@@ -1,11 +1,8 @@
 """ Functions for backend rendering with OmniSci """
 
 import ast
-import base64
-import uuid
 import yaml
 
-import vdom
 import ibis
 import pymapd
 
@@ -13,10 +10,12 @@ try:
     import altair as alt
 except ImportError:
     alt = None
+else:
+    import pandas as pd
 
 from ipykernel.comm import Comm
 from IPython.core.magic import register_cell_magic
-from IPython.display import display
+from IPython.display import display, Code
 import IPython.display
 
 
@@ -198,7 +197,7 @@ class VegaLite(IPython.display.DisplayObject):
 EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 
 
-def extract_vega_renderer(spec):
+def extract_vega_renderer(spec, spec_transform=lambda s: s):
     """
     Create a placeholder spec and return it to the frontend.
     Also communicate with the frontend vega transform functionality
@@ -206,11 +205,11 @@ def extract_vega_renderer(spec):
     with the actual vega spec.
     """
     display_id = display(VegaLite(EMPTY_SPEC), display_id=True)
-    extract_spec(spec, lambda s: display_id.update(VegaLite(s)))
+    extract_spec(spec, lambda s: display_id.update(VegaLite(spec_transform(s))))
     return {"text/plain": ""}
 
 
-def extract_vega_renderer_json(spec):
+def extract_vega_renderer_json(spec, spec_transform=lambda s: s):
     """
     Create a placeholder spec and return it to the frontend.
     Also communicate with the frontend vega transform functionality
@@ -218,14 +217,142 @@ def extract_vega_renderer_json(spec):
     with the actual vega spec.
     """
     display_id = display(IPython.display.JSON({}), display_id=True)
-    extract_spec(spec, lambda s: display_id.update(IPython.display.JSON(s)))
+    extract_spec(
+        spec, lambda s: display_id.update(IPython.display.JSON(spec_transform(s)))
+    )
     return {"text/plain": ""}
+
+
+def empty(expr):
+    """
+    Creates an empty DF for a ibis expression, based on the schema
+
+    https://github.com/ibis-project/ibis/issues/1676#issuecomment-441472528
+    """
+    return expr.schema().apply_to(pd.DataFrame(columns=expr.columns))
+
+
+def monkeypatch_altair():
+    """
+    Needed until https://github.com/altair-viz/altair/issues/843 is fixed to let Altair
+    handle ibis inputs
+    """
+    original_chart_init = alt.Chart.__init__
+
+    def updated_chart_init(self, data=None, *args, **kwargs):
+        if data is not None and isinstance(data, ibis.Expr):
+            expr = data
+            data = empty(expr)
+            data.ibis = expr
+        return original_chart_init(self, data=data, *args, **kwargs)
+
+    alt.Chart.__init__ = updated_chart_init
+
+
+_i = 0
+_name_to_ibis = {}
+
+
+def ibis_transformation(data):
+    """
+    turn a pandas DF with the Ibis query that made it attached to it into
+    a valid Vega Lite data dict. Since this has to be JSON serializiable
+    (because of how Altair is set up), we create a unique name and
+    save the ibis expression globally with that name so we can pick it up later.
+    """
+    assert isinstance(data, pd.DataFrame)
+    global _i
+    name = f"ibis_{_i}"
+    _i += 1
+    _name_to_ibis[name] = data.ibis
+    return {"name": name}
+
+
+def translate_op(op: str) -> str:
+    return {"mean": "mean", "average": "mean"}.get(op, op)
+
+
+def vl_aggregate_to_grouping_expr(expr: ibis.Expr, a: dict) -> ibis.Expr:
+    if "field" in a:
+        expr = expr[a["field"]]
+    op = translate_op(a["op"])
+    expr = getattr(expr, op)()
+    return expr.name(a["as"])
+
+
+def update_spec(expr: ibis.Expr, spec: dict):
+    """
+    Takes in an ibis expression and a spec and should return an updated ibis expression
+    and updated spec
+    """
+    original_expr = expr
+    # logic modified from
+    # https://github.com/vega/vega-lite-transforms2sql/blob/3b360144305a6cec79792036049e8a920e4d2c9e/transforms2sql.ts#L7
+    for transform in spec.get("transform", []):
+        groupby = transform.pop("groupby", None)
+        if groupby:
+            expr = expr.groupby(groupby)
+
+        aggregate = transform.pop("aggregate", None)
+        if aggregate:
+            expr = expr.aggregate(
+                [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
+            )
+
+    return expr, spec
+
+
+def extract_vega_renderer_ibis_sql(spec):
+    ibis_expression = _name_to_ibis.pop(spec["data"]["name"])
+    display_id = display(Code(""), display_id=True)
+
+    def on_spec(extracted_spec):
+        expr, _ = update_spec(ibis_expression, extracted_spec)
+        display_id.update(Code(expr.compile()))
+
+    extract_spec(spec, on_spec)
+    return {"text/plain": ""}
+
+
+def extract_vega_renderer_ibis(spec):
+    ibis_expression = _name_to_ibis.pop(spec["data"]["name"])
+
+    def spec_transform(extracted_spec, ibis_expression=ibis_expression):
+        expr, extracted_spec = update_spec(ibis_expression, extracted_spec)
+        df = expr.execute()
+        extracted_spec["data"] = alt.utils.data.to_json(df)
+        return extracted_spec
+
+    return extract_vega_renderer(spec, spec_transform=spec_transform)
 
 
 if alt:
     alt.renderers.register("omnisci", omnisci_mimetype)
     alt.renderers.register("extract", extract_vega_renderer)
     alt.renderers.register("extract-json", extract_vega_renderer_json)
+    alt.renderers.register("extract-ibis", extract_vega_renderer_ibis)
+    alt.renderers.register("extract-ibis-sql", extract_vega_renderer_ibis_sql)
+
+    alt.data_transformers.register("ibis", ibis_transformation)
+    monkeypatch_altair()
+
+
+def display_chart(chart):
+    display(Code('alt.renderers.enable("json")'))
+    alt.renderers.enable("json")
+    display(chart)
+
+    display(Code('alt.renderers.enable("extract-json")'))
+    alt.renderers.enable("extract-json")
+    chart._repr_mimebundle_(None, None)
+
+    display(Code('alt.renderers.enable("extract-ibis-sql")'))
+    alt.renderers.enable("extract-ibis-sql")
+    chart._repr_mimebundle_(None, None)
+
+    display(Code('alt.renderers.enable("extract-ibis")'))
+    alt.renderers.enable("extract-ibis")
+    chart._repr_mimebundle_(None, None)
 
 
 def _make_connection(connection):
