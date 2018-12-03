@@ -3,7 +3,11 @@
 Connect to OmniSci, query their databases, and render the OmniSci-flavored Vega specification,
 all within JupyterLab
 
+
+[![binder logo](https://beta.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/33610432eefa8392e1f4a9c505aa01a368eb9be8?urlpath=lab/tree/notebooks/4.%20Extract%20Use%20Cases%20-%20VL%20examples.ipynb)
+
 ![example](./screenshot.png)
+
 
 ## Installation
 
