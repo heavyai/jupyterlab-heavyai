@@ -17,7 +17,7 @@ import time
 
 # Data about this site
 BLOG_AUTHOR = "Quansight"  # (translatable)
-BLOG_TITLE = "quansight"  # (translatable)
+BLOG_TITLE = "jupyterlab-omnisci research and documentation"  # (translatable)
 # This is the main URL for your site. It will be used
 # in a prominent link. Don't forget the protocol (http/https)!
 SITE_URL = "https://jupyterlab-omnisci.readthedocs.io/en/latest/blog"
