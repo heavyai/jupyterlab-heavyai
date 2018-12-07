@@ -246,21 +246,26 @@ for folder, *item in POSTS:
             'type': 'text',
             **nb['metadata']['nikola']
         })
-        if 'date' not in nb['metadata']['nikola']:
-            try:
-                updated_date, author_name = author_date(repo, str(file))
-            except:
-                updated_date = __import__('datetime').datetime.utcfromtimestamp(
-                    file.stat().st_mtime
-                ).strftime('%Y-%m-%d %H:%M:%S UTC')
-                author_name = 'Guest'
-            nb['metadata']['nikola'].update({
-                'author': author_name,
-                'date': updated_date,
-            })
 
+        try:
+            updated_date, author_name = author_date(repo, str(file))
+        except:
+            updated_date = __import__('datetime').datetime.utcfromtimestamp(
+                file.stat().st_mtime
+            ).strftime('%Y-%m-%d %H:%M:%S UTC')
+            author_name = 'Guest'
+        nb['metadata']['nikola'].update({
+            'author': author_name,
+            'date': updated_date,
+        })
 
-        file.write_text(json.dumps(nb))
+        for cell in nb['cells']:
+            if 'outputs' in cell:
+                for output in cell['outputs']:
+                    if 'data' in output:
+                        ...#output['data'].pop('image/png', None)
+
+        file.write_text(json.dumps(nb), encoding='UTF-8')
 
 PAGES = tuple()
 
