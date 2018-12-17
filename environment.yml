@@ -7,8 +7,8 @@ dependencies:
   - altair
   - pyyaml
   - mypy
+  - pymapd
   - pip:
     - vdom
     - vega_datasets
-    - pymapd
     - https://github.com/ibis-project/ibis/archive/master.zip
