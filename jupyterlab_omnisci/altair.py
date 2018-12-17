@@ -96,7 +96,7 @@ def extract_vega_renderer_json(spec, spec_transform=lambda s: s):
     over a comm channel. Once it has returned, update the placeholder
     with the actual vega spec.
     """
-    display_id = display(JSON({}), display_id=True)
+    display_id = display(JSON({"_": "Waiting for transformed spec..."}), display_id=True)
     extract_spec(spec, lambda s: display_id.update(JSON(spec_transform(s))))
     return {"text/plain": ""}
 
@@ -130,6 +130,11 @@ def monkeypatch_altair():
 _i = 0
 _name_to_ibis = {}
 
+def retrieve_expr(spec) -> ibis.Expr:
+    # some specs have sub `spec` key
+    if 'spec' in spec:
+        spec = spec['spec']
+    return _name_to_ibis.pop(spec["data"]["name"])
 
 def ibis_transformation(data):
     """
@@ -160,8 +165,7 @@ def vl_aggregate_to_grouping_expr(expr: ibis.Expr, a: dict) -> ibis.Expr:
 
 def update_spec(expr: ibis.Expr, spec: dict):
     """
-    Takes in an ibis expression and a spec and should return an updated ibis expression
-    and updated spec
+    Takes in an ibis expression and a spec, updating the spec and returning a new ibis expr
     """
     original_expr = expr
     # logic modified from
@@ -177,15 +181,19 @@ def update_spec(expr: ibis.Expr, spec: dict):
                 [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
             )
 
-    return expr, spec
+    return expr
 
 
 def extract_vega_renderer_ibis_sql(spec):
-    ibis_expression = _name_to_ibis.pop(spec["data"]["name"])
+    ibis_expression = retrieve_expr(spec)
     display_id = display(Code(""), display_id=True)
 
-    def on_spec(extracted_spec):
-        expr, _ = update_spec(ibis_expression, extracted_spec)
+    def on_spec(extracted_spec, ibis_expression=ibis_expression, display_id=display_id):
+        if 'spec' in extracted_spec:
+            real_spec = extracted_spec['spec']
+        else:
+            real_spec = extracted_spec
+        expr = update_spec(ibis_expression, real_spec)
         display_id.update(Code(expr.compile()))
 
     extract_spec(spec, on_spec)
@@ -193,12 +201,16 @@ def extract_vega_renderer_ibis_sql(spec):
 
 
 def extract_vega_renderer_ibis(spec):
-    ibis_expression = _name_to_ibis.pop(spec["data"]["name"])
+    ibis_expression = retrieve_expr(spec)
 
     def spec_transform(extracted_spec, ibis_expression=ibis_expression):
-        expr, extracted_spec = update_spec(ibis_expression, extracted_spec)
+        if 'spec' in extracted_spec:
+            real_spec = extracted_spec['spec']
+        else:
+            real_spec = extracted_spec
+        expr = update_spec(ibis_expression, real_spec)
         df = expr.execute()
-        extracted_spec["data"] = altair.utils.data.to_json(df)
+        real_spec["data"] = altair.utils.data.to_json(df)
         return extracted_spec
 
     return extract_vega_renderer(spec, spec_transform=spec_transform)
