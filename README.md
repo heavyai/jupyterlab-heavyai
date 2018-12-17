@@ -32,28 +32,7 @@ To set a default connection that will be saved and used for new editors, go to *
 
 ## Creating Visualizations
 
-There are a variety of ways to create visualizations based on OmniSci data in JupyterLab.
-
-You can use [OmniSci's backend Vega rendering](https://www.omnisci.com/docs/latest/6_vegaTutorials.html)
-inside your notebooks with the `omnisci_vega` and `omnisci_vegalite` cell magics
-(
-[![](https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg)](http://nbviewer.jupyter.org/github/Quansight/jupyterlab-omnisci/blob/master/notebooks/Renderers.ipynb)
-[![](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/Renderers.ipynb)
-). You can also create an SQL editor to live query your Ibis table using the `omnisci_sqleditor` cell magic
-(
-[![](https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg)](http://nbviewer.jupyter.org/github/Quansight/jupyterlab-omnisci/blob/master/notebooks/SQL%20Editor.ipynb)
-[![](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/SQL%20Editor.ipynb)
-).
-
-If you like using [Altair](https://altair-viz.github.io/) to compose your visualizations, there are a couple of ways
-to integrate that with an OmniSci database. There is preliminary support for visualizations with aggregates in them (sum, groupby, etc)
-so that those aggregates are executed in the database and only the post aggregated data is sent to the browser (
-[![](https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg)](http://nbviewer.jupyter.org/github/Quansight/jupyterlab-omnisci/blob/master/notebooks/Ibis%20+%20Altair%20+%20Extraction.ipynb)
-[![](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/Ibis%20+%20Altair%20+%20Extraction.ipynb)
-). Instead, if you would like to use OmniSci's builtin Vega rendering capabilities, you can tell have Altair defer to those (
-[![](https://raw.githubusercontent.com/jupyter/design/master/logos/Badges/nbviewer_badge.svg)](http://nbviewer.jupyter.org/github/Quansight/jupyterlab-omnisci/blob/master/notebooks/Ibis%20+%20Altair.ipynb)
-[![](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/Ibis%20+%20Altair.ipynb)
-).
+Check out the [introduction notebook](./notebooks/Introduction.ipynb) to see how to use OmniSci within your notebooks [![](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/Introduction.ipynb).
 
 ## FAQ
 
