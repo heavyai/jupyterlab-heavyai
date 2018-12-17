@@ -11,4 +11,4 @@ dependencies:
     - vdom
     - vega_datasets
     - pymapd
-    - git+https://github.com/ibis-project/ibis.git
+    - https://github.com/ibis-project/ibis/archive/master.zip

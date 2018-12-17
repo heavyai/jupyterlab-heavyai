@@ -16,3 +16,6 @@ __pycache__
 .vscode
 *.egg-info
 **/altair-data-*
+*.tgz
+*.gz
+*.whl
