@@ -9,12 +9,19 @@ all within JupyterLab.
 
 ## Installation
 
-First, install JupyterLab as well the `jupyterlab-omnisci` Python package and
+First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package and
 `jupyterlab-omnisci` JupyterLab extension:
 
 ```bash
-pip install jupyterlab-omnisci
+conda install -c conda-forge jupyterlab pymapd
+
+pip install jupyterlab-omnisci git+https://github.com/ibis-project/ibis.git@5672feb8516d56c7c9d9faacc083c6e6f9b953fa
 jupyter labextension install jupyterlab-omnisci
+```
+
+Then launch Jupyter Lab:
+
+```bash
 jupyter lab
 ```
 
@@ -54,4 +61,19 @@ jlpm install
 jlpm run build
 jupyter labextension install .
 pip install -e .
+```
+
+## Releasing
+
+Follow the [setuptools docs](https://setuptools.readthedocs.io/en/latest/setuptools.html#distributing-a-setuptools-based-project) on how to release
+a package:
+
+```bash
+pip install --upgrade setuptools wheel twine
+python setup.py sdist bdist_wheel
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+# try installing
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple jupyterlab_omnisci
+# upload for real
+twine upload dist/*
 ```

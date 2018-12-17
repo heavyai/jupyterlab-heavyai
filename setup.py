@@ -13,21 +13,15 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="jupyterlab-omnisci",  # Required
-    version="0.0.0",  # Required
+    version="0.0.8",  # Required
     description="Omnisci integration with JupyterLab",  # Required
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
     url="https://github.com/Quansight/jupyterlab-omnisci",  # Optional
-    py_modules=["jupyterlab_omnisci"],
+    packages=find_packages(),
     install_requires=[
         "vdom",
-        "pymapd",
         "pyyaml",
-        "jupyterlab",
-        # need master till this PR is released
-        # https://github.com/ibis-project/ibis/pull/1675
-        "https://github.com/ibis-project/ibis/archive/master.zip",
-        "altair",
-        "pandas"
+        "altair"
     ]
 )
