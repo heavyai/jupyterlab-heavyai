@@ -31,11 +31,11 @@ You can open an OmiSci SQL editor by going to **File > New > OmniSci SQL Editor*
 
 Input your database credentials by clicking on the blue icon on the right:
 
-![](https://user-images.githubusercontent.com/1186124/49897086-243ba800-fe23-11e8-8bf4-78f35d4fe9ce.png)
+![](./sqlcon.png)
 
 Then you can input an SQL query and hit the triangle to see the results:
 
-![](https://user-images.githubusercontent.com/1186124/49897052-0e2de780-fe23-11e8-9265-4bfad02c1f7e.png)
+![](./sql.png)
 
 To set a default connection that will be saved and used for new editors, go to **Settings > Set Default Omnisci Connection...**.
 
