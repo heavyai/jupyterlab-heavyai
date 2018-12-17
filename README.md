@@ -3,6 +3,8 @@
 Connect to OmniSci, query their databases, and render the OmniSci-flavored Vega specification,
 all within JupyterLab.
 
+[![](https://img.shields.io/pypi/v/jupyterlab-omnisci.svg)](https://pypi.python.org/pypi/jupyterlab-omnisci) [![](https://img.shields.io/npm/v/jupyterlab-omnisci.svg?style=flat-square)](https://www.npmjs.com/package/jupyterlab-omnisci)
+
 ![example](./screenshot.png)
 
 ## Installation
