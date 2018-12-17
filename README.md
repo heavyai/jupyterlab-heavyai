@@ -65,7 +65,11 @@ pip install -e .
 
 ## Releasing
 
-Follow the [setuptools docs](https://setuptools.readthedocs.io/en/latest/setuptools.html#distributing-a-setuptools-based-project) on how to release
+### Python Package
+
+First bump the version number in `setup.py`.
+
+Then, follow the [setuptools docs](https://setuptools.readthedocs.io/en/latest/setuptools.html#distributing-a-setuptools-based-project) on how to release
 a package:
 
 ```bash
