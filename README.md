@@ -16,7 +16,7 @@ jupyter labextension install jupyterlab-omnisci
 jupyter lab
 ```
 
-## Executing SQL Querries
+## Executing SQL Queries
 
 You can open an OmiSci SQL editor by going to **File > New > OmniSci SQL Editor** or clicking the icon on the launcher.
 
