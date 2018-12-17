@@ -27,6 +27,7 @@ setup(
         # need master till this PR is released
         # https://github.com/ibis-project/ibis/pull/1675
         "https://github.com/ibis-project/ibis/archive/master.zip",
-    ],  # Optional
-    extras_require={"altair": ["altair", "pandas"]},  # Optional
+        "altair",
+        "pandas"
+    ]
 )

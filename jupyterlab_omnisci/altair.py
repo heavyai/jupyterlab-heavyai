@@ -22,13 +22,9 @@ the `ibis` data transformer, or they will not work.
 
 import ibis
 
-try:
-    import altair
-except ImportError:
-    altair = None
-else:
-    import pandas
-    from altair.vegalite.v2.display import default_renderer
+import altair
+import pandas
+from altair.vegalite.v2.display import default_renderer
 
 __all__ = ["display_chart"]
 
@@ -73,10 +69,7 @@ def extract_spec(spec, callback):
 
 class VegaLite(DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
-        if altair:
-            return default_renderer(self.data)
-        else:
-            return {"text/plain": ""}
+        return default_renderer(self.data)
 
 
 # A placeholder vega spec that will be replaced once the
@@ -211,17 +204,16 @@ def extract_vega_renderer_ibis(spec):
     return extract_vega_renderer(spec, spec_transform=spec_transform)
 
 
-if altair:
-    altair.renderers.register("omnisci", omnisci_mimetype)
-    # not useful now, because initially dataframe is empty so rendering it as vega lite
-    # won't show anything useful.
-    # altair.renderers.register("extract", extract_vega_renderer)
-    altair.renderers.register("extract-json", extract_vega_renderer_json)
-    altair.renderers.register("extract-ibis", extract_vega_renderer_ibis)
-    altair.renderers.register("extract-ibis-sql", extract_vega_renderer_ibis_sql)
+altair.renderers.register("omnisci", omnisci_mimetype)
+# not useful now, because initially dataframe is empty so rendering it as vega lite
+# won't show anything useful.
+# altair.renderers.register("extract", extract_vega_renderer)
+altair.renderers.register("extract-json", extract_vega_renderer_json)
+altair.renderers.register("extract-ibis", extract_vega_renderer_ibis)
+altair.renderers.register("extract-ibis-sql", extract_vega_renderer_ibis_sql)
 
-    altair.data_transformers.register("ibis", ibis_transformation)
-    monkeypatch_altair()
+altair.data_transformers.register("ibis", ibis_transformation)
+monkeypatch_altair()
 
 
 def display_chart(chart: altair.Chart) -> None:

@@ -11,7 +11,7 @@ First, install JupyterLab as well the `jupyterlab-omnisci` Python package and
 `jupyterlab-omnisci` JupyterLab extension:
 
 ```bash
-pip install jupyterlab-omnisci[altair]
+pip install jupyterlab-omnisci
 jupyter labextension install jupyterlab-omnisci
 jupyter lab
 ```
