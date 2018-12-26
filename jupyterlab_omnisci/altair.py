@@ -1,26 +1,13 @@
 """
-Importing this file will register multiple new Altair renderers and
-monkeypatch Altair so it is able to process Ibis expressions as data.
+This file enables using Ibis expressions inside Altair charts.
 
-Renderers:
-
-* `omnisci`: Renders the Vega Lite with MapD's server Vega rendering.
-  If you enable this, you must pass the SQL query to generate the data
-  as a string to `altair.Chart`
-* `extract-ibis`: Aggregates the data on the server and renders
-  it in the browser. You must pass in a `ibis.Expression` to `altair.Chart`
-  when using this renderer.
-* `extract-ibis-sql`: Displays the generated SQL that would be run to get the
-  aggregated data for the previous renderer.
-* `extract-json`: Displays the JSON of the Vega Lite, after the aggregates
-  are extracted. 
-
-
-When using `extract-ibis` or `extract-ibis-sql`, you must also enable
-the `ibis` data transformer, or they will not work.
+To use it, import it and enable the `ibis` renderer adn `ibis` data transformer,
+then pass an Ibis expression directly to `altair.Chart`.
 """
+import typing
 
 import ibis
+import ibis.client
 
 import altair
 import pandas
@@ -29,42 +16,104 @@ from altair.vegalite.v2.display import default_renderer
 __all__ = ["display_chart"]
 
 import ipykernel.comm
-from IPython.display import JSON, Code, DisplayObject, display
+from IPython.display import JSON, DisplayObject, display, Code, HTML
 
 
-def omnisci_mimetype(spec, conn):
-    """
-    Returns a omnisci vega lite mimetype, assuming that the URL
-    for the vega spec is actually the SQL query
-    """
-    data = spec["data"]
-    data["sql"] = data.pop("url")
-    return {
-        "application/vnd.omnisci.vega+json": {
-            "vegalite": spec,
-            "connection": {
-                "host": conn.host,
-                "protocol": conn.protocol,
-                "port": conn.port,
-                "user": conn.user,
-                "dbname": conn.db_name,
-                "password": conn.password,
-            },
-        }
-    }
+# Data transformer to use in ibis renderer
+DEFAULT_TRANSFORMER = altair.utils.data.to_json
 
+
+# A placeholder vega spec that will be replaced once the
+# transform has been completed and returned via the comm channel.
+EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 
 # A comm id used to establish a link between python code
 # and frontend vega-lite transforms.
 COMM_ID = "extract-vega-lite"
 
 
-def extract_spec(spec, callback):
-    my_comm = ipykernel.comm.Comm(target_name=COMM_ID, data=spec)
+def ibis_renderer(spec, type="vl", extract=True, compile=True):
+    """
+    Altair renderer for Ibis expressions.
 
-    @my_comm.on_msg
-    def _recv(msg):
-        callback(msg["content"]["data"])
+    Arguments:
+
+        type:  What the mimetype of the output should be. Valid types:
+            'vl': Vega Lite mimetype so the chart is rendered in the browser.
+            'vl-omnisci': OmniSci Vega Lite mimetype so the chart is rendered with the OmniSci Vega renderer
+            'json': JSON mimetype so you can see the JSON of the chart.
+            'sql': Text mimetype to see the SQL computed for the chart.
+
+        extract: Whether to extract the transformations from the Vega Lite spec. If True, the display for
+                 this cell becomes asyncronous, because it has to query the frontend through a comm for the
+                 updated spec.
+        compile: Whether to take the list of transformations on the spec and compile them to Ibis.
+    """
+    expr: ibis.Expr = retrieve_expr(spec)
+    assert type in ("vl", "vl-omnisci", "json", "sql")
+    if type == "vl":
+        display_type = VegaLite
+        display_data = EMPTY_SPEC
+    elif type == "vl-omnisci":
+        conn = get_client(expr)
+        display_type = VegaLiteOmniSci
+        display_data = [EMPTY_SPEC, conn]
+    elif type == "json":
+        display_type = JSON
+        display_data = {"_": "Waiting for transformed spec..."}
+    elif type == "sql":
+        display_type = Code
+        display_data = "Waiting for transformed spec..."
+
+    def to_data(spec, expr=expr):
+        # if we should compile the expression, replace it with the updated
+        # version and mutate the spec
+        if compile:
+            expr = update_spec(expr, spec)
+
+        if type == "vl":
+            set_data(spec, DEFAULT_TRANSFORMER(expr.execute()))
+            return spec
+        elif type == "vl-omnisci":
+            set_data(spec, {"sql": expr.compile()})
+            return [spec, conn]
+        elif type == "json":
+            return spec
+        elif type == "sql":
+            return expr.compile()
+
+    def to_display(spec) -> DisplayObject:
+        return display_type(to_data(spec))
+
+    if extract:
+        display_id = display(display_type(display_data), display_id=True)
+
+        extract_spec(spec, lambda s: display_id.update(to_display(s)))
+        return {"text/plain": ""}
+    return get_ipython().display_formatter.format(to_display(spec))[0]
+
+
+##
+# Custom display objects
+##
+
+
+class VegaLiteOmniSci(DisplayObject):
+    def _repr_mimebundle_(self, include, exclude):
+        spec, conn = self.data
+        return {
+            "application/vnd.omnisci.vega+json": {
+                "vegalite": spec,
+                "connection": {
+                    "host": conn.host,
+                    "protocol": conn.protocol,
+                    "port": conn.port,
+                    "user": conn.user,
+                    "dbname": conn.db_name,
+                    "password": conn.password,
+                },
+            }
+        }
 
 
 class VegaLite(DisplayObject):
@@ -72,42 +121,33 @@ class VegaLite(DisplayObject):
         return default_renderer(self.data)
 
 
-# A placeholder vega spec that will be replaced once the
-# transform has been completed and returned via the comm channel.
-EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
+##
+# Utils
+##
 
 
-def extract_vega_renderer(spec, spec_transform=lambda s: s):
+def extract_spec(spec, callback):
     """
-    Create a placeholder spec and return it to the frontend.
-    Also communicate with the frontend vega transform functionality
-    over a comm channel. Once it has returned, update the placeholder
-    with the actual vega spec.
+    Calls extract_transform on the frontend and calls the callback with the transformed spec.
     """
-    display_id = display(VegaLite(EMPTY_SPEC), display_id=True)
-    extract_spec(spec, lambda s: display_id.update(VegaLite(spec_transform(s))))
-    return {"text/plain": ""}
+    my_comm = ipykernel.comm.Comm(target_name=COMM_ID, data=spec)
+
+    @my_comm.on_msg
+    def _recv(msg):
+        callback(msg["content"]["data"])
 
 
-def extract_vega_renderer_json(spec, spec_transform=lambda s: s):
-    """
-    Create a placeholder spec and return it to the frontend.
-    Also communicate with the frontend vega transform functionality
-    over a comm channel. Once it has returned, update the placeholder
-    with the actual vega spec.
-    """
-    display_id = display(JSON({"_": "Waiting for transformed spec..."}), display_id=True)
-    extract_spec(spec, lambda s: display_id.update(JSON(spec_transform(s))))
-    return {"text/plain": ""}
-
-
-def empty(expr):
+def empty(expr: ibis.Expr) -> pandas.DataFrame:
     """
     Creates an empty DF for a ibis expression, based on the schema
 
     https://github.com/ibis-project/ibis/issues/1676#issuecomment-441472528
     """
     return expr.schema().apply_to(pandas.DataFrame(columns=expr.columns))
+
+
+def get_client(expr: ibis.Expr) -> ibis.client.Client:
+    return expr.op().table.op().source
 
 
 def monkeypatch_altair():
@@ -118,23 +158,41 @@ def monkeypatch_altair():
     original_chart_init = altair.Chart.__init__
 
     def updated_chart_init(self, data=None, *args, **kwargs):
+        """
+        If user passes in a Ibis expression, create an empty dataframe with
+        those types and set the `ibis` attribute to the original ibis expression.
+        """
         if data is not None and isinstance(data, ibis.Expr):
             expr = data
             data = empty(expr)
             data.ibis = expr
+
         return original_chart_init(self, data=data, *args, **kwargs)
 
     altair.Chart.__init__ = updated_chart_init
 
 
 _i = 0
-_name_to_ibis = {}
+_name_to_ibis: typing.Dict[str, ibis.Expr] = {}
+
 
 def retrieve_expr(spec) -> ibis.Expr:
+    """
+    Given a spec, return the ibis expression associated with it.
+
+    The `data.name` should be a UUID that we look up in our global mapping of names
+    to ibis expressions.
+    """
     # some specs have sub `spec` key
-    if 'spec' in spec:
-        spec = spec['spec']
-    return _name_to_ibis.pop(spec["data"]["name"])
+    if "spec" in spec:
+        spec = spec["spec"]
+    try:
+        return _name_to_ibis.pop(spec["data"]["name"])
+    except KeyError:
+        raise RuntimeError(
+            "Could not find Ibis expression for chart. Make sure Ibis data transformer is enabled: altair.data_transformers.enable('ibis')"
+        )
+
 
 def ibis_transformation(data):
     """
@@ -184,67 +242,59 @@ def update_spec(expr: ibis.Expr, spec: dict):
     return expr
 
 
-def extract_vega_renderer_ibis_sql(spec):
-    ibis_expression = retrieve_expr(spec)
-    display_id = display(Code(""), display_id=True)
-
-    def on_spec(extracted_spec, ibis_expression=ibis_expression, display_id=display_id):
-        if 'spec' in extracted_spec:
-            real_spec = extracted_spec['spec']
-        else:
-            real_spec = extracted_spec
-        expr = update_spec(ibis_expression, real_spec)
-        display_id.update(Code(expr.compile()))
-
-    extract_spec(spec, on_spec)
-    return {"text/plain": ""}
+def set_data(spec, data):
+    """
+    Sets the data on the spec to be the new data
+    """
+    if "spec" in spec:
+        spec["spec"]["data"] = data
+    else:
+        spec["data"] = data
 
 
-def extract_vega_renderer_ibis(spec):
-    ibis_expression = retrieve_expr(spec)
-
-    def spec_transform(extracted_spec, ibis_expression=ibis_expression):
-        if 'spec' in extracted_spec:
-            real_spec = extracted_spec['spec']
-        else:
-            real_spec = extracted_spec
-        expr = update_spec(ibis_expression, real_spec)
-        df = expr.execute()
-        real_spec["data"] = altair.utils.data.to_json(df)
-        return extracted_spec
-
-    return extract_vega_renderer(spec, spec_transform=spec_transform)
-
-
-altair.renderers.register("omnisci", omnisci_mimetype)
-# not useful now, because initially dataframe is empty so rendering it as vega lite
-# won't show anything useful.
-# altair.renderers.register("extract", extract_vega_renderer)
-altair.renderers.register("extract-json", extract_vega_renderer_json)
-altair.renderers.register("extract-ibis", extract_vega_renderer_ibis)
-altair.renderers.register("extract-ibis-sql", extract_vega_renderer_ibis_sql)
-
+altair.renderers.register("ibis", ibis_renderer)
 altair.data_transformers.register("ibis", ibis_transformation)
 monkeypatch_altair()
 
 
-def display_chart(chart: altair.Chart) -> None:
+def display_chart(chart: altair.Chart, backend_render=False) -> None:
     """
     Given an Altair chart created around an Ibis expression, this displays the different
     stages of rendering of that chart. Helpful for debugging.
+
+    backend_render: Whether to also render with OmniSci's builtin Vega rendering.
     """
-    display(Code('altair.renderers.enable("json")'))
-    altair.renderers.enable("json")
-    display(chart)
 
-    display(Code('altair.renderers.enable("extract-json")'))
-    altair.renderers.enable("extract-json")
-    chart._repr_mimebundle_(None, None)
+    def display_header(name):
+        display(HTML(f"<h3>{name}</h3>"))
 
-    display(Code('altair.renderers.enable("extract-ibis-sql")'))
-    altair.renderers.enable("extract-ibis-sql")
-    chart._repr_mimebundle_(None, None)
+    def display_render(compile, extract, type):
+        altair.renderers.enable("ibis", compile=compile, extract=extract, type=type)
+        method = f'altair.renderers.enable("ibis", compile={compile}, extract={extract}, type={repr(type)})'
+        display(HTML(f"<strong><code>{method}</code></strong>"))
+        display(chart)
 
-    display(Code('altair.renderers.enable("extract-ibis")'))
-    altair.renderers.enable("extract-ibis")
-    chart._repr_mimebundle_(None, None)
+    display_header("Initial")
+    display_render(False, False, "json")
+    display_render(False, False, "sql")
+    display_render(False, False, "vl")
+    if backend_render:
+        display_render(False, False, "vl-omnisci")
+
+    display_header("Compiled")
+    display_render(True, False, "json")
+    display_render(True, False, "sql")
+    display_render(True, False, "vl")
+    if backend_render:
+        display_render(False, False, "vl-omnisci")
+
+    display_header("Extracted")
+    display_render(False, True, "json")
+    display_render(False, True, "vl")
+
+    display_header("Extracted then Compiled")
+    display_render(True, True, "json")
+    display_render(True, True, "sql")
+    display_render(True, True, "vl")
+    if backend_render:
+        display_render(False, False, "vl-omnisci")
