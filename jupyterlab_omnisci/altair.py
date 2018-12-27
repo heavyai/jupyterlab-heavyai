@@ -5,6 +5,7 @@ To use it, import it and enable the `ibis` renderer adn `ibis` data transformer,
 then pass an Ibis expression directly to `altair.Chart`.
 """
 import typing
+import json
 
 import ibis
 import ibis.client
@@ -59,7 +60,7 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
         display_type = VegaLiteOmniSci
         display_data = [EMPTY_SPEC, conn]
     elif type == "json":
-        display_type = JSON
+        display_type = CompatJSON
         display_data = {"_": "Waiting for transformed spec..."}
     elif type == "sql":
         display_type = Code
@@ -120,6 +121,10 @@ class VegaLite(DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
         return default_renderer(self.data)
 
+
+class CompatJSON(JSON):
+    def _repr_html_(self):
+        return "<pre>" + repr(self.data) + "</pre>"
 
 ##
 # Utils
