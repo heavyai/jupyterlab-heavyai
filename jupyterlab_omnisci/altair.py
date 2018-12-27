@@ -5,7 +5,7 @@ To use it, import it and enable the `ibis` renderer adn `ibis` data transformer,
 then pass an Ibis expression directly to `altair.Chart`.
 """
 import typing
-import json
+import pprint
 
 import ibis
 import ibis.client
@@ -124,7 +124,7 @@ class VegaLite(DisplayObject):
 
 class CompatJSON(JSON):
     def _repr_html_(self):
-        return "<pre>" + repr(self.data) + "</pre>"
+        return "<pre>" + pprint.pformat(self.data, width=120) + "</pre>"
 
 ##
 # Utils
