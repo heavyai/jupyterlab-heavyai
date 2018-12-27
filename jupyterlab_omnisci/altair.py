@@ -276,7 +276,7 @@ def update_spec(expr: ibis.Expr, spec: dict):
             expr = expr.filter(preds)
 
     # remove empty transforms
-    spec['transform'] = filter(lambda i: i, spec.get('transform', []))
+    spec['transform'] = [i for i in spec.get('transform', []) if i]
     # remove key if empty
     if not spec['transform']:
         del spec['transform']
