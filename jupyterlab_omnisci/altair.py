@@ -1,7 +1,7 @@
 """
 This file enables using Ibis expressions inside Altair charts.
 
-To use it, import it and enable the `ibis` renderer adn `ibis` data transformer,
+To use it, import it and enable the `ibis` renderer and `ibis` data transformer,
 then pass an Ibis expression directly to `altair.Chart`.
 """
 import typing
