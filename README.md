@@ -46,6 +46,8 @@ pip install    git+https://github.com/jakevdp/altair.git@vl3-rc8
 Then tell JupyterLab to use a later version of Vega Lite, by adding
 a resolution to the `./staging/package.json` file in the `jupyterlab` Python package.
 
+This works on a Mac:
+
 ```bash
 open $(python -c 'import os; import jupyterlab; print(os.path.dirname(jupyterlab.__file__))')/staging/package.json
 ```
