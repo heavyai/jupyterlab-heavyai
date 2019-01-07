@@ -123,6 +123,10 @@ class VegaLite(DisplayObject):
 
 
 class CompatJSON(JSON):
+    """
+    Regular JSON object isn't rendered on Github on nbviewer, so we subclass it
+    to also render as HTML.
+    """
     def _repr_html_(self):
         return "<pre>" + pprint.pformat(self.data, width=120) + "</pre>"
 
