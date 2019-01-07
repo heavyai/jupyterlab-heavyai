@@ -11,13 +11,20 @@ all within JupyterLab.
 
 ## Installation
 
-First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package and
-`jupyterlab-omnisci` JupyterLab extension:
+First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package:
 
 ```bash
 conda install -c conda-forge jupyterlab pymapd
 
-pip install jupyterlab-omnisci git+https://github.com/ibis-project/ibis.git@5672feb8516d56c7c9d9faacc083c6e6f9b953fa
+pip install \
+    jupyterlab-omnisci \
+    git+https://github.com/Quansight/ibis.git@omnisci-sample \
+    altair
+```
+
+Then install the `jupyterlab-omnisci` JupyterLab extension.
+
+```bash
 jupyter labextension install jupyterlab-omnisci
 ```
 
@@ -25,6 +32,44 @@ Then launch Jupyter Lab:
 
 ```bash
 jupyter lab
+```
+
+### Bleed Edge Installation
+
+If you would like to get some of geographic use cases to work, like those in `./notebooks/OmniSci Vega Tutorial.py`,
+you also have to use the latest beta versions of Altair and Vega.
+
+First install the latest Altair:
+
+```bash
+pip install    git+https://github.com/jakevdp/altair.git@vl3-rc8
+```
+
+Then tell JupyterLab to use a later version of Vega Lite, by adding
+a resolution to the `./staging/package.json` file in the `jupyterlab` Python package.
+
+This works on a Mac:
+
+```bash
+open $(python -c 'import os; import jupyterlab; print(os.path.dirname(jupyterlab.__file__))')/staging/package.json
+```
+
+Add resolutions key:
+
+```json
+{
+    "resolutions": {
+        "vega-embed": "3.28.0"
+    },
+    "name": "@jupyterlab/application-top",
+    "version": "0.19.1",
+    ...
+```
+
+Then rebuild JupyterLab:
+
+```
+jupyter lab build
 ```
 
 ## Executing SQL Queries
@@ -89,3 +134,7 @@ pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://
 # upload for real
 twine upload dist/*
 ```
+
+### JS Package
+
+First bump the version in `package.json`.
