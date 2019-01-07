@@ -4,7 +4,11 @@ import {
   JupyterLabPlugin
 } from '@jupyterlab/application';
 
-import { InstanceTracker, IThemeManager } from '@jupyterlab/apputils';
+import {
+  ICommandPalette,
+  InstanceTracker,
+  IThemeManager
+} from '@jupyterlab/apputils';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
@@ -18,7 +22,11 @@ import { ILauncher } from '@jupyterlab/launcher';
 
 import { IMainMenu } from '@jupyterlab/mainmenu';
 
-import { NotebookModel } from '@jupyterlab/notebook';
+import {
+  INotebookModel,
+  INotebookTracker,
+  NotebookModel
+} from '@jupyterlab/notebook';
 
 import { PromiseDelegate } from '@phosphor/coreutils';
 
@@ -57,6 +65,8 @@ namespace CommandIDs {
   export const selectCompleter = 'omnisci:select-completer';
 
   export const setConnection = 'omnisci:set-connection';
+
+  export const injectIbisConnection = 'omnisci:inject-ibis-connection';
 }
 
 /**
@@ -90,12 +100,13 @@ const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
 const omnisciConnectionPlugin: JupyterLabPlugin<void> = {
   activate: activateOmniSciConnection,
   id: CONNECTION_PLUGIN_ID,
-  requires: [IMainMenu, ISettingRegistry],
+  requires: [ICommandPalette, IMainMenu, ISettingRegistry],
   autoStart: true
 };
 
 function activateOmniSciConnection(
   app: JupyterLab,
+  palette: ICommandPalette,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry
 ): void {
@@ -141,6 +152,7 @@ function activateOmniSciConnection(
       console.error(reason.message);
     });
   mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
+  palette.addItem({ command: CommandIDs.setConnection, category: 'OmniSci' });
 }
 /**
  * The OmniSci-Vega file type.
@@ -459,17 +471,41 @@ function activateOmniSciGridViewer(
 const omnisciInitialNotebookPlugin: JupyterLabPlugin<void> = {
   activate: activateOmniSciInitialNotebook,
   id: INITIAL_NOTEBOOK_PLUGIN_ID,
-  requires: [ISettingRegistry, IStateDB],
+  requires: [ICommandPalette, INotebookTracker, ISettingRegistry, IStateDB],
   autoStart: true
 };
 
 function activateOmniSciInitialNotebook(
   app: JupyterLab,
+  palette: ICommandPalette,
+  tracker: INotebookTracker,
   settingRegistry: ISettingRegistry,
   state: IStateDB
 ): void {
   const settingsLoaded = new PromiseDelegate<void>();
   let defaultConnectionData: IOmniSciConnectionData | undefined;
+
+  // Add a command to inject the ibis connection data into the active notebook.
+  app.commands.addCommand(CommandIDs.injectIbisConnection, {
+    label: 'Inject Ibis OmniSci Connection',
+    execute: () => {
+      let current = tracker.currentWidget;
+      if (!current || !defaultConnectionData) {
+        return;
+      }
+      Private.injectIbisConnection(
+        current.content.model,
+        defaultConnectionData
+      );
+    },
+    isEnabled: () => !!tracker.currentWidget
+  });
+
+  palette.addItem({
+    command: CommandIDs.injectIbisConnection,
+    category: 'OmniSci'
+  });
+
   // Fetch the initial state of the settings.
   Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
     .then(([settings]) => {
@@ -517,24 +553,16 @@ function activateOmniSciInitialNotebook(
         // is ready. Instead, it waits for a new stack frame to add
         // the initial cell. So as a workaround, we wait until there
         // is exactly one cell, then inject our code, then disconnect.
-        const injectCode = (sender: NotebookModel) => {
-          if (notebook.content.model.cells.length === 1) {
-            let value = Private.IBIS_TEMPLATE;
-            const connection = defaultConnectionData;
-            if (!connection) {
+        const inject = (sender: NotebookModel) => {
+          if (sender.cells.length === 1) {
+            if (!defaultConnectionData) {
               return;
             }
-            value = value.replace('{{host}}', connection.host);
-            value = value.replace('{{protocol}}', connection.protocol);
-            value = value.replace('{{password}}', connection.password);
-            value = value.replace('{{database}}', connection.dbname);
-            value = value.replace('{{user}}', connection.user);
-            value = value.replace('{{port}}', connection.port);
-            notebook.content.model.cells.get(0).value.text = value;
-            notebook.content.model.contentChanged.disconnect(injectCode);
+            Private.injectIbisConnection(sender, defaultConnectionData);
+            notebook.content.model.contentChanged.disconnect(inject);
           }
         };
-        notebook.content.model.contentChanged.connect(injectCode);
+        notebook.content.model.contentChanged.connect(inject);
       }
     }
   );
@@ -601,7 +629,7 @@ namespace Private {
   /**
    * A template for an Ibis mapd client.
    */
-  export const IBIS_TEMPLATE = `
+  const IBIS_TEMPLATE = `
 import ibis
 
 con = ibis.mapd.connect(
@@ -610,4 +638,18 @@ con = ibis.mapd.connect(
 )
 
 con.list_tables()`.trim();
+
+  export function injectIbisConnection(
+    model: INotebookModel,
+    connection: IOmniSciConnectionData
+  ) {
+    let value = IBIS_TEMPLATE;
+    value = value.replace('{{host}}', connection.host);
+    value = value.replace('{{protocol}}', connection.protocol);
+    value = value.replace('{{password}}', connection.password);
+    value = value.replace('{{database}}', connection.dbname);
+    value = value.replace('{{user}}', connection.user);
+    value = value.replace('{{port}}', connection.port);
+    model.cells.get(0).value.text = value;
+  }
 }

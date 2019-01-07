@@ -5,11 +5,9 @@ all within JupyterLab.
 
 [![](https://img.shields.io/pypi/v/jupyterlab-omnisci.svg)](https://pypi.python.org/pypi/jupyterlab-omnisci) [![](https://img.shields.io/npm/v/jupyterlab-omnisci.svg?style=flat-square)](https://www.npmjs.com/package/jupyterlab-omnisci)
 
-
 [![binder logo](https://beta.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/33610432eefa8392e1f4a9c505aa01a368eb9be8?urlpath=lab/tree/notebooks/4.%20Extract%20Use%20Cases%20-%20VL%20examples.ipynb)
 
 ![example](./screenshot.png)
-
 
 ## Installation
 
@@ -42,6 +40,12 @@ Then you can input an SQL query and hit the triangle to see the results:
 ![](./sql.png)
 
 To set a default connection that will be saved and used for new editors, go to **Settings > Set Default Omnisci Connection...**.
+
+## Getting started with Ibis
+
+Once you have set a default connection, you can run the **Inject Ibis OmniSci Connection** command to prefil a cell to connect to it with Ibis.
+
+![](./inject-ibis-con.gif)
 
 ## Creating Visualizations
 
