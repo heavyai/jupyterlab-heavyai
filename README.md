@@ -16,8 +16,31 @@ conda install -c conda-forge jupyterlab pymapd
 
 pip install \
     jupyterlab-omnisci \
-    git+https://github.com/ibis-project/ibis.git@5672feb8516d56c7c9d9faacc083c6e6f9b953fa \
-    git+https://github.com/jakevdp/altair.git@vl3-rc8
+    git+https://github.com/Quansight/ibis.git@omnisci-sample \
+    altair
+```
+
+Then install the `jupyterlab-omnisci` JupyterLab extension.
+
+```bash
+jupyter labextension install jupyterlab-omnisci
+```
+
+Then launch Jupyter Lab:
+
+```bash
+jupyter lab
+```
+
+### Bleed Edge Installation
+
+If you would like to get some of geographic use cases to work, like those in `./notebooks/OmniSci Vega Tutorial.py`,
+you also have to use the latest beta versions of Altair and Vega.
+
+First install the latest Altair:
+
+```bash
+pip install    git+https://github.com/jakevdp/altair.git@vl3-rc8
 ```
 
 Then tell JupyterLab to use a later version of Vega Lite, by adding
@@ -39,17 +62,10 @@ Add resolutions key:
     ...
 ```
 
-Then install the `jupyterlab-omnisci` JupyterLab extension, which will also rebuild
-JupyterLab with the latest version.
+Then rebuild JupyterLab:
 
-```bash
-jupyter labextension install jupyterlab-omnisci
 ```
-
-Then launch Jupyter Lab:
-
-```bash
-jupyter lab
+jupyter lab build
 ```
 
 ## Executing SQL Queries
