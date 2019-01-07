@@ -306,7 +306,14 @@ monkeypatch_altair()
 def display_chart(chart: altair.Chart, backend_render=False) -> None:
     """
     Given an Altair chart created around an Ibis expression, this displays the different
-    stages of rendering of that chart. Helpful for debugging.
+    stages of rendering of that chart.
+
+    This is more for debugging than for anything else.
+    It iterates through all useful combinations for the renderer,
+    displays the code you would need to run to enable that setting,
+    and then displays its output given that setting.
+
+
 
     backend_render: Whether to also render with OmniSci's builtin Vega rendering.
     """
