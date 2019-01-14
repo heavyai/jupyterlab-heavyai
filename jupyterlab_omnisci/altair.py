@@ -192,16 +192,18 @@ def retrieve_expr(spec) -> ibis.Expr:
     The `data.name` should be a UUID that we look up in our global mapping of names
     to ibis expressions.
     """
-    # some specs have sub `spec` key
-    if "spec" in spec:
-        spec = spec["spec"]
     try:
-        return _name_to_ibis.pop(spec["data"]["name"])
+        name = spec["data"]["name"]
+    except KeyError:
+        # some specs have sub `spec` key
+        name = spec["spec"]["data"]["name"]
+
+    try:
+        return _name_to_ibis.pop(name)
     except KeyError:
         raise RuntimeError(
             "Could not find Ibis expression for chart. Make sure Ibis data transformer is enabled: altair.data_transformers.enable('ibis')"
         )
-
 
 def ibis_transformation(data):
     """
@@ -292,7 +294,7 @@ def set_data(spec, data):
     """
     Sets the data on the spec to be the new data
     """
-    if "spec" in spec:
+    if "spec" in spec and "data" in spec["data"]:
         spec["spec"]["data"] = data
     else:
         spec["data"] = data
