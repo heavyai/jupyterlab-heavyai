@@ -29,7 +29,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
     this._connectionData = connectionData;
 
     this.toolbar.addClass('omnisci-OmniSci-toolbar');
-    this.addClass('omnisci-OmniSciVegaViewer-content');
+    this.addClass('omnisci-OmniSciVegaViewer');
 
     this.toolbar.addItem(
       'Render',
