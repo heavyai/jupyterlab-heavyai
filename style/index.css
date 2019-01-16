@@ -1,5 +1,6 @@
 :root {
-  --omnisci-toolbar-height: calc(72px + var(--jp-border-width));
+  --omnisci-sqleditor-toolbar-height: calc(72px + var(--jp-border-width));
+  --omnisci-vega-toolbar-height: calc(36px + var(--jp-border-width));
 }
 
 .omnisci-ErrorMessage {
@@ -8,7 +9,7 @@
   white-space: pre-wrap;
 }
 
-.omnisci-OmniSciVegaViewer-content {
+.omnisci-OmniSciVegaViewer {
   height: 100%;
   width: 100%;
 }
@@ -19,15 +20,9 @@
   overflow: auto;
 }
 
-.omnisci-RenderedOmniSciSQLEditor {
-}
-
-.omnisci-OmniSciSQLEditor {
-}
-
 .omnisci-OmniSciGrid {
-  top: var(--omnisci-toolbar-height) !important;
-  height: calc(100% - var(--omnisci-toolbar-height)) !important;
+  top: var(--omnisci-sqleditor-toolbar-height) !important;
+  height: calc(100% - var(--omnisci-sqleditor-toolbar-height)) !important;
 }
 
 .omnisci-OmniSciGrid-content {
@@ -39,13 +34,20 @@
 }
 
 .jp-Notebook .jp-Cell .jp-OutputArea .omnisci-OmniSciGrid-content {
-  height: calc(100% - var(--omnisci-toolbar-height)) !important;
+  height: calc(100% - var(--omnisci-sqleditor-toolbar-height)) !important;
 }
 
 .jp-Toolbar.omnisci-OmniSci-toolbar {
   justify-content: right;
   align-items: center;
-  height: var(--omnisci-toolbar-height) !important;
+}
+
+.omnisci-OmniSciSQLEditor .jp-Toolbar.omnisci-OmniSci-toolbar {
+  height: var(--omnisci-sqleditor-toolbar-height) !important;
+}
+
+.omnisci-OmniSciVegaViewer .jp-Toolbar.omnisci-OmniSci-toolbar {
+  height: var(--omnisci-vega-toolbar-height) !important;
 }
 
 .jp-Toolbar.omnisci-OmniSci-toolbar .jp-Toolbar-item {
