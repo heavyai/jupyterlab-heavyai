@@ -261,46 +261,46 @@ def update_spec(expr: ibis.Expr, spec: dict):
         if groupby:
             all_fields_exist = all([field in expr.columns for field in groupby])
             if not all_fields_exist:
-                transform['groupby'] = groupby
+                transform["groupby"] = groupby
                 # we referenced a field that isnt in the expression because it was an aggregate we coudnt process
                 continue
             expr = expr.groupby(groupby)
 
         aggregate = transform.pop("aggregate", None)
         if aggregate:
-                expr = expr.aggregate(
-                    [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
-                )
+            expr = expr.aggregate(
+                [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
+            )
 
         filter_ = transform.pop("filter", None)
         if filter_:
             # https://vega.github.io/vega-lite/docs/filter.html#field-predicate
-            field = filter_['field']
+            field = filter_["field"]
             field_expr = original_expr[field]
-            if 'range' in filter_:
-                min, max = filter_['range']
+            if "range" in filter_:
+                min, max = filter_["range"]
                 preds = [field_expr >= min, field_expr <= max]
-            elif 'equal' in filter_:
-                preds = [field_expr == filter_['equal']]
-            elif 'gt' in filter_:
-                preds = [field_expr > filter_['gt']]
-            elif 'lt' in filter_:
-                preds = [field_expr < filter_['lt']]
-            elif 'lte' in filter_:
-                preds = [field_expr <= filter_['lte']]
-            elif 'gte' in filter_:
-                preds = [field_expr >= filter_['gte']]
+            elif "equal" in filter_:
+                preds = [field_expr == filter_["equal"]]
+            elif "gt" in filter_:
+                preds = [field_expr > filter_["gt"]]
+            elif "lt" in filter_:
+                preds = [field_expr < filter_["lt"]]
+            elif "lte" in filter_:
+                preds = [field_expr <= filter_["lte"]]
+            elif "gte" in filter_:
+                preds = [field_expr >= filter_["gte"]]
             else:
                 # put filter back if we cant transform itt
-                transform['filter'] = filter_
+                transform["filter"] = filter_
                 continue
             expr = expr.filter(preds)
 
     # remove empty transforms
-    spec['transform'] = [i for i in spec.get('transform', []) if i]
+    spec["transform"] = [i for i in spec.get("transform", []) if i]
     # remove key if empty
-    if not spec['transform']:
-        del spec['transform']
+    if not spec["transform"]:
+        del spec["transform"]
 
     return expr
 
