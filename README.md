@@ -68,7 +68,7 @@ Add resolutions key:
 
 Then rebuild JupyterLab:
 
-```
+```bash
 jupyter lab build
 ```
 

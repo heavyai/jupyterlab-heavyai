@@ -50,15 +50,13 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
                  updated spec.
         compile: Whether to take the list of transformations on the spec and compile them to Ibis.
     """
-    expr: ibis.Expr = retrieve_expr(spec)
     assert type in ("vl", "vl-omnisci", "json", "sql")
     if type == "vl":
         display_type = VegaLite
         display_data = EMPTY_SPEC
     elif type == "vl-omnisci":
-        conn = get_client(expr)
         display_type = VegaLiteOmniSci
-        display_data = [EMPTY_SPEC, conn]
+        display_data = [EMPTY_SPEC, None]
     elif type == "json":
         display_type = CompatJSON
         display_data = {"_": "Waiting for transformed spec..."}
@@ -66,22 +64,39 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
         display_type = Code
         display_data = "Waiting for transformed spec..."
 
-    def to_data(spec, expr=expr):
+    def to_data(spec):
         # if we should compile the expression, replace it with the updated
         # version and mutate the spec
-        if compile:
-            expr = update_spec(expr, spec)
+        all_expressions = []
+        for view in spec_views(spec):
+            if "data" not in view:
+                continue
+            # Retrieve the ibis expression based on the name of the data
+            expr = _name_to_ibis.pop(view["data"]["name"])
+            # If we are compiling, update the spec based on the expression
+            # and record the updated expression
+            if compile:
+                expr = update_spec(expr, view)
+            # Save the resulting expression so we can access it for the SQL output.
+            all_expressions.append(expr)
+            # If we are compiling to vega lite, get the data and run
+            # it through the default transformer (to_csv)
+            if type == "vl":
+                view["data"] = DEFAULT_TRANSFORMER(expr.execute())
+            # If we are compiling to backend rendered vega
+            # just record the SQL statement
+            elif type == "vl-omnisci":
+                view["data"] = {"sql": expr.compile()}
 
         if type == "vl":
-            set_data(spec, DEFAULT_TRANSFORMER(expr.execute()))
             return spec
         elif type == "vl-omnisci":
-            set_data(spec, {"sql": expr.compile()})
-            return [spec, conn]
+            return [spec, get_client(all_expressions[0])]
         elif type == "json":
             return spec
         elif type == "sql":
-            return expr.compile()
+            # TODO: return mutiple
+            return "\n".join(expr.compile() for expr in all_expressions)
 
     def to_display(spec) -> DisplayObject:
         return display_type(to_data(spec))
@@ -127,8 +142,10 @@ class CompatJSON(JSON):
     Regular JSON object isn't rendered on Github on nbviewer, so we subclass it
     to also render as HTML.
     """
+
     def _repr_html_(self):
         return "<pre>" + pprint.pformat(self.data, width=120) + "</pre>"
+
 
 ##
 # Utils
@@ -182,28 +199,26 @@ def monkeypatch_altair():
 
 
 _i = 0
+# Mapping from data name to ibis expression
 _name_to_ibis: typing.Dict[str, ibis.Expr] = {}
 
 
-def retrieve_expr(spec) -> ibis.Expr:
+def spec_views(spec: dict):
     """
-    Given a spec, return the ibis expression associated with it.
-
-    The `data.name` should be a UUID that we look up in our global mapping of names
-    to ibis expressions.
+    Given a vega lite spec, returns all the (possible) specifications in side of it:
+    https://vega.github.io/vega-lite/docs/spec.html#documentation-overview
     """
-    try:
-        name = spec["data"]["name"]
-    except KeyError:
-        # some specs have sub `spec` key
-        name = spec["spec"]["data"]["name"]
+    yield spec
+    sub_specs = (
+        spec.get("layer", []) + spec.get("hconcat", []) + spec.get("vconcat", [])
+    )
+    if "spec" in spec:
+        sub_specs.append(spec["spec"])
+    if "repeat" in spec:
+        sub_specs.append(spec["repeat"])
+    for sub_spec in sub_specs:
+        yield from spec_views(sub_spec)
 
-    try:
-        return _name_to_ibis.pop(name)
-    except KeyError:
-        raise RuntimeError(
-            "Could not find Ibis expression for chart. Make sure Ibis data transformer is enabled: altair.data_transformers.enable('ibis')"
-        )
 
 def ibis_transformation(data):
     """
@@ -246,58 +261,48 @@ def update_spec(expr: ibis.Expr, spec: dict):
         if groupby:
             all_fields_exist = all([field in expr.columns for field in groupby])
             if not all_fields_exist:
-                transform['groupby'] = groupby
+                transform["groupby"] = groupby
                 # we referenced a field that isnt in the expression because it was an aggregate we coudnt process
                 continue
             expr = expr.groupby(groupby)
 
         aggregate = transform.pop("aggregate", None)
         if aggregate:
-                expr = expr.aggregate(
-                    [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
-                )
+            expr = expr.aggregate(
+                [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
+            )
 
         filter_ = transform.pop("filter", None)
         if filter_:
             # https://vega.github.io/vega-lite/docs/filter.html#field-predicate
-            field = filter_['field']
+            field = filter_["field"]
             field_expr = original_expr[field]
-            if 'range' in filter_:
-                min, max = filter_['range']
+            if "range" in filter_:
+                min, max = filter_["range"]
                 preds = [field_expr >= min, field_expr <= max]
-            elif 'equal' in filter_:
-                preds = [field_expr == filter_['equal']]
-            elif 'gt' in filter_:
-                preds = [field_expr > filter_['gt']]
-            elif 'lt' in filter_:
-                preds = [field_expr < filter_['lt']]
-            elif 'lte' in filter_:
-                preds = [field_expr <= filter_['lte']]
-            elif 'gte' in filter_:
-                preds = [field_expr >= filter_['gte']]
+            elif "equal" in filter_:
+                preds = [field_expr == filter_["equal"]]
+            elif "gt" in filter_:
+                preds = [field_expr > filter_["gt"]]
+            elif "lt" in filter_:
+                preds = [field_expr < filter_["lt"]]
+            elif "lte" in filter_:
+                preds = [field_expr <= filter_["lte"]]
+            elif "gte" in filter_:
+                preds = [field_expr >= filter_["gte"]]
             else:
                 # put filter back if we cant transform itt
-                transform['filter'] = filter_
+                transform["filter"] = filter_
                 continue
             expr = expr.filter(preds)
 
     # remove empty transforms
-    spec['transform'] = [i for i in spec.get('transform', []) if i]
+    spec["transform"] = [i for i in spec.get("transform", []) if i]
     # remove key if empty
-    if not spec['transform']:
-        del spec['transform']
+    if not spec["transform"]:
+        del spec["transform"]
 
     return expr
-
-
-def set_data(spec, data):
-    """
-    Sets the data on the spec to be the new data
-    """
-    if "spec" in spec and "data" in spec["data"]:
-        spec["spec"]["data"] = data
-    else:
-        spec["data"] = data
 
 
 altair.renderers.register("ibis", ibis_renderer)
