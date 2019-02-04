@@ -76,7 +76,7 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
             # If we are compiling, update the spec based on the expression
             # and record the updated expression
             if compile:
-                expr = update_spec(expr, spec)
+                expr = update_spec(expr, view)
             # Save the resulting expression so we can access it for the SQL output.
             all_expressions.append(expr)
             # If we are compiling to vega lite, get the data and run
