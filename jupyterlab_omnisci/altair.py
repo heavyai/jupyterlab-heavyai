@@ -15,7 +15,7 @@ import altair
 import pandas
 from altair.vegalite.v2.display import default_renderer
 
-__all__ = ["display_chart"]
+__all__ = ["display_chart", "interactive_chart"]
 
 import ipykernel.comm
 from IPython.display import JSON, DisplayObject, display, Code, HTML
@@ -32,6 +32,11 @@ EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 # A comm id used to establish a link between python code
 # and frontend vega-lite transforms.
 COMM_ID = "extract-vega-lite"
+
+
+# Set this to the active output when we are rendering with ipywidgets.
+# We use this to get the output into the renderer, without having to pass it in explicitly.
+ACTIVE_OUTPUT: typing.Optional[ipywidgets.Output] = None
 
 
 def ibis_renderer(spec, type="vl", extract=True, compile=True):
@@ -103,13 +108,12 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
         return display_type(to_data(spec))
 
     if extract:
-        output: typing.Optional[ipywidgets.Output] = active_output()
 
-        if output:  # we are in ipywidget mode
+        if ACTIVE_OUTPUT:  # we are in ipywidget mode
 
-            def callback(s):
-                output.clear_output(wait=True)
-                output.append_display_data(to_display(s))
+            def callback(s, ACTIVE_OUTPUT=ACTIVE_OUTPUT):
+                ACTIVE_OUTPUT.clear_output(wait=True)
+                ACTIVE_OUTPUT.append_display_data(to_display(s))
 
             extract_spec(spec, callback)
         else:  # we are in normal ipython mode
@@ -119,16 +123,29 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
     return get_ipython().display_formatter.format(to_display(spec))[0]
 
 
-def active_output():
+def interactive_chart(f, controls):
     """
-    Returns the currently active output (the one I am in the context manager of).
+    Connect Altair chart to a function.
+
+    Like `ipywidgets.interactive_output` but should return Altair chart and supports
+    async altair rendering.
     """
 
-    #  https://github.com/jupyter-widgets/ipywidgets/blob/2b91eac459bf4929c3b92794bfb0dc7deef2a353/ipywidgets/widgets/widget_output.py#L105-L127
-    msg_id = get_ipython().kernel._parent_header["header"]["msg_id"]
-    for w in ipywidgets.Widget.widgets.values():
-        if isinstance(w, ipywidgets.Output) and w.msg_id == msg_id:
-            return w
+    out = ipywidgets.Output()
+
+    def observer(change, out=out):
+        global ACTIVE_OUTPUT
+        kwargs = {k: v.value for k, v in controls.items()}
+        out.clear_output(wait=True)
+
+        ACTIVE_OUTPUT = out
+        f(**kwargs)._repr_mimebundle_(None, None)
+        ACTIVE_OUTPUT = None
+
+    for k, w in controls.items():
+        w.observe(observer, "value")
+    observer(None)
+    return out
 
 
 ##
