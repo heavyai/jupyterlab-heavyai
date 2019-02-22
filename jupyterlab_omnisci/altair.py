@@ -9,6 +9,7 @@ import pprint
 
 import ibis
 import ibis.client
+import ipywidgets
 
 import altair
 import pandas
@@ -102,11 +103,32 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
         return display_type(to_data(spec))
 
     if extract:
-        display_id = display(display_type(display_data), display_id=True)
+        output: typing.Optional[ipywidgets.Output] = active_output()
 
-        extract_spec(spec, lambda s: display_id.update(to_display(s)))
+        if output:  # we are in ipywidget mode
+
+            def callback(s):
+                output.clear_output(wait=True)
+                output.append_display_data(to_display(s))
+
+            extract_spec(spec, callback)
+        else:  # we are in normal ipython mode
+            display_id = display(display_type(display_data), display_id=True)
+            extract_spec(spec, lambda s: display_id.update(to_display(s)))
         return {"text/plain": ""}
     return get_ipython().display_formatter.format(to_display(spec))[0]
+
+
+def active_output():
+    """
+    Returns the currently active output (the one I am in the context manager of).
+    """
+
+    #  https://github.com/jupyter-widgets/ipywidgets/blob/2b91eac459bf4929c3b92794bfb0dc7deef2a353/ipywidgets/widgets/widget_output.py#L105-L127
+    msg_id = get_ipython().kernel._parent_header["header"]["msg_id"]
+    for w in ipywidgets.Widget.widgets.values():
+        if isinstance(w, ipywidgets.Output) and w.msg_id == msg_id:
+            return w
 
 
 ##
