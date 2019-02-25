@@ -22,6 +22,7 @@ setup(
     install_requires=[
         "vdom",
         "pyyaml",
-        "altair"
+        "altair",
+        "ipywidgets"
     ]
 )

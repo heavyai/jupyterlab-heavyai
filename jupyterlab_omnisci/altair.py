@@ -9,12 +9,13 @@ import pprint
 
 import ibis
 import ibis.client
+import ipywidgets
 
 import altair
 import pandas
 from altair.vegalite.v2.display import default_renderer
 
-__all__ = ["display_chart"]
+__all__ = ["display_chart", "interactive_chart"]
 
 import ipykernel.comm
 from IPython.display import JSON, DisplayObject, display, Code, HTML
@@ -31,6 +32,11 @@ EMPTY_SPEC = {"data": {"values": []}, "mark": "bar"}
 # A comm id used to establish a link between python code
 # and frontend vega-lite transforms.
 COMM_ID = "extract-vega-lite"
+
+
+# Set this to the active output when we are rendering with ipywidgets.
+# We use this to get the output into the renderer, without having to pass it in explicitly.
+ACTIVE_OUTPUT: typing.Optional[ipywidgets.Output] = None
 
 
 def ibis_renderer(spec, type="vl", extract=True, compile=True):
@@ -102,11 +108,44 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
         return display_type(to_data(spec))
 
     if extract:
-        display_id = display(display_type(display_data), display_id=True)
 
-        extract_spec(spec, lambda s: display_id.update(to_display(s)))
+        if ACTIVE_OUTPUT:  # we are in ipywidget mode
+
+            def callback(s, ACTIVE_OUTPUT=ACTIVE_OUTPUT):
+                ACTIVE_OUTPUT.clear_output(wait=True)
+                ACTIVE_OUTPUT.append_display_data(to_display(s))
+
+            extract_spec(spec, callback)
+        else:  # we are in normal ipython mode
+            display_id = display(display_type(display_data), display_id=True)
+            extract_spec(spec, lambda s: display_id.update(to_display(s)))
         return {"text/plain": ""}
     return get_ipython().display_formatter.format(to_display(spec))[0]
+
+
+def interactive_chart(f, controls):
+    """
+    Connect Altair chart to a function.
+
+    Like `ipywidgets.interactive_output` but should return Altair chart and supports
+    async altair rendering.
+    """
+
+    out = ipywidgets.Output()
+
+    def observer(change, out=out):
+        global ACTIVE_OUTPUT
+        kwargs = {k: v.value for k, v in controls.items()}
+        out.clear_output(wait=True)
+
+        ACTIVE_OUTPUT = out
+        f(**kwargs)._repr_mimebundle_(None, None)
+        ACTIVE_OUTPUT = None
+
+    for k, w in controls.items():
+        w.observe(observer, "value")
+    observer(None)
+    return out
 
 
 ##

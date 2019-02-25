@@ -12,3 +12,4 @@ dependencies:
     - vdom
     - vega_datasets
     - https://github.com/ibis-project/ibis/archive/master.zip
+    - ipywidgets

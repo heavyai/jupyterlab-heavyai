@@ -25,6 +25,7 @@ pip install \
 Then install the `jupyterlab-omnisci` JupyterLab extension.
 
 ```bash
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x
 jupyter labextension install jupyterlab-omnisci
 ```
 
@@ -42,7 +43,7 @@ you also have to use the latest beta versions of Altair and Vega.
 First install the latest Altair:
 
 ```bash
-pip install    git+https://github.com/jakevdp/altair.git@vl3-rc8
+pip install git+https://github.com/jakevdp/altair.git@vl3-rc8
 ```
 
 Then tell JupyterLab to use a later version of Vega Lite, by adding
@@ -112,6 +113,7 @@ conda create -f environment.yml
 conda activate jupyterlab-omnisci
 jlpm install
 jlpm run build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x
 jupyter labextension install .
 pip install -e .
 ```
