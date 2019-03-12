@@ -6,19 +6,21 @@ then pass an Ibis expression directly to `altair.Chart`.
 """
 import typing
 import pprint
+from copy import copy
 
 import ibis
 import ibis.client
 import ipywidgets
 
 import altair
+import vdom
 import pandas
 from altair.vegalite.v2.display import default_renderer
 
-__all__ = ["display_chart", "interactive_chart"]
+__all__ = ["display_chart", "interactive_chart", "get_display"]
 
 import ipykernel.comm
-from IPython.display import JSON, DisplayObject, display, Code, HTML
+from IPython.display import JSON, DisplayObject, display, Code, HTML, DisplayHandle
 
 
 # Data transformer to use in ibis renderer
@@ -37,6 +39,7 @@ COMM_ID = "extract-vega-lite"
 # Set this to the active output when we are rendering with ipywidgets.
 # We use this to get the output into the renderer, without having to pass it in explicitly.
 ACTIVE_OUTPUT: typing.Optional[ipywidgets.Output] = None
+DISPLAY_HANDLE: typing.Optional[display] = None
 
 
 def ibis_renderer(spec, type="vl", extract=True, compile=True):
@@ -108,18 +111,35 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
         return display_type(to_data(spec))
 
     if extract:
-
-        if ACTIVE_OUTPUT:  # we are in ipywidget mode
-
+        global DISPLAY_HANDLE
+        
+        if DISPLAY_HANDLE:
+            # we are in vdom widget mode
+            def callback(s):
+                global DISPLAY_HANDLE
+                # Don't display if s == {}
+                if '$schema' in s:
+                    DISPLAY_HANDLE.update(to_display(s))
+                    DISPLAY_HANDLE = None
+            
+            # If DISPLAY_HANDLE is set but it's not a DisplayHandle yet
+            if not isinstance(DISPLAY_HANDLE, DisplayHandle):
+                DISPLAY_HANDLE = display(display_type(display_data), display_id=True)
+            extract_spec(spec, callback)
+        elif ACTIVE_OUTPUT:
+            # we are in ipywidget mode
             def callback(s, ACTIVE_OUTPUT=ACTIVE_OUTPUT):
                 ACTIVE_OUTPUT.clear_output(wait=True)
                 ACTIVE_OUTPUT.append_display_data(to_display(s))
 
             extract_spec(spec, callback)
-        else:  # we are in normal ipython mode
+        else:
+            # we are in normal ipython mode
             display_id = display(display_type(display_data), display_id=True)
             extract_spec(spec, lambda s: display_id.update(to_display(s)))
+        
         return {"text/plain": ""}
+    
     return get_ipython().display_formatter.format(to_display(spec))[0]
 
 
@@ -148,11 +168,23 @@ def interactive_chart(f, controls):
     return out
 
 
+def get_display(f, *args, display_handle=True, **kwargs):
+    """
+    Get a IPython display handle that can be updated
+    Usage:
+        chart_handle = jupyterlab_omnisci.get_display(render_chart, *args)
+    """
+
+    global DISPLAY_HANDLE
+
+    DISPLAY_HANDLE = display_handle
+    f(*args, **kwargs)._repr_mimebundle_(None, None)
+    # return DISPLAY_HANDLE
+    return copy(DISPLAY_HANDLE)
+
 ##
 # Custom display objects
 ##
-
-
 class VegaLiteOmniSci(DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
         spec, conn = self.data
