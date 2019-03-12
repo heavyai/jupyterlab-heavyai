@@ -2,8 +2,8 @@ name: jupyterlab-omnisci
 channels:
   - conda-forge
 dependencies:
-  - python
-  - jupyterlab
+  - python=3.6
+  - jupyterlab=0.35.4
   - altair
   - pyyaml
   - mypy
