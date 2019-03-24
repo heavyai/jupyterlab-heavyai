@@ -118,16 +118,10 @@
       }
     }
   },
-  "properties": {
-    "servers": {
-      "title": "Default Connection Configuration",
-      "description": "The default connection settings for OmniSci databases",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/connection"
-      }
-    }
-  },
-  "additionalProperties": false,
-  "type": "object"
+  "type": "array",
+  "title": "Default Connection Configuration",
+  "description": "The default connection settings for OmniSci databases",
+  "items": {
+    "$ref": "#/definitions/connection"
+  }
 }
