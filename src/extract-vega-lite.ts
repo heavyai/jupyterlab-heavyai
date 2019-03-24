@@ -1,4 +1,7 @@
-import { JupyterLab, JupyterLabPlugin } from '@jupyterlab/application';
+import {
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
+} from '@jupyterlab/application';
 
 import { NotebookPanel } from '@jupyterlab/notebook';
 
@@ -13,7 +16,7 @@ import { Kernel, KernelMessage } from '@jupyterlab/services';
 
 const PLUGIN_ID = 'jupyterlab-omnisci:extract-vega-lite-plugin';
 
-const plugin: JupyterLabPlugin<void> = {
+const plugin: JupyterFrontEndPlugin<void> = {
   activate,
   id: PLUGIN_ID,
   autoStart: true
@@ -24,8 +27,8 @@ const COMM_TARGET = 'extract-vega-lite';
 
 function commTarget(comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) {
   const spec: any = msg.content.data;
-  const config_ = config.initConfig({});
-  const extractedSpec = extractTransforms(spec, config_);
+  const vegaConfig = config.initConfig({});
+  const extractedSpec = extractTransforms(spec, vegaConfig);
   comm.send(extractedSpec as any);
 }
 function createNew(
@@ -47,6 +50,6 @@ function createNew(
     }
   });
 }
-function activate(app: JupyterLab) {
+function activate(app: JupyterFrontEnd) {
   app.docRegistry.addWidgetExtension('Notebook', { createNew });
 }

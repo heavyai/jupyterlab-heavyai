@@ -1,7 +1,7 @@
 import {
   ILayoutRestorer,
-  JupyterLab,
-  JupyterLabPlugin
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 
 import {
@@ -97,7 +97,7 @@ const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
 /**
  * The Omnisci connection handler extension.
  */
-const omnisciConnectionPlugin: JupyterLabPlugin<void> = {
+const omnisciConnectionPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciConnection,
   id: CONNECTION_PLUGIN_ID,
   requires: [ICommandPalette, IMainMenu, ISettingRegistry],
@@ -105,7 +105,7 @@ const omnisciConnectionPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciConnection(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   palette: ICommandPalette,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry
@@ -169,7 +169,7 @@ const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
 /**
  * The Omnisci vega file handler extension.
  */
-const omnisciVegaPlugin: JupyterLabPlugin<void> = {
+const omnisciVegaPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciVegaViewer,
   id: VEGA_PLUGIN_ID,
   requires: [ILayoutRestorer, ISettingRegistry],
@@ -177,7 +177,7 @@ const omnisciVegaPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciVegaViewer(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   restorer: ILayoutRestorer,
   settingRegistry: ISettingRegistry
 ): void {
@@ -245,7 +245,7 @@ function activateOmniSciVegaViewer(
 /**
  * The Omnisci SQL editor extension.
  */
-const omnisciGridPlugin: JupyterLabPlugin<void> = {
+const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciGridViewer,
   id: SQL_EDITOR_PLUGIN_ID,
   requires: [
@@ -262,7 +262,7 @@ const omnisciGridPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciGridViewer(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   completionManager: ICompletionManager,
   editorServices: IEditorServices,
   launcher: ILauncher,
@@ -418,7 +418,7 @@ function activateOmniSciGridViewer(
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
       gridTracker.add(grid);
-      app.shell.addToMainArea(grid);
+      app.shell.add(grid, 'main');
       app.shell.activateById(grid.id);
       grid.content.onModelChanged.connect(() => {
         gridTracker.save(grid);
@@ -468,7 +468,7 @@ function activateOmniSciGridViewer(
 /**
  * The Omnisci inital notebook extension.
  */
-const omnisciInitialNotebookPlugin: JupyterLabPlugin<void> = {
+const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciInitialNotebook,
   id: INITIAL_NOTEBOOK_PLUGIN_ID,
   requires: [ICommandPalette, INotebookTracker, ISettingRegistry, IStateDB],
@@ -476,7 +476,7 @@ const omnisciInitialNotebookPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciInitialNotebook(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   palette: ICommandPalette,
   tracker: INotebookTracker,
   settingRegistry: ISettingRegistry,
@@ -543,7 +543,7 @@ function activateOmniSciInitialNotebook(
         });
         // Move the notebook so it is in a split pane with the primary tab.
         // It has already been added, so this just has the effect of moving it.
-        app.shell.addToMainArea(notebook, { mode: 'split-left' });
+        app.shell.add(notebook, 'main', { mode: 'split-left' });
 
         await notebook.context.ready;
 
@@ -571,7 +571,7 @@ function activateOmniSciInitialNotebook(
 /**
  * Export the plugin as default.
  */
-const plugins: JupyterLabPlugin<any>[] = [
+const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciConnectionPlugin,
   omnisciVegaPlugin,
   omnisciGridPlugin,
