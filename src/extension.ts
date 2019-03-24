@@ -647,9 +647,9 @@ con.list_tables()`.trim();
     value = value.replace('{{host}}', connection.host);
     value = value.replace('{{protocol}}', connection.protocol);
     value = value.replace('{{password}}', connection.password);
-    value = value.replace('{{database}}', connection.dbname);
-    value = value.replace('{{user}}', connection.user);
-    value = value.replace('{{port}}', connection.port);
+    value = value.replace('{{database}}', connection.database);
+    value = value.replace('{{user}}', connection.username);
+    value = value.replace('{{port}}', `${connection.port}`);
     model.cells.get(0).value.text = value;
   }
 }

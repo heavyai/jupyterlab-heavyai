@@ -24,34 +24,64 @@ export type OmniSciConnection = any;
  */
 export interface IOmniSciConnectionData extends JSONObject {
   /**
-   * The host of the connection, e.g. `metis.mapd.com`.
+   * The name of the database to connect to.
    */
-  host: string;
+  database?: string;
 
   /**
-   * The protocol to use, e.g. `https`.
+   * Whether this connection should be considered the default one.
    */
-  protocol: string;
+  master?: boolean;
 
   /**
-   * The port to use, e.g. `443`.
+   * Username for the database connection.
    */
-  port: string;
+  username?: string;
 
   /**
-   * The user name.
+   * Password for the database connection.
    */
-  user: string;
+  password?: string;
 
   /**
-   * The database name.
+   * A URL for the OmniSci server.
+   *
+   * If host, protocol, and port are given,
+   * those will take precedence.
    */
-  dbname: string;
+  url?: string;
 
   /**
-   * The password for the connection.
+   * Custom styles used by Immerse.
+   * Typed as `any` here as they are unused.
    */
-  password: string;
+  customStyles?: any;
+
+  /**
+   * The protocol to use when connecting.
+   */
+  protocol?: 'http' | 'https' | string;
+
+  /**
+   * Custom styles for mapbox.
+   * Unused here.
+   */
+  mapboxCustomStyles?: any;
+
+  /**
+   * The host URL for the connection.
+   */
+  host?: string;
+
+  /**
+   * The port for the connection.
+   */
+  port?: number;
+
+  /**
+   * GTM string.
+   */
+  GTM?: string;
 }
 
 /**
@@ -122,12 +152,12 @@ export class OmniSciConnectionDialog extends Widget
     this._protocol.placeholder = 'Protocol';
     this._port.placeholder = 'Port';
     if (oldData) {
-      this._user.value = oldData.user;
+      this._user.value = oldData.username;
       this._password.value = oldData.password;
-      this._database.value = oldData.dbname;
+      this._database.value = oldData.database;
       this._host.value = oldData.host;
       this._protocol.value = oldData.protocol;
-      this._port.value = oldData.port;
+      this._port.value = `${oldData.port}`;
     }
 
     const userLabel = new Widget();
@@ -164,7 +194,7 @@ export class OmniSciConnectionDialog extends Widget
       dbname: this._database.value,
       host: this._host.value,
       protocol: this._protocol.value,
-      port: this._port.value
+      port: parseInt(this._port.value, 10)
     };
   }
 
