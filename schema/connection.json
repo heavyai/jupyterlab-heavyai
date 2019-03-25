@@ -34,10 +34,13 @@
           "type": "string"
         },
         "port": {
-          "type": "string"
+          "type": "integer"
         },
         "GTM": {
           "type": "string"
+        },
+        "loadDashboard": {
+          "type": "integer"
         }
       },
       "additionalProperties": false,

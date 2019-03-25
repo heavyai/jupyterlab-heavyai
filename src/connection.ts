@@ -4,8 +4,6 @@ import { CompletionHandler } from '@jupyterlab/completer';
 
 import { DataConnector } from '@jupyterlab/coreutils';
 
-import { JSONObject } from '@phosphor/coreutils';
-
 import { PanelLayout, Widget } from '@phosphor/widgets';
 
 declare const require: any;
@@ -22,7 +20,7 @@ export type OmniSciConnection = any;
 /**
  * Connection data for the omnisci browser client.
  */
-export interface IOmniSciConnectionData extends JSONObject {
+export interface IOmniSciConnectionData {
   /**
    * The name of the database to connect to.
    */
@@ -82,6 +80,12 @@ export interface IOmniSciConnectionData extends JSONObject {
    * GTM string.
    */
   GTM?: string;
+
+  /**
+   * The dashboard to load in Immerse.
+   * Not used here.
+   */
+  loadDashboard?: number;
 }
 
 /**
@@ -115,8 +119,8 @@ export function makeConnection(
       .protocol(data.protocol)
       .host(data.host)
       .port(data.port)
-      .dbName(data.dbname)
-      .user(data.user)
+      .dbName(data.database)
+      .user(data.username)
       .password(data.password)
       .connect((error: any, con: any) => {
         if (error) {
@@ -152,12 +156,12 @@ export class OmniSciConnectionDialog extends Widget
     this._protocol.placeholder = 'Protocol';
     this._port.placeholder = 'Port';
     if (oldData) {
-      this._user.value = oldData.username;
-      this._password.value = oldData.password;
-      this._database.value = oldData.database;
-      this._host.value = oldData.host;
-      this._protocol.value = oldData.protocol;
-      this._port.value = `${oldData.port}`;
+      this._user.value = oldData.username || '';
+      this._password.value = oldData.password || '';
+      this._database.value = oldData.database || '';
+      this._host.value = oldData.host || '';
+      this._protocol.value = oldData.protocol || '';
+      this._port.value = oldData.port ? `${oldData.port}` : '';
     }
 
     const userLabel = new Widget();
@@ -189,9 +193,9 @@ export class OmniSciConnectionDialog extends Widget
 
   getValue(): IOmniSciConnectionData {
     return {
-      user: this._user.value,
+      username: this._user.value,
       password: this._password.value,
-      dbname: this._database.value,
+      database: this._database.value,
       host: this._host.value,
       protocol: this._protocol.value,
       port: parseInt(this._port.value, 10)
