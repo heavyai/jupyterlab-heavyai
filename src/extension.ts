@@ -148,14 +148,16 @@ function activateOmniSciConnection(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const connectionData = settings.get('servers').composite as
-      | IOmniSciConnectionData
-      | null
+    const servers = (settings.get('servers').composite as unknown) as
+      | IOmniSciConnectionData[]
       | undefined;
-    if (!connectionData) {
+    // If there is no server data, return.
+    if (!servers || servers.length === 0) {
       return;
     }
-    defaultConnectionData = connectionData;
+    // Search for a server marked as "master". If that is not found, just
+    // use the first one in the list.
+    defaultConnectionData = servers.find(s => s.master === true) || servers[0];
   };
 
   // Fetch the initial state of the settings.
@@ -234,11 +236,17 @@ function activateOmniSciVegaViewer(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const defaultConnectionData = settings.get('defaultConnection')
-      .composite as IOmniSciConnectionData | null | undefined;
-    if (!defaultConnectionData) {
+    const servers = (settings.get('servers').composite as unknown) as
+      | IOmniSciConnectionData[]
+      | undefined;
+    // If there is no server data, return.
+    if (!servers || servers.length === 0) {
       return;
     }
+    // Search for a server marked as "master". If that is not found, just
+    // use the first one in the list.
+    const defaultConnectionData =
+      servers.find(s => s.master === true) || servers[0];
     factory.defaultConnectionData = defaultConnectionData;
     viewerTracker.forEach(viewer => {
       if (!viewer.connectionData) {
@@ -528,14 +536,17 @@ function activateOmniSciInitialNotebook(
   // Fetch the initial state of the settings.
   Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
     .then(([settings]) => {
-      const connectionData = settings.get('defaultConnection').composite as
-        | IOmniSciConnectionData
-        | null
+      const servers = (settings.get('servers').composite as unknown) as
+        | IOmniSciConnectionData[]
         | undefined;
-      if (!connectionData) {
+      // If there is no server data, return.
+      if (!servers || servers.length === 0) {
         return;
       }
-      defaultConnectionData = connectionData;
+      // Search for a server marked as "master". If that is not found, just
+      // use the first one in the list.
+      defaultConnectionData =
+        servers.find(s => s.master === true) || servers[0];
       settingsLoaded.resolve(void 0);
     })
     .catch((reason: Error) => {
