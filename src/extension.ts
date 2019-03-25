@@ -111,7 +111,7 @@ function activateOmniSciConnection(
   settingRegistry: ISettingRegistry
 ): void {
   let defaultConnectionData: IOmniSciConnectionData;
-  let servers: IOmniSciConnectionData[] | undefined;
+  let servers: IOmniSciConnectionData[] = [];
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
@@ -120,6 +120,7 @@ function activateOmniSciConnection(
         'Set Default Omnisci Connection',
         defaultConnectionData
       ).then(connection => {
+        connection.master = false; // Temporarily set to false.
         // First loop through the existing servers and unset the master attribute.
         servers.forEach(s => {
           s.master = false;
@@ -133,6 +134,7 @@ function activateOmniSciConnection(
         if (match) {
           match.master = true;
         } else {
+          connection.master = true;
           servers = [connection, ...servers];
         }
         settingRegistry.set(
@@ -148,13 +150,14 @@ function activateOmniSciConnection(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const servers = (settings.get('servers').composite as unknown) as
+    const newServers = (settings.get('servers').composite as unknown) as
       | IOmniSciConnectionData[]
       | undefined;
     // If there is no server data, return.
-    if (!servers || servers.length === 0) {
+    if (!newServers || newServers.length === 0) {
       return;
     }
+    servers = newServers;
     // Search for a server marked as "master". If that is not found, just
     // use the first one in the list.
     defaultConnectionData = servers.find(s => s.master === true) || servers[0];

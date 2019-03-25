@@ -198,7 +198,7 @@ export class OmniSciConnectionDialog extends Widget
       database: this._database.value,
       host: this._host.value,
       protocol: this._protocol.value,
-      port: parseInt(this._port.value, 10)
+      port: this._port.value ? parseInt(this._port.value, 10) : undefined
     };
   }
 
