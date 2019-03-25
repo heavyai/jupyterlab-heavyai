@@ -192,14 +192,19 @@ export class OmniSciConnectionDialog extends Widget
   }
 
   getValue(): IOmniSciConnectionData {
-    return {
-      username: this._user.value,
-      password: this._password.value,
-      database: this._database.value,
-      host: this._host.value,
-      protocol: this._protocol.value,
+    const data: IOmniSciConnectionData = {
+      username: this._user.value || undefined,
+      password: this._password.value || undefined,
+      database: this._database.value || undefined,
+      host: this._host.value || undefined,
+      protocol: this._protocol.value || undefined,
       port: this._port.value ? parseInt(this._port.value, 10) : undefined
     };
+    Object.keys(data).forEach(
+      (k: keyof IOmniSciConnectionData) =>
+        data[k] === undefined && delete data[k]
+    );
+    return data;
   }
 
   private _user: HTMLInputElement;
