@@ -85,7 +85,7 @@ export interface IOmniSciConnectionData {
    * The dashboard to load in Immerse.
    * Not used here.
    */
-  loadDashboard?: number;
+  loadDashboard?: any;
 }
 
 /**

@@ -40,7 +40,7 @@
           "type": "string"
         },
         "loadDashboard": {
-          "type": "integer"
+          "type": ["string", "integer"]
         }
       },
       "additionalProperties": false,
