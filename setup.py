@@ -24,6 +24,7 @@ setup(
         "pyyaml",
         "altair==3.0.0rc1",
         "ipywidgets",
-        "ibis-framework==1.0.0"
+        "ibis-framework==1.0.0",
+        "vega_datasets"
     ]
 )

@@ -4,8 +4,4 @@ channels:
 dependencies:
   - jupyterlab=0.35.4
   - python=3.6
-  - altair
   - pymapd
-  - mypy
-  - pip:
-    - vega_datasets
