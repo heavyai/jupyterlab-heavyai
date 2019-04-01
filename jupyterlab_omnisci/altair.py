@@ -15,7 +15,7 @@ import ipywidgets
 import altair
 import vdom
 import pandas
-from altair.vegalite.v2.display import default_renderer
+from altair.vegalite.v3.display import default_renderer
 
 __all__ = ["display_chart", "interactive_chart", "get_display"]
 

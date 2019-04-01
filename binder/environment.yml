@@ -2,14 +2,10 @@ name: jupyterlab-omnisci
 channels:
   - conda-forge
 dependencies:
-  - python=3.6
   - jupyterlab=0.35.4
+  - python=3.6
   - altair
-  - pyyaml
-  - mypy
   - pymapd
+  - mypy
   - pip:
-    - vdom
     - vega_datasets
-    - https://github.com/ibis-project/ibis/archive/master.zip
-    - ipywidgets

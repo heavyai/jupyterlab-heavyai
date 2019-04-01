@@ -5,7 +5,7 @@ all within JupyterLab.
 
 [![](https://img.shields.io/pypi/v/jupyterlab-omnisci.svg)](https://pypi.python.org/pypi/jupyterlab-omnisci) [![](https://img.shields.io/npm/v/jupyterlab-omnisci.svg?style=flat-square)](https://www.npmjs.com/package/jupyterlab-omnisci)
 
-[![binder logo](https://beta.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/33610432eefa8392e1f4a9c505aa01a368eb9be8?urlpath=lab/tree/notebooks/4.%20Extract%20Use%20Cases%20-%20VL%20examples.ipynb)
+[![binder logo](https://beta.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/4.%20Extract%20Use%20Cases%20-%20VL%20examples.ipynb)
 
 ![example](./screenshot.png)
 
@@ -14,12 +14,9 @@ all within JupyterLab.
 First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package:
 
 ```bash
-conda install -c conda-forge jupyterlab pymapd
+conda install -c conda-forge jupyterlab=0.35.4 pymapd python=3.6
 
-pip install \
-    jupyterlab-omnisci \
-    git+https://github.com/Quansight/ibis.git@omnisci-sample \
-    altair
+pip install jupyterlab-omnisci
 ```
 
 Then install the `jupyterlab-omnisci` JupyterLab extension.
@@ -33,44 +30,6 @@ Then launch Jupyter Lab:
 
 ```bash
 jupyter lab
-```
-
-### Bleed Edge Installation
-
-If you would like to get some of geographic use cases to work, like those in `./notebooks/OmniSci Vega Tutorial.py`,
-you also have to use the latest beta versions of Altair and Vega.
-
-First install the latest Altair:
-
-```bash
-pip install git+https://github.com/jakevdp/altair.git@vl3-rc8
-```
-
-Then tell JupyterLab to use a later version of Vega Lite, by adding
-a resolution to the `./staging/package.json` file in the `jupyterlab` Python package.
-
-This works on a Mac:
-
-```bash
-open $(python -c 'import os; import jupyterlab; print(os.path.dirname(jupyterlab.__file__))')/staging/package.json
-```
-
-Add resolutions key:
-
-```json
-{
-    "resolutions": {
-        "vega-embed": "3.28.0"
-    },
-    "name": "@jupyterlab/application-top",
-    "version": "0.19.1",
-    ...
-```
-
-Then rebuild JupyterLab:
-
-```bash
-jupyter lab build
 ```
 
 ## Executing SQL Queries
@@ -109,11 +68,11 @@ To install from source, run the following in a terminal:
 ```bash
 git clone https://github.com/Quansight/jupyterlab-omnisci
 cd jupyterlab-omnisci
-conda create -f environment.yml
+conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
 jlpm install
 jlpm run build
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x --no-build
 jupyter labextension install .
 pip install -e .
 ```
