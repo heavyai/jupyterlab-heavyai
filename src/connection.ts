@@ -2,7 +2,11 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 
 import { CompletionHandler } from '@jupyterlab/completer';
 
-import { DataConnector } from '@jupyterlab/coreutils';
+import { DataConnector, ISettingRegistry } from '@jupyterlab/coreutils';
+
+import { JSONExt, JSONObject, Token } from '@phosphor/coreutils';
+
+import { IDisposable } from '@phosphor/disposable';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
@@ -13,6 +17,16 @@ declare const require: any;
 require('@mapd/connector/dist/browser-connector');
 
 declare const MapdCon: any;
+
+/* tslint:disable */
+/**
+ * The OmniSciConnectionManager token.
+ */
+const IOmniSciConnectionManager = new Token<IOmniSciConnectionManager>(
+  'jupyterlab-omnisci:IOmniSciConnectionManager'
+);
+
+/* tslint:enable */
 
 /**
  * A type stub for a connection object.
@@ -90,17 +104,62 @@ export interface IOmniSciConnectionData {
   loadDashboard?: any;
 }
 
-export interface IOmniSciConnectionManager {
+/**
+ * The public interface for a connection manager.
+ */
+export interface IOmniSciConnectionManager extends IDisposable {
+  /**
+   * The default connection data.
+   */
   readonly defaultConnection: IOmniSciConnectionData | undefined;
 
+  /**
+   * A list of predefined connections.
+   */
   readonly connections: ReadonlyArray<IOmniSciConnectionData>;
 
+  /**
+   * A signal that fires when the connection listing changes.
+   */
   readonly changed: ISignal<this, void>;
 }
 
-export class OmniSciConnectionManager {
-  get defaultConnection(): IOmniSciConnectionData | undefined {
+export class OmniSciConnectionManager implements IOmniSciConnectionManager {
+  constructor(options: OmniSciConnectionManager.IOptions) {
+    this._settings = options.settings;
+    this._settings.changed.connect(
+      this._onSettingsChanged,
+      this
+    );
+    this._onSettingsChanged(this._settings);
+  }
+
+  get defaultConnection(): IOmniSciConnectionData {
     return this._defaultConnection;
+  }
+  set defaultConnection(value: IOmniSciConnectionData) {
+    value.master = false; // Temporarily set to false;
+    let servers = this._connections.slice();
+    // First loop through the existing servers and unset the master attribute.
+    servers.forEach(s => {
+      s.master = false;
+    });
+    // Next loop through the existing servers and see if one already matches
+    // the new server.
+    const match = servers.find(s => {
+      // TODO: make this forgiving.
+      return JSONExt.deepEqual(s as JSONObject, value as JSONObject);
+    });
+
+    // If we found one, set it to the master server.
+    if (match) {
+      match.master = true;
+    } else {
+      value.master = true;
+      servers = [value, ...servers];
+    }
+
+    this._settings.set('servers', (servers as unknown) as JSONObject);
   }
 
   get connections(): ReadonlyArray<IOmniSciConnectionData> {
@@ -111,9 +170,51 @@ export class OmniSciConnectionManager {
     return this._changed;
   }
 
-  private _defaultConnection: IOmniSciConnectionData | undefined;
+  dispose(): void {
+    this._isDisposed = true;
+    Signal.clearData(this);
+  }
+
+  get isDisposed(): boolean {
+    return this._isDisposed;
+  }
+
+  private _onSettingsChanged(settings: ISettingRegistry.ISettings): void {
+    const newServers = (settings.get('servers').composite as unknown) as
+      | IOmniSciConnectionData[]
+      | undefined;
+    // If there is no data, empty out the data.
+    if (!newServers || newServers.length === 0) {
+      this._connections.length = 0;
+      this._defaultConnection = {};
+    } else {
+      this._connections = newServers.slice();
+      this._defaultConnection =
+        this._connections.find(c => c.master === true) || this._connections[0];
+    }
+    this._changed.emit(void 0);
+  }
+
+  private _settings: ISettingRegistry.ISettings;
+  private _isDisposed = false;
+  private _defaultConnection: IOmniSciConnectionData = {};
   private _changed = new Signal<this, void>(this);
   private _connections: IOmniSciConnectionData[] = [];
+}
+
+/**
+ * A namespace for OmniSciConnectionManager statics.
+ */
+export namespace OmniSciConnectionManager {
+  /**
+   * Options for creating a connection manager.
+   */
+  export interface IOptions {
+    /**
+     * A settings object which gets connection data from the server.
+     */
+    settings: ISettingRegistry.ISettings;
+  }
 }
 
 /**
