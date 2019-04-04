@@ -134,6 +134,13 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     this._onSettingsChanged(this._settings);
   }
 
+  /**
+   * The default connection data.
+   *
+   * #### Notes
+   * Setting the default triggers an asynchronous write to the settings
+   * system. The changed signal will not fire until that is complete.
+   */
   get defaultConnection(): IOmniSciConnectionData {
     return this._defaultConnection;
   }
@@ -162,23 +169,39 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     this._settings.set('servers', (servers as unknown) as JSONObject);
   }
 
+  /**
+   * The overall list of connections known to the manager.
+   */
   get connections(): ReadonlyArray<IOmniSciConnectionData> {
     return this._connections;
   }
 
+  /**
+   * A signal that fires when the list of connections changes.
+   */
   get changed(): ISignal<this, void> {
     return this._changed;
   }
 
+  /**
+   * Dispose of the connection manager.
+   */
   dispose(): void {
     this._isDisposed = true;
     Signal.clearData(this);
   }
 
+  /**
+   * Whether the connection manager is disposed.
+   */
   get isDisposed(): boolean {
     return this._isDisposed;
   }
 
+  /**
+   * React to the settings changing.
+   * This emits the `changed` signal once it is done.
+   */
   private _onSettingsChanged(settings: ISettingRegistry.ISettings): void {
     const newServers = (settings.get('servers').composite as unknown) as
       | IOmniSciConnectionData[]
