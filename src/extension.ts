@@ -28,7 +28,12 @@ import {
   NotebookModel
 } from '@jupyterlab/notebook';
 
-import { JSONExt, JSONObject, PromiseDelegate } from '@phosphor/coreutils';
+import {
+  JSONExt,
+  JSONObject,
+  PromiseDelegate,
+  Token
+} from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
@@ -36,6 +41,7 @@ import { Widget } from '@phosphor/widgets';
 
 import {
   IOmniSciConnectionData,
+  IOmniSciConnectionManager,
   OmniSciCompletionConnector,
   showConnectionDialog
 } from './connection';
@@ -53,6 +59,15 @@ import {
  * The name of the factory that creates pdf widgets.
  */
 const FACTORY = 'OmniSciVega';
+
+/* tslint:disable */
+/**
+ * The OmniSciConnectionManager token.
+ */
+const IOmniSciConnectionManager = new Token<IOmniSciConnectionManager>(
+  'jupyterlab-omnisci:IOmniSciConnectionManager'
+);
+/* tslint:enable */
 
 /**
  * Command IDs for the extension.
@@ -175,6 +190,7 @@ function activateOmniSciConnection(
   mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
   palette.addItem({ command: CommandIDs.setConnection, category: 'OmniSci' });
 }
+
 /**
  * The OmniSci-Vega file type.
  */

@@ -4,6 +4,8 @@ import { CompletionHandler } from '@jupyterlab/completer';
 
 import { DataConnector } from '@jupyterlab/coreutils';
 
+import { ISignal, Signal } from '@phosphor/signaling';
+
 import { PanelLayout, Widget } from '@phosphor/widgets';
 
 declare const require: any;
@@ -86,6 +88,32 @@ export interface IOmniSciConnectionData {
    * Not used here.
    */
   loadDashboard?: any;
+}
+
+export interface IOmniSciConnectionManager {
+  readonly defaultConnection: IOmniSciConnectionData | undefined;
+
+  readonly connections: ReadonlyArray<IOmniSciConnectionData>;
+
+  readonly changed: ISignal<this, void>;
+}
+
+export class OmniSciConnectionManager {
+  get defaultConnection(): IOmniSciConnectionData | undefined {
+    return this._defaultConnection;
+  }
+
+  get connections(): ReadonlyArray<IOmniSciConnectionData> {
+    return this._connections;
+  }
+
+  get changed(): ISignal<this, void> {
+    return this._changed;
+  }
+
+  private _defaultConnection: IOmniSciConnectionData | undefined;
+  private _changed = new Signal<this, void>(this);
+  private _connections: IOmniSciConnectionData[] = [];
 }
 
 /**
