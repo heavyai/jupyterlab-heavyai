@@ -380,8 +380,6 @@ function activateOmniSciGridViewer(
     selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-enabled`
   });
 
-  let defaultConnectionData: IOmniSciConnectionData | undefined;
-
   app.commands.addCommand(CommandIDs.newGrid, {
     label: 'OmniSci SQL Editor',
     iconClass: 'omnisci-OmniSci-logo',
@@ -389,7 +387,7 @@ function activateOmniSciGridViewer(
       const query = (args['initialQuery'] as string) || '';
       const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        connectionData: defaultConnectionData
+        connectionData: manager.defaultConnection
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;
