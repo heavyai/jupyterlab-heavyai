@@ -145,6 +145,15 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     return this._defaultConnection;
   }
   set defaultConnection(value: IOmniSciConnectionData) {
+    // Do nothing if there is no change.
+    if (
+      JSONExt.deepEqual(
+        this._defaultConnection as JSONObject,
+        value as JSONObject
+      )
+    ) {
+      return;
+    }
     value.master = false; // Temporarily set to false;
     let servers = this._connections.slice();
     // First loop through the existing servers and unset the master attribute.
@@ -154,8 +163,11 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     // Next loop through the existing servers and see if one already matches
     // the new server.
     const match = servers.find(s => {
-      // TODO: make this forgiving.
-      return JSONExt.deepEqual(s as JSONObject, value as JSONObject);
+      return (
+        Object.keys(value).filter(
+          (key: keyof IOmniSciConnectionData) => value[key] !== s[key]
+        ).length === 0
+      );
     });
 
     // If we found one, set it to the master server.
