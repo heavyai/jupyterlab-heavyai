@@ -160,7 +160,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     // unmodified. This will trigger a possible selection of the
     // value in `_onSettingsChanged.
     if (!value) {
-      this._defaultConnection = this._chooseDefault(this.connections);
+      this._defaultConnection = Private.chooseDefault(this.connections);
       this._changed.emit(void 0);
       return;
     }
@@ -239,8 +239,8 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
         | IOmniSciConnectionData[]
         | undefined) || [];
     // Combine the settings connection data with any immerse connection data.
-    this._labConnections = newServers.slice();
-    this._defaultConnection = this._chooseDefault(this.connections);
+    this._labConnections = newServers.map(Private.normalizeConnectionData);
+    this._defaultConnection = Private.chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
 
@@ -255,24 +255,11 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       this._immerseConnections = [];
       return;
     }
-    this._immerseConnections = await response.json();
-    this._defaultConnection = this._chooseDefault(this.connections);
+    this._immerseConnections = (await response.json()).map(
+      Private.normalizeConnectionData
+    );
+    this._defaultConnection = Private.chooseDefault(this.connections);
     this._changed.emit(void 0);
-  }
-
-  /**
-   * Given a list of connections, select one as default.
-   * This looks for a the first connection indicated with "master: true".
-   * If none is found returns the first in the list.
-   * If the list is empty, returns undefined.
-   */
-  private _chooseDefault(
-    connections: ReadonlyArray<IOmniSciConnectionData>
-  ): IOmniSciConnectionData | undefined {
-    if (!connections.length) {
-      return undefined;
-    }
-    return connections.find(c => c.master === true) || connections[0];
   }
 
   private _settings: ISettingRegistry.ISettings;
@@ -603,4 +590,52 @@ export class OmniSciCompletionConnector extends DataConnector<
     );
   }
   private _connection: Promise<OmniSciConnection> | undefined = undefined;
+}
+
+/**
+ * A namespace for private functionality.
+ */
+namespace Private {
+  /**
+   * Given a list of connections, select one as default.
+   * This looks for a the first connection indicated with "master: true".
+   * If none is found returns the first in the list.
+   * If the list is empty, returns undefined.
+   */
+  export function chooseDefault(
+    connections: ReadonlyArray<IOmniSciConnectionData>
+  ): IOmniSciConnectionData | undefined {
+    if (!connections.length) {
+      return undefined;
+    }
+    return connections.find(c => c.master === true) || connections[0];
+  }
+
+  /**
+   * Given a valid connection data, normalize it to the format
+   * expected in this plugin. In particular, if given a URL to
+   * a database, parse it into protocol, host, and port.
+   */
+  export function normalizeConnectionData(
+    data: IOmniSciConnectionData
+  ): IOmniSciConnectionData {
+    if (data.url) {
+      let { hostname, port, protocol } = URLExt.parse(data.url);
+      let portN: number;
+      if (port) {
+        portN = parseInt(port, 10);
+      } else {
+        portN = protocol === 'http' ? 80 : port === 'https' ? 443 : NaN;
+      }
+
+      const newData: IOmniSciConnectionData = {
+        ...data,
+        host: hostname,
+        port: portN,
+        protocol
+      };
+      return newData;
+    }
+    return data;
+  }
 }
