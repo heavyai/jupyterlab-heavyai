@@ -155,19 +155,19 @@ def _make_connection(connection):
         return dict(
             host=connection.host,
             port=connection.port,
-            dbname=connection.db_name,
+            database=connection.db_name,
             password=connection.password,
             protocol=connection.protocol,
-            user=connection.user,
+            username=connection.user,
         )
     elif isinstance(connection, pymapd.Connection):
         return dict(
             host=connection._host,
             port=connection._port,
-            dbname=connection._dbname,
+            database=connection._dbname,
             password=connection._password,
             protocol=connection._protocol,
-            user=connection._user,
+            username=connection._user,
         )
     else:
         return connection
