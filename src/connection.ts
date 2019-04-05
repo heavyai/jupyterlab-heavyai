@@ -140,11 +140,24 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * #### Notes
    * Setting the default triggers an asynchronous write to the settings
    * system. The changed signal will not fire until that is complete.
+   *
+   * Setting the default to `undefined` will not necessarily produce
+   * the expected behavior! The connection manager will still look through the
+   * servers known to it, and select one that is marked with `"master": true`,
+   * or, if there is only one option, select that.
    */
-  get defaultConnection(): IOmniSciConnectionData {
+  get defaultConnection(): IOmniSciConnectionData | undefined {
     return this._defaultConnection;
   }
-  set defaultConnection(value: IOmniSciConnectionData) {
+  set defaultConnection(value: IOmniSciConnectionData | undefined) {
+    // If the new value is undefined, write the existing values
+    // unmodified. This will trigger a possible selection of the
+    // value in `_onSettingsChanged.
+    if (!value) {
+      this._settings.set('servers', (this
+        ._connections as unknown) as JSONObject);
+      return;
+    }
     // Do nothing if there is no change.
     if (
       JSONExt.deepEqual(
@@ -221,7 +234,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     // If there is no data, empty out the data.
     if (!newServers || newServers.length === 0) {
       this._connections.length = 0;
-      this._defaultConnection = {};
+      this._defaultConnection = undefined;
     } else {
       this._connections = newServers.slice();
       this._defaultConnection =
@@ -232,7 +245,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
 
   private _settings: ISettingRegistry.ISettings;
   private _isDisposed = false;
-  private _defaultConnection: IOmniSciConnectionData = {};
+  private _defaultConnection: IOmniSciConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
   private _connections: IOmniSciConnectionData[] = [];
 }
