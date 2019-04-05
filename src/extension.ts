@@ -114,10 +114,7 @@ async function activateOmniSciConnection(
   settingRegistry: ISettingRegistry
 ): Promise<IOmniSciConnectionManager> {
   // Fetch the initial state of the settings.
-  const [settings] = await Promise.all([
-    settingRegistry.load(CONNECTION_PLUGIN_ID),
-    app.restored
-  ]);
+  const settings = await settingRegistry.load(CONNECTION_PLUGIN_ID);
   const manager = new OmniSciConnectionManager({ settings });
 
   // Add an application-wide connection-setting command.
