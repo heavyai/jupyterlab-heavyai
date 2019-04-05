@@ -125,7 +125,7 @@ async function activateOmniSciConnection(
         manager.defaultConnection,
         manager.connections
       ).then(connection => {
-        manager.defaultConnection = connection;
+        manager.defaultConnection = connection || {};
       });
     },
     label: 'Set Default Omnisci Connection...'
@@ -193,8 +193,8 @@ function activateOmniSciVegaViewer(
     const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
     if (types.length > 0) {
-      widget.title.iconClass = types[0].iconClass;
-      widget.title.iconLabel = types[0].iconLabel;
+      widget.title.iconClass = types[0].iconClass || '';
+      widget.title.iconLabel = types[0].iconLabel || '';
     }
   });
 
@@ -280,7 +280,9 @@ function activateOmniSciGridViewer(
 
   // Keep the themes up-to-date.
   const updateThemes = () => {
-    const isLight = themeManager.isLight(themeManager.theme);
+    const isLight = themeManager.theme
+      ? themeManager.isLight(themeManager.theme)
+      : true;
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
     renderer = isLight ? Private.LIGHT_RENDERER : Private.DARK_RENDERER;
     gridTracker.forEach(grid => {
@@ -333,7 +335,11 @@ function activateOmniSciGridViewer(
       const current = app.shell.currentWidget;
       if (current && current === gridTracker.currentWidget) {
         anchor = gridTracker.currentWidget;
-      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+      } else if (
+        current &&
+        mimeGridTracker.currentWidget &&
+        current.contains(mimeGridTracker.currentWidget)
+      ) {
         anchor = mimeGridTracker.currentWidget;
       }
       if (anchor) {
@@ -349,7 +355,11 @@ function activateOmniSciGridViewer(
       const current = app.shell.currentWidget;
       if (current && current === gridTracker.currentWidget) {
         anchor = gridTracker.currentWidget;
-      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+      } else if (
+        current &&
+        mimeGridTracker.currentWidget &&
+        current.contains(mimeGridTracker.currentWidget)
+      ) {
         anchor = mimeGridTracker.currentWidget;
       }
       if (anchor) {
@@ -442,12 +452,12 @@ function activateOmniSciInitialNotebook(
     label: 'Inject Ibis OmniSci Connection',
     execute: () => {
       const current = tracker.currentWidget;
-      if (!current || Private.connectionPopulated(manager.defaultConnection)) {
+      if (!current || !Private.connectionPopulated(manager.defaultConnection)) {
         return;
       }
       Private.injectIbisConnection(
         current.content.model,
-        manager.defaultConnection
+        manager.defaultConnection!
       );
     },
     isEnabled: () => !!tracker.currentWidget
@@ -492,7 +502,7 @@ function activateOmniSciInitialNotebook(
           if (!Private.connectionPopulated(manager.defaultConnection)) {
             return;
           }
-          Private.injectIbisConnection(sender, manager.defaultConnection);
+          Private.injectIbisConnection(sender, manager.defaultConnection!);
           notebook.content.model.contentChanged.disconnect(inject);
         }
       };
@@ -577,20 +587,23 @@ con.list_tables()`.trim();
     connection: IOmniSciConnectionData
   ) {
     let value = IBIS_TEMPLATE;
-    value = value.replace('{{host}}', connection.host);
-    value = value.replace('{{protocol}}', connection.protocol);
-    value = value.replace('{{password}}', connection.password);
-    value = value.replace('{{database}}', connection.database);
-    value = value.replace('{{user}}', connection.username);
-    value = value.replace('{{port}}', `${connection.port}`);
-    model.cells.get(0).value.text = value;
+    value = value.replace('{{host}}', connection.host || '');
+    value = value.replace('{{protocol}}', connection.protocol || '');
+    value = value.replace('{{password}}', connection.password || '');
+    value = value.replace('{{database}}', connection.database || '');
+    value = value.replace('{{user}}', connection.username || '');
+    value = value.replace('{{port}}', `${connection.port || ''}`);
+    model.cells.get(0)!.value.text = value;
   }
 
   /**
    * Test whether a partial connection is complete enough to be successful.
    */
-  export function connectionPopulated(con: IOmniSciConnectionData): boolean {
+  export function connectionPopulated(
+    con: IOmniSciConnectionData | undefined
+  ): boolean {
     return !!(
+      con &&
       con.host &&
       con.protocol &&
       con.password &&

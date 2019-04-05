@@ -173,10 +173,10 @@ export class OmniSciGrid extends Panel {
   /**
    * The current connection data for the viewer.
    */
-  get connectionData(): IOmniSciConnectionData {
+  get connectionData(): IOmniSciConnectionData | undefined {
     return this._model.connectionData;
   }
-  set connectionData(value: IOmniSciConnectionData) {
+  set connectionData(value: IOmniSciConnectionData | undefined) {
     this._updateModel(value, this._model.query);
   }
 
@@ -225,7 +225,7 @@ export class OmniSciGrid extends Panel {
    * validation failure, it shows the error in the panel.
    */
   private _updateModel(
-    connectionData: IOmniSciConnectionData,
+    connectionData: IOmniSciConnectionData | undefined,
     query: string
   ): void {
     const hasQuery = query !== '';
@@ -371,7 +371,7 @@ export class OmniSciTableModel extends DataModel {
       }
     } else {
       // If we are not streaming, then just return the loaded data.
-      const rowData = this._dataset[row];
+      const rowData = this._dataset![row];
       return rowData[this._fieldNames[column]];
     }
   }
@@ -388,7 +388,7 @@ export class OmniSciTableModel extends DataModel {
    *   an error if the validation fails.
    */
   updateModel(
-    connectionData: IOmniSciConnectionData,
+    connectionData: IOmniSciConnectionData | undefined,
     query: string
   ): Promise<void> {
     if (
@@ -451,9 +451,12 @@ export class OmniSciTableModel extends DataModel {
    * Fetch a block with a given index into memory.
    */
   private _fetchBlock(index: number): Promise<void> {
+    if (!this._connectionPromise) {
+      return Promise.resolve(void 0);
+    }
     // If we are already fetching this block, do nothing.
     if (this._pending.has(index)) {
-      return;
+      return Promise.resolve(void 0);
     }
     this._pending.add(index);
 
@@ -530,6 +533,9 @@ export class OmniSciTableModel extends DataModel {
    * limited by DEFAULT_LIMIT.
    */
   private _fetchDataset(): Promise<void> {
+    if (!this._connectionPromise) {
+      return Promise.resolve(void 0);
+    }
     return this._connectionPromise.then(connection => {
       return Private.makeQuery(connection, this._query, {
         limit: DEFAULT_LIMIT

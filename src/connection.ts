@@ -259,14 +259,14 @@ export function showConnectionDialog(
   title: string,
   oldConnection?: IOmniSciConnectionData,
   knownServers?: ReadonlyArray<IOmniSciConnectionData>
-): Promise<IOmniSciConnectionData> {
+): Promise<IOmniSciConnectionData | undefined> {
   return showDialog<IOmniSciConnectionData>({
     title,
     body: new OmniSciConnectionDialog({ knownServers, oldData: oldConnection }),
     buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {
     if (result.button.accept) {
-      return result.value;
+      return result.value || oldConnection;
     } else {
       return oldConnection;
     }
@@ -451,7 +451,7 @@ export class OmniSciConnectionDialog extends Widget
     knownServers.forEach(server => {
       const option = document.createElement('option');
       option.value = `${idx++}`;
-      option.textContent = server.host;
+      option.textContent = server.host || 'Unknown host';
       select.appendChild(option);
     });
     return select;
@@ -516,6 +516,10 @@ export class OmniSciCompletionConnector extends DataConnector<
     }
     return new Promise<CompletionHandler.IReply | undefined>(
       (resolve, reject) => {
+        if (!this._connection) {
+          resolve(void 0);
+          return;
+        }
         this._connection
           .then(con => {
             con.getCompletionHints(

@@ -62,10 +62,10 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   /**
    * The current connection data for the viewer.
    */
-  get connectionData(): IOmniSciConnectionData {
+  get connectionData(): IOmniSciConnectionData | undefined {
     return this._connectionData;
   }
-  set connectionData(value: IOmniSciConnectionData) {
+  set connectionData(value: IOmniSciConnectionData | undefined) {
     this._connectionData = value;
   }
 
@@ -133,10 +133,10 @@ export class OmniSciVegaViewerFactory extends ABCWidgetFactory<
   /**
    * The current default connection data for viewers.
    */
-  get defaultConnectionData(): IOmniSciConnectionData {
+  get defaultConnectionData(): IOmniSciConnectionData | undefined {
     return this._defaultConnectionData;
   }
-  set defaultConnectionData(value: IOmniSciConnectionData) {
+  set defaultConnectionData(value: IOmniSciConnectionData | undefined) {
     this._defaultConnectionData = value;
   }
 

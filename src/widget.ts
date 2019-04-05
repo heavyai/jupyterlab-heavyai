@@ -105,7 +105,7 @@ export class OmniSciVega extends Widget {
 
   private _rendered = new PromiseDelegate<string>();
   private _vega: JSONObject;
-  private _vegaLite: JSONObject;
+  private _vegaLite: JSONObject | undefined;
   private _connectionPromise: Promise<OmniSciConnection>;
   private _img: HTMLImageElement;
   private _error: HTMLElement;

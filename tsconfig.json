@@ -5,6 +5,7 @@
     "noEmitOnError": true,
     "noUnusedLocals": true,
     "skipLibCheck": true,
+    "strictNullChecks": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "ES6",
