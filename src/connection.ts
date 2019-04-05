@@ -2,9 +2,11 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 
 import { CompletionHandler } from '@jupyterlab/completer';
 
-import { DataConnector, ISettingRegistry } from '@jupyterlab/coreutils';
+import { DataConnector, ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
 
 import { JSONExt, JSONObject, Token } from '@phosphor/coreutils';
+
+import { ServerConnection } from '@jupyterlab/services';
 
 import { IDisposable } from '@phosphor/disposable';
 
@@ -125,6 +127,9 @@ export interface IOmniSciConnectionManager extends IDisposable {
 }
 
 export class OmniSciConnectionManager implements IOmniSciConnectionManager {
+  /**
+   * Construct a new conection manager.
+   */
   constructor(options: OmniSciConnectionManager.IOptions) {
     this._settings = options.settings;
     this._settings.changed.connect(
@@ -132,6 +137,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       this
     );
     this._onSettingsChanged(this._settings);
+    void this._fetchImmerseServers();
   }
 
   /**
@@ -228,19 +234,46 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * This emits the `changed` signal once it is done.
    */
   private _onSettingsChanged(settings: ISettingRegistry.ISettings): void {
-    const newServers = (settings.get('servers').composite as unknown) as
-      | IOmniSciConnectionData[]
-      | undefined;
-    // If there is no data, empty out the data.
-    if (!newServers || newServers.length === 0) {
-      this._connections.length = 0;
-      this._defaultConnection = undefined;
-    } else {
-      this._connections = newServers.slice();
-      this._defaultConnection =
-        this._connections.find(c => c.master === true) || this._connections[0];
-    }
+    const newServers =
+      ((settings.get('servers').composite as unknown) as
+        | IOmniSciConnectionData[]
+        | undefined) || [];
+    // Combine the settings connection data with any immerse connection data.
+    this._connections = [...newServers, ...this._immerseConnections];
+    this._defaultConnection = this._chooseDefault(this._connections);
     this._changed.emit(void 0);
+  }
+
+  /**
+   * Fetch default servers from immerse, if it can be found.
+   */
+  private async _fetchImmerseServers(): Promise<void> {
+    const settings = ServerConnection.makeSettings();
+    const url = URLExt.join(settings.baseUrl, 'immerse', 'servers.json');
+    const response = await ServerConnection.makeRequest(url, {}, settings);
+    if (response.status !== 200) {
+      this._immerseConnections = [];
+      return;
+    }
+    this._immerseConnections = await response.json();
+    this._connections = [...this._connections, ...this._immerseConnections];
+    this._defaultConnection = this._chooseDefault(this._connections);
+    this._changed.emit(void 0);
+  }
+
+  /**
+   * Given a list of connections, select one as default.
+   * This looks for a the first connection indicated with "master: true".
+   * If none is found returns the first in the list.
+   * If the list is empty, returns undefined.
+   */
+  private _chooseDefault(
+    connections: IOmniSciConnectionData[]
+  ): IOmniSciConnectionData | undefined {
+    if (!connections.length) {
+      return undefined;
+    }
+    return connections.find(c => c.master === true) || connections[0];
   }
 
   private _settings: ISettingRegistry.ISettings;
@@ -248,6 +281,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   private _defaultConnection: IOmniSciConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
   private _connections: IOmniSciConnectionData[] = [];
+  private _immerseConnections: IOmniSciConnectionData[] = [];
 }
 
 /**
