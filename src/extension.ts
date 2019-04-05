@@ -384,7 +384,7 @@ function activateOmniSciGridViewer(
       const query = (args['initialQuery'] as string) || '';
       const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        connectionData: manager.defaultConnection
+        manager
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;

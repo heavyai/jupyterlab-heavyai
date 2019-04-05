@@ -14,9 +14,9 @@ import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
 import {
   IOmniSciConnectionData,
+  IOmniSciConnectionManager,
   makeConnection,
-  OmniSciConnection,
-  showConnectionDialog
+  OmniSciConnection
 } from './connection';
 
 /**
@@ -34,8 +34,15 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    * Construct a new OmniSciSQLEditor widget.
    */
   constructor(options: OmniSciSQLEditor.IOptions) {
-    const content = new OmniSciGrid(options.connectionData);
-    const toolbar = Private.createToolbar(content, options.editorFactory);
+    const connection =
+      options.connectionData ||
+      (options.manager && options.manager.defaultConnection);
+    const content = new OmniSciGrid(connection);
+    const toolbar = Private.createToolbar(
+      content,
+      options.editorFactory,
+      options.manager
+    );
     super({ content, toolbar });
     this.addClass('omnisci-OmniSciSQLEditor');
   }
@@ -121,6 +128,11 @@ export namespace OmniSciSQLEditor {
      * An optional initial connection data structure.
      */
     connectionData?: IOmniSciConnectionData;
+
+    /**
+     * An optional connection manager.
+     */
+    manager?: IOmniSciConnectionManager;
   }
 }
 
@@ -582,9 +594,14 @@ export class OmniSciTableModel extends DataModel {
 }
 
 namespace Private {
+  /**
+   * Create a toolbar. If a connection manager is provided,
+   * it will create a change-connection button.
+   */
   export function createToolbar(
     widget: OmniSciGrid,
-    editorFactory: CodeEditor.Factory
+    editorFactory: CodeEditor.Factory,
+    manager?: IOmniSciConnectionManager
   ): Toolbar {
     const toolbar = new Toolbar();
     toolbar.addClass('omnisci-OmniSci-toolbar');
@@ -610,21 +627,25 @@ namespace Private {
         tooltip: 'Query'
       })
     );
-    toolbar.addItem(
-      'Connect',
-      new ToolbarButton({
-        iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
-        onClick: () => {
-          showConnectionDialog(
-            'Set SQL Editor Connection',
-            widget.connectionData
-          ).then(connectionData => {
-            widget.connectionData = connectionData;
-          });
-        },
-        tooltip: 'Enter OmniSci Connection Data'
-      })
-    );
+    if (manager) {
+      toolbar.addItem(
+        'Connect',
+        new ToolbarButton({
+          iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
+          onClick: () => {
+            manager
+              .chooseConnection(
+                'Set SQL Editor Connection',
+                widget.connectionData
+              )
+              .then(connectionData => {
+                widget.connectionData = connectionData;
+              });
+          },
+          tooltip: 'Enter OmniSci Connection Data'
+        })
+      );
+    }
 
     widget.onModelChanged.connect(() => {
       if (widget.query === queryEditor.editor.model.value.text) {
