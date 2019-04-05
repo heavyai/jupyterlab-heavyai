@@ -22,7 +22,7 @@ declare const MapdCon: any;
 /**
  * The OmniSciConnectionManager token.
  */
-const IOmniSciConnectionManager = new Token<IOmniSciConnectionManager>(
+export const IOmniSciConnectionManager = new Token<IOmniSciConnectionManager>(
   'jupyterlab-omnisci:IOmniSciConnectionManager'
 );
 
