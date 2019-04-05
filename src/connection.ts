@@ -245,11 +245,12 @@ export namespace OmniSciConnectionManager {
  */
 export function showConnectionDialog(
   title: string,
-  oldConnection?: IOmniSciConnectionData
+  oldConnection?: IOmniSciConnectionData,
+  knownServers?: ReadonlyArray<IOmniSciConnectionData>
 ): Promise<IOmniSciConnectionData> {
   return showDialog<IOmniSciConnectionData>({
     title,
-    body: new OmniSciConnectionDialog(oldConnection),
+    body: new OmniSciConnectionDialog({ knownServers, oldData: oldConnection }),
     buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {
     if (result.button.accept) {
@@ -289,9 +290,19 @@ export function makeConnection(
  */
 export class OmniSciConnectionDialog extends Widget
   implements Dialog.IBodyWidget<IOmniSciConnectionData> {
-  constructor(oldData?: IOmniSciConnectionData) {
+  constructor(options: OmniSciConnectionDialog.IOptions = {}) {
     super();
     let layout = (this.layout = new PanelLayout());
+    const oldData = options.oldData;
+    this._servers = options.knownServers || [];
+
+    if (this._servers.length) {
+      this._select = this._buildSelect(this._servers);
+      const knownServersLabel = new Widget();
+      knownServersLabel.node.textContent = 'Known Servers';
+      layout.addWidget(knownServersLabel);
+      layout.addWidget(new Widget({ node: this._select }));
+    }
 
     this._user = document.createElement('input');
     this._password = document.createElement('input');
@@ -308,12 +319,7 @@ export class OmniSciConnectionDialog extends Widget
     this._protocol.placeholder = 'Protocol';
     this._port.placeholder = 'Port';
     if (oldData) {
-      this._user.value = oldData.username || '';
-      this._password.value = oldData.password || '';
-      this._database.value = oldData.database || '';
-      this._host.value = oldData.host || '';
-      this._protocol.value = oldData.protocol || '';
-      this._port.value = oldData.port ? `${oldData.port}` : '';
+      this._populateInputs(oldData);
     }
 
     const userLabel = new Widget();
@@ -343,6 +349,9 @@ export class OmniSciConnectionDialog extends Widget
     layout.addWidget(new Widget({ node: this._port }));
   }
 
+  /**
+   * Get connection data for the current state of the dialog.
+   */
   getValue(): IOmniSciConnectionData {
     const data: IOmniSciConnectionData = {
       username: this._user.value || undefined,
@@ -359,12 +368,111 @@ export class OmniSciConnectionDialog extends Widget
     return data;
   }
 
+  handleEvent(event: Event) {
+    switch (event.type) {
+      case 'change':
+        this._evtSelectChange(event);
+        break;
+      default:
+        break;
+    }
+  }
+
+  /**
+   * Handle `after-attach` messages for the widget.
+   */
+  protected onAfterAttach(): void {
+    if (this._select) {
+      this._select.addEventListener('change', this);
+    }
+  }
+
+  /**
+   * Handle `before-detach` messages for the widget.
+   */
+  protected onBeforeDetach(): void {
+    if (this._select) {
+      this._select.removeEventListener('change', this);
+    }
+  }
+
+  /**
+   * On a change to the select element,
+   * populate the input elements with the appropriate
+   * data.
+   */
+  private _evtSelectChange(event: Event): void {
+    const idx = parseInt((event.target as any).value, 10);
+    if (idx > 0 && idx <= this._servers.length) {
+      this._populateInputs(this._servers[idx - 1]);
+    }
+  }
+
+  /**
+   * Given connection data, populate the inputs.
+   */
+  private _populateInputs(data: IOmniSciConnectionData): void {
+    this._user.value = data.username || '';
+    this._password.value = data.password || '';
+    this._database.value = data.database || '';
+    this._host.value = data.host || '';
+    this._protocol.value = data.protocol || '';
+    this._port.value = data.port ? `${data.port}` : '';
+  }
+
+  /**
+   * Given a list of servers, build a select element
+   * with those options. The first option in the select
+   * is the null "-" option, for when the inputs don't match.
+   * The values for the options are their indices in the list-1
+   */
+  private _buildSelect(knownServers: ReadonlyArray<IOmniSciConnectionData>) {
+    const select = document.createElement('select');
+    let idx = 0;
+
+    // Create an option corresponding to none of the known servers.
+    const option = document.createElement('option');
+    option.value = `${idx++}`;
+    option.textContent = '-';
+    select.appendChild(option);
+
+    knownServers.forEach(server => {
+      const option = document.createElement('option');
+      option.value = `${idx++}`;
+      option.textContent = server.host;
+      select.appendChild(option);
+    });
+    return select;
+  }
+
+  private _servers: ReadonlyArray<IOmniSciConnectionData>;
+  private _select: HTMLSelectElement;
   private _user: HTMLInputElement;
   private _password: HTMLInputElement;
   private _database: HTMLInputElement;
   private _host: HTMLInputElement;
   private _protocol: HTMLInputElement;
   private _port: HTMLInputElement;
+}
+
+/**
+ * A namespace for OmniSciConnectionDialog statics.
+ */
+export namespace OmniSciConnectionDialog {
+  /**
+   * Options to create a new connection dialog.
+   */
+  export interface IOptions {
+    /**
+     * A previous connection to prepopulate.
+     */
+    oldData?: IOmniSciConnectionData;
+
+    /**
+     * A list of known servers for selection.
+     */
+    knownServers?: ReadonlyArray<IOmniSciConnectionData>;
+  }
 }
 
 /**

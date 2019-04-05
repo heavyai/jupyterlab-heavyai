@@ -122,7 +122,8 @@ async function activateOmniSciConnection(
     execute: () => {
       showConnectionDialog(
         'Set Default Omnisci Connection',
-        manager.defaultConnection
+        manager.defaultConnection,
+        manager.connections
       ).then(connection => {
         manager.defaultConnection = connection;
       });
