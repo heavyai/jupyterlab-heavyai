@@ -121,6 +121,19 @@ export interface IOmniSciConnectionManager extends IDisposable {
   readonly connections: ReadonlyArray<IOmniSciConnectionData>;
 
   /**
+   * Prompt user to choose a connection.
+   */
+  chooseConnection(
+    label: string,
+    oldData?: IOmniSciConnectionData
+  ): Promise<IOmniSciConnectionData | undefined>;
+
+  /**
+   * Make a connection to the Omnisci backend.
+   */
+  makeConnection(data: IOmniSciConnectionData): Promise<OmniSciConnection>;
+
+  /**
    * A signal that fires when the connection listing changes.
    */
   readonly changed: ISignal<this, void>;
@@ -215,6 +228,23 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   }
 
   /**
+   * Prompt user to choose a connection.
+   */
+  chooseConnection(
+    label: string,
+    oldData?: IOmniSciConnectionData
+  ): Promise<IOmniSciConnectionData | undefined> {
+    return showConnectionDialog(label, oldData, this.connections);
+  }
+
+  /**
+   * Make a connection to the Omnisci backend.
+   */
+  makeConnection(data: IOmniSciConnectionData): Promise<OmniSciConnection> {
+    return makeConnection(data);
+  }
+
+  /**
    * Dispose of the connection manager.
    */
   dispose(): void {
@@ -295,7 +325,10 @@ export function showConnectionDialog(
 ): Promise<IOmniSciConnectionData | undefined> {
   return showDialog<IOmniSciConnectionData>({
     title,
-    body: new OmniSciConnectionDialog({ knownServers, oldData: oldConnection }),
+    body: new OmniSciConnectionDialog({
+      knownServers,
+      oldData: oldConnection
+    }),
     buttons: [Dialog.cancelButton(), Dialog.okButton()]
   }).then(result => {
     if (result.button.accept) {

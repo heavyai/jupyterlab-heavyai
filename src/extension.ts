@@ -36,8 +36,7 @@ import {
   IOmniSciConnectionData,
   IOmniSciConnectionManager,
   OmniSciCompletionConnector,
-  OmniSciConnectionManager,
-  showConnectionDialog
+  OmniSciConnectionManager
 } from './connection';
 
 import { OmniSciSQLEditor } from './grid';
@@ -119,14 +118,12 @@ async function activateOmniSciConnection(
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
-    execute: () => {
-      showConnectionDialog(
+    execute: async () => {
+      const connection = await manager.chooseConnection(
         'Set Default Omnisci Connection',
-        manager.defaultConnection,
-        manager.connections
-      ).then(connection => {
-        manager.defaultConnection = connection;
-      });
+        manager.defaultConnection
+      );
+      manager.defaultConnection = connection;
     },
     label: 'Set Default Omnisci Connection...'
   });
