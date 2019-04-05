@@ -160,8 +160,8 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     // unmodified. This will trigger a possible selection of the
     // value in `_onSettingsChanged.
     if (!value) {
-      this._settings.set('servers', (this
-        ._connections as unknown) as JSONObject);
+      this._defaultConnection = this._chooseDefault(this.connections);
+      this._changed.emit(void 0);
       return;
     }
     // Do nothing if there is no change.
@@ -174,14 +174,14 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       return;
     }
     value.master = false; // Temporarily set to false;
-    let servers = this._connections.slice();
+    let labServers = this._labConnections.slice();
     // First loop through the existing servers and unset the master attribute.
-    servers.forEach(s => {
+    labServers.forEach(s => {
       s.master = false;
     });
     // Next loop through the existing servers and see if one already matches
     // the new server.
-    const match = servers.find(s => {
+    const labMatch = labServers.find(s => {
       return (
         Object.keys(value).filter(
           (key: keyof IOmniSciConnectionData) => value[key] !== s[key]
@@ -190,21 +190,21 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     });
 
     // If we found one, set it to the master server.
-    if (match) {
-      match.master = true;
+    if (labMatch) {
+      labMatch.master = true;
     } else {
       value.master = true;
-      servers = [value, ...servers];
+      labServers = [value, ...labServers];
     }
 
-    this._settings.set('servers', (servers as unknown) as JSONObject);
+    this._settings.set('servers', (labServers as unknown) as JSONObject);
   }
 
   /**
    * The overall list of connections known to the manager.
    */
   get connections(): ReadonlyArray<IOmniSciConnectionData> {
-    return this._connections;
+    return [...this._labConnections, ...this._immerseConnections];
   }
 
   /**
@@ -239,8 +239,8 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
         | IOmniSciConnectionData[]
         | undefined) || [];
     // Combine the settings connection data with any immerse connection data.
-    this._connections = [...newServers, ...this._immerseConnections];
-    this._defaultConnection = this._chooseDefault(this._connections);
+    this._labConnections = newServers.slice();
+    this._defaultConnection = this._chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
 
@@ -256,8 +256,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       return;
     }
     this._immerseConnections = await response.json();
-    this._connections = [...this._connections, ...this._immerseConnections];
-    this._defaultConnection = this._chooseDefault(this._connections);
+    this._defaultConnection = this._chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
 
@@ -268,7 +267,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * If the list is empty, returns undefined.
    */
   private _chooseDefault(
-    connections: IOmniSciConnectionData[]
+    connections: ReadonlyArray<IOmniSciConnectionData>
   ): IOmniSciConnectionData | undefined {
     if (!connections.length) {
       return undefined;
@@ -280,8 +279,8 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   private _isDisposed = false;
   private _defaultConnection: IOmniSciConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
-  private _connections: IOmniSciConnectionData[] = [];
-  private _immerseConnections: IOmniSciConnectionData[] = [];
+  private _labConnections: ReadonlyArray<IOmniSciConnectionData> = [];
+  private _immerseConnections: ReadonlyArray<IOmniSciConnectionData> = [];
 }
 
 /**
