@@ -129,11 +129,6 @@ export interface IOmniSciConnectionManager extends IDisposable {
   ): Promise<IOmniSciConnectionData | undefined>;
 
   /**
-   * Make a connection to the Omnisci backend.
-   */
-  makeConnection(data: IOmniSciConnectionData): Promise<OmniSciConnection>;
-
-  /**
    * A signal that fires when the connection listing changes.
    */
   readonly changed: ISignal<this, void>;
@@ -235,13 +230,6 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     oldData?: IOmniSciConnectionData
   ): Promise<IOmniSciConnectionData | undefined> {
     return Private.showConnectionDialog(label, oldData, this.connections);
-  }
-
-  /**
-   * Make a connection to the Omnisci backend.
-   */
-  makeConnection(data: IOmniSciConnectionData): Promise<OmniSciConnection> {
-    return makeConnection(data);
   }
 
   /**
