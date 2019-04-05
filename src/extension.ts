@@ -168,7 +168,8 @@ function activateOmniSciVegaViewer(
     modelName: 'text',
     fileTypes: ['json', 'omnisci-vega', 'vega3', 'vega4'],
     defaultFor: ['omnisci-vega'],
-    readOnly: true
+    readOnly: true,
+    manager
   });
   const viewerTracker = new InstanceTracker<OmniSciVegaViewer>({
     namespace: viewerNamespace
@@ -199,7 +200,6 @@ function activateOmniSciVegaViewer(
   // have it defined.
   manager.changed.connect(() => {
     const defaultConnectionData = manager.defaultConnection;
-    factory.defaultConnectionData = defaultConnectionData;
     viewerTracker.forEach(viewer => {
       if (!viewer.connectionData) {
         viewer.connectionData = defaultConnectionData;

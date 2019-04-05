@@ -12,21 +12,21 @@ import {
   DocumentWidget
 } from '@jupyterlab/docregistry';
 
-import { IOmniSciConnectionData, showConnectionDialog } from './connection';
+import {
+  IOmniSciConnectionData,
+  IOmniSciConnectionManager
+} from './connection';
 
 import { OmniSciVega } from './widget';
 
 export class OmniSciVegaViewer extends DocumentWidget<Widget> {
-  constructor(
-    context: DocumentRegistry.Context,
-    connectionData?: IOmniSciConnectionData
-  ) {
+  constructor(options: OmniSciVegaViewer.IOptions) {
     super({
-      context,
-      reveal: context.ready.then(() => this._render()),
+      context: options.context,
+      reveal: options.context.ready.then(() => this._render()),
       content: new Widget()
     });
-    this._connectionData = connectionData;
+    this._connectionData = options.manager.defaultConnection;
 
     this.toolbar.addClass('omnisci-OmniSci-toolbar');
     this.addClass('omnisci-OmniSciVegaViewer');
@@ -47,12 +47,14 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
         iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
         onClick: () => {
           const name = PathExt.basename(this.context.path);
-          showConnectionDialog(
-            `Set Connection for ${name}`,
-            this._connectionData
-          ).then(connectionData => {
-            this._connectionData = connectionData;
-          });
+          options.manager
+            .chooseConnection(
+              `Set Connection for ${name}`,
+              this._connectionData
+            )
+            .then(connectionData => {
+              this._connectionData = connectionData;
+            });
         },
         tooltip: 'Enter OmniSci Connection Data'
       })
@@ -67,6 +69,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   }
   set connectionData(value: IOmniSciConnectionData | undefined) {
     this._connectionData = value;
+    void this._render();
   }
 
   /**
@@ -115,30 +118,54 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
 }
 
 /**
+ * A namespace for OmniSciVegaViewer statics.
+ */
+export namespace OmniSciVegaViewer {
+  /**
+   * Options to create a new document viewer.
+   */
+  export interface IOptions {
+    /**
+     * A context for the document.
+     */
+    context: DocumentRegistry.IContext<DocumentRegistry.IModel>;
+
+    /**
+     * An options manager for the document.
+     */
+    manager: IOmniSciConnectionManager;
+  }
+}
+
+/**
  * A widget factory for images.
  */
 export class OmniSciVegaViewerFactory extends ABCWidgetFactory<
   OmniSciVegaViewer,
   DocumentRegistry.IModel
 > {
+  constructor(options: OmniSciVegaViewerFactory.IOptions) {
+    super(options);
+    this._manager = options.manager;
+  }
+
   /**
    * Create a new widget given a context.
    */
   protected createNewWidget(
     context: DocumentRegistry.IContext<DocumentRegistry.IModel>
   ): OmniSciVegaViewer {
-    return new OmniSciVegaViewer(context, this.defaultConnectionData);
+    return new OmniSciVegaViewer({ context, manager: this._manager });
   }
 
-  /**
-   * The current default connection data for viewers.
-   */
-  get defaultConnectionData(): IOmniSciConnectionData | undefined {
-    return this._defaultConnectionData;
-  }
-  set defaultConnectionData(value: IOmniSciConnectionData | undefined) {
-    this._defaultConnectionData = value;
-  }
+  private _manager: IOmniSciConnectionManager;
+}
 
-  private _defaultConnectionData: IOmniSciConnectionData | undefined;
+export namespace OmniSciVegaViewerFactory {
+  export interface IOptions extends DocumentRegistry.IWidgetFactoryOptions {
+    /**
+     * A connection manager.
+     */
+    manager: IOmniSciConnectionManager;
+  }
 }

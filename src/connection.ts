@@ -234,7 +234,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     label: string,
     oldData?: IOmniSciConnectionData
   ): Promise<IOmniSciConnectionData | undefined> {
-    return showConnectionDialog(label, oldData, this.connections);
+    return Private.showConnectionDialog(label, oldData, this.connections);
   }
 
   /**
@@ -313,30 +313,6 @@ export namespace OmniSciConnectionManager {
      */
     settings: ISettingRegistry.ISettings;
   }
-}
-
-/**
- * Show a dialog for entering OmniSci connection data.
- */
-export function showConnectionDialog(
-  title: string,
-  oldConnection?: IOmniSciConnectionData,
-  knownServers?: ReadonlyArray<IOmniSciConnectionData>
-): Promise<IOmniSciConnectionData | undefined> {
-  return showDialog<IOmniSciConnectionData>({
-    title,
-    body: new OmniSciConnectionDialog({
-      knownServers,
-      oldData: oldConnection
-    }),
-    buttons: [Dialog.cancelButton(), Dialog.okButton()]
-  }).then(result => {
-    if (result.button.accept) {
-      return result.value || oldConnection;
-    } else {
-      return oldConnection;
-    }
-  });
 }
 
 /**
@@ -670,5 +646,29 @@ namespace Private {
       return newData;
     }
     return data;
+  }
+
+  /**
+   * Show a dialog for entering OmniSci connection data.
+   */
+  export function showConnectionDialog(
+    title: string,
+    oldConnection?: IOmniSciConnectionData,
+    knownServers?: ReadonlyArray<IOmniSciConnectionData>
+  ): Promise<IOmniSciConnectionData | undefined> {
+    return showDialog<IOmniSciConnectionData>({
+      title,
+      body: new OmniSciConnectionDialog({
+        knownServers,
+        oldData: oldConnection
+      }),
+      buttons: [Dialog.cancelButton(), Dialog.okButton()]
+    }).then(result => {
+      if (result.button.accept) {
+        return result.value || oldConnection;
+      } else {
+        return oldConnection;
+      }
+    });
   }
 }
