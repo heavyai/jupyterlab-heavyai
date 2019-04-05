@@ -60,6 +60,7 @@
   font-family: monospace;
   background-color: var(--jp-layout-color0);
   border: var(--jp-border-width) solid var(--jp-border-color0);
+  margin-left: 12px;
 }
 
 .jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {
