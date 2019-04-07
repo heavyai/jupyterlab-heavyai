@@ -619,11 +619,14 @@ namespace Private {
     if (data.url) {
       let { hostname, port, protocol } = URLExt.parse(data.url);
       let portN: number;
+      // Fill in the port with defaults if necessary.
       if (port) {
         portN = parseInt(port, 10);
       } else {
         portN = protocol === 'http' ? 80 : port === 'https' ? 443 : NaN;
       }
+      // Remove ':' characters from the protocol.
+      protocol = protocol ? protocol.replace(':', '') : '';
 
       const newData: IOmniSciConnectionData = {
         ...data,
