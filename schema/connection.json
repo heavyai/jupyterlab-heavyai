@@ -4,43 +4,129 @@
   "title": "OmniSci",
   "description": "OmniSci settings.",
   "definitions": {
-    "defaultConnection": {
+    "connection": {
       "properties": {
-        "user": {
+        "database": {
+          "type": "string"
+        },
+        "master": {
+          "type": "boolean"
+        },
+        "username": {
           "type": "string"
         },
         "password": {
           "type": "string"
         },
-        "dbname": {
+        "url": {
           "type": "string"
         },
-        "host": {
-          "type": "string"
+        "customStyles": {
+          "$ref": "#/definitions/customstyles"
         },
         "protocol": {
           "type": "string"
         },
-        "port": {
+        "mapboxCustomStyles": {
+          "type": "array"
+        },
+        "host": {
           "type": "string"
+        },
+        "port": {
+          "type": "integer"
+        },
+        "GTM": {
+          "type": "string"
+        },
+        "loadDashboard": {
+          "type": ["string", "integer"]
         }
       },
       "additionalProperties": false,
       "type": "object"
+    },
+    "customstyles": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "logoUrl": {
+          "type": "string"
+        },
+        "buttonPrimaryColor": {
+          "type": "string"
+        },
+        "secondaryButtonColor": {
+          "type": "string"
+        },
+        "buttonSecondaryHighlightColor": {
+          "type": "string"
+        },
+        "loginText": {
+          "type": "string"
+        },
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "solid": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "custom": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "ordinal": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "minItems": 4,
+                "maxItems": 4
+              }
+            },
+            "quantitative": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "minItems": 4,
+                "maxItems": 4
+              }
+            }
+          }
+        },
+        "title": {
+          "type": "string"
+        },
+        "disableHelpMenu": {
+          "type": "boolean"
+        }
+      }
     }
   },
   "properties": {
-    "defaultConnection": {
+    "servers": {
       "title": "Default Connection Configuration",
-      "description": "The default connection settings for OmniSci",
-      "$ref": "#/definitions/defaultConnection",
-      "default": {
-        "user": "",
-        "password": "",
-        "dbname": "",
-        "host": "",
-        "protocol": "",
-        "port": ""
+      "description": "The default connection settings for OmniSci databases",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/connection"
       }
     }
   },

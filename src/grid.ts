@@ -395,7 +395,10 @@ export class OmniSciTableModel extends DataModel {
       this._query === query &&
       connectionData &&
       this._connectionData &&
-      JSONExt.deepEqual(connectionData, this._connectionData)
+      JSONExt.deepEqual(
+        connectionData as JSONObject,
+        this._connectionData as JSONObject
+      )
     ) {
       return Promise.resolve(void 0);
     }
