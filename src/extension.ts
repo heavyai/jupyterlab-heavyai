@@ -23,9 +23,9 @@ import { ILauncher } from '@jupyterlab/launcher';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 
 import {
-  INotebookModel,
   INotebookTracker,
-  NotebookModel
+  Notebook,
+  NotebookActions
 } from '@jupyterlab/notebook';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
@@ -450,10 +450,7 @@ function activateOmniSciInitialNotebook(
       if (!current || !Private.connectionPopulated(manager.defaultConnection)) {
         return;
       }
-      Private.injectIbisConnection(
-        current.content.model,
-        manager.defaultConnection!
-      );
+      Private.injectIbisConnection(current.content, manager.defaultConnection!);
     },
     isEnabled: () => !!tracker.currentWidget
   });
@@ -492,12 +489,15 @@ function activateOmniSciInitialNotebook(
       // is ready. Instead, it waits for a new stack frame to add
       // the initial cell. So as a workaround, we wait until there
       // is exactly one cell, then inject our code, then disconnect.
-      const inject = (sender: NotebookModel) => {
-        if (sender.cells.length === 1) {
+      const inject = () => {
+        if (notebook.content.model.cells.length === 1) {
           if (!Private.connectionPopulated(manager.defaultConnection)) {
             return;
           }
-          Private.injectIbisConnection(sender, manager.defaultConnection!);
+          Private.injectIbisConnection(
+            notebook.content,
+            manager.defaultConnection!
+          );
           notebook.content.model.contentChanged.disconnect(inject);
         }
       };
@@ -578,7 +578,7 @@ con = ibis.mapd.connect(
 con.list_tables()`.trim();
 
   export function injectIbisConnection(
-    model: INotebookModel,
+    notebook: Notebook,
     connection: IOmniSciConnectionData
   ) {
     let value = IBIS_TEMPLATE;
@@ -588,7 +588,8 @@ con.list_tables()`.trim();
     value = value.replace('{{database}}', connection.database || '');
     value = value.replace('{{user}}', connection.username || '');
     value = value.replace('{{port}}', `${connection.port || ''}`);
-    model.cells.get(0)!.value.text = value;
+    NotebookActions.insertAbove(notebook);
+    notebook.model.cells.get(0)!.value.text = value;
   }
 
   /**
