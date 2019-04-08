@@ -1,0 +1,8 @@
+name: jupyterlab-omnisci
+channels:
+  - conda-forge
+dependencies:
+  - python=3.6
+  - pymapd
+  - pip:
+    - jupyterlab==1.0.0a1

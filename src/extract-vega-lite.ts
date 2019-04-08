@@ -11,7 +11,7 @@ import { INotebookModel } from '@jupyterlab/notebook';
 
 import { IDisposable, DisposableDelegate } from '@phosphor/disposable';
 
-import { extractTransforms, config } from 'vega-lite';
+import { extractTransforms } from 'vega-lite';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 
 const PLUGIN_ID = 'jupyterlab-omnisci:extract-vega-lite-plugin';
@@ -27,8 +27,7 @@ const COMM_TARGET = 'extract-vega-lite';
 
 function commTarget(comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) {
   const spec: any = msg.content.data;
-  const vegaConfig = config.initConfig({});
-  const extractedSpec = extractTransforms(spec, vegaConfig);
+  const extractedSpec = extractTransforms(spec, {});
   comm.send(extractedSpec as any);
 }
 function createNew(

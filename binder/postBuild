@@ -1,0 +1,9 @@
+#!/bin/bash
+set -o errexit
+set -o xtrace
+
+jlpm install
+jlpm run build
+# jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x
+jupyter labextension install .
+pip install -e .

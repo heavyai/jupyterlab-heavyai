@@ -10,7 +10,7 @@
     "target": "ES6",
     "outDir": "./lib",
     "lib": ["ES6", "DOM"],
-    "types": []
+    "types": ["webpack-env"]
   },
   "include": ["src/*"]
 }
