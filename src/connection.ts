@@ -618,15 +618,19 @@ namespace Private {
   ): IOmniSciConnectionData {
     if (data.url) {
       let { hostname, port, protocol } = URLExt.parse(data.url);
-      let portN: number;
+
+      // Assume https if protocol is undefined.
+      protocol = protocol || 'https';
+      // Remove ':' characters from the protocols
+      protocol = protocol ? protocol.replace(':', '') : '';
+
       // Fill in the port with defaults if necessary.
+      let portN: number;
       if (port) {
         portN = parseInt(port, 10);
       } else {
         portN = protocol === 'http' ? 80 : port === 'https' ? 443 : NaN;
       }
-      // Remove ':' characters from the protocol.
-      protocol = protocol ? protocol.replace(':', '') : '';
 
       const newData: IOmniSciConnectionData = {
         ...data,
