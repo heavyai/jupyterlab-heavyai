@@ -1,7 +1,7 @@
 import {
   ILayoutRestorer,
-  JupyterLab,
-  JupyterLabPlugin
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 
 import {
@@ -28,7 +28,7 @@ import {
   NotebookModel
 } from '@jupyterlab/notebook';
 
-import { PromiseDelegate } from '@phosphor/coreutils';
+import { JSONExt, JSONObject, PromiseDelegate } from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
@@ -97,7 +97,7 @@ const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
 /**
  * The Omnisci connection handler extension.
  */
-const omnisciConnectionPlugin: JupyterLabPlugin<void> = {
+const omnisciConnectionPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciConnection,
   id: CONNECTION_PLUGIN_ID,
   requires: [ICommandPalette, IMainMenu, ISettingRegistry],
@@ -105,12 +105,13 @@ const omnisciConnectionPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciConnection(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   palette: ICommandPalette,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry
 ): void {
   let defaultConnectionData: IOmniSciConnectionData;
+  let servers: IOmniSciConnectionData[] = [];
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
@@ -119,10 +120,27 @@ function activateOmniSciConnection(
         'Set Default Omnisci Connection',
         defaultConnectionData
       ).then(connection => {
+        connection.master = false; // Temporarily set to false.
+        // First loop through the existing servers and unset the master attribute.
+        servers.forEach(s => {
+          s.master = false;
+        });
+        // Next loop through the existing servers and see if one already
+        // matches the new one.
+        const match = servers.find(s => {
+          return JSONExt.deepEqual(s as JSONObject, connection as JSONObject);
+        });
+        // If we found one, set it to the master server.
+        if (match) {
+          match.master = true;
+        } else {
+          connection.master = true;
+          servers = [connection, ...servers];
+        }
         settingRegistry.set(
           CONNECTION_PLUGIN_ID,
-          'defaultConnection',
-          connection
+          'servers',
+          (servers as unknown) as JSONObject
         );
       });
     },
@@ -132,14 +150,17 @@ function activateOmniSciConnection(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const connectionData = settings.get('defaultConnection').composite as
-      | IOmniSciConnectionData
-      | null
+    const newServers = (settings.get('servers').composite as unknown) as
+      | IOmniSciConnectionData[]
       | undefined;
-    if (!connectionData) {
+    // If there is no server data, return.
+    if (!newServers || newServers.length === 0) {
       return;
     }
-    defaultConnectionData = connectionData;
+    servers = newServers;
+    // Search for a server marked as "master". If that is not found, just
+    // use the first one in the list.
+    defaultConnectionData = servers.find(s => s.master === true) || servers[0];
   };
 
   // Fetch the initial state of the settings.
@@ -169,7 +190,7 @@ const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
 /**
  * The Omnisci vega file handler extension.
  */
-const omnisciVegaPlugin: JupyterLabPlugin<void> = {
+const omnisciVegaPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciVegaViewer,
   id: VEGA_PLUGIN_ID,
   requires: [ILayoutRestorer, ISettingRegistry],
@@ -177,7 +198,7 @@ const omnisciVegaPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciVegaViewer(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   restorer: ILayoutRestorer,
   settingRegistry: ISettingRegistry
 ): void {
@@ -218,11 +239,17 @@ function activateOmniSciVegaViewer(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const defaultConnectionData = settings.get('defaultConnection')
-      .composite as IOmniSciConnectionData | null | undefined;
-    if (!defaultConnectionData) {
+    const servers = (settings.get('servers').composite as unknown) as
+      | IOmniSciConnectionData[]
+      | undefined;
+    // If there is no server data, return.
+    if (!servers || servers.length === 0) {
       return;
     }
+    // Search for a server marked as "master". If that is not found, just
+    // use the first one in the list.
+    const defaultConnectionData =
+      servers.find(s => s.master === true) || servers[0];
     factory.defaultConnectionData = defaultConnectionData;
     viewerTracker.forEach(viewer => {
       if (!viewer.connectionData) {
@@ -245,7 +272,7 @@ function activateOmniSciVegaViewer(
 /**
  * The Omnisci SQL editor extension.
  */
-const omnisciGridPlugin: JupyterLabPlugin<void> = {
+const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciGridViewer,
   id: SQL_EDITOR_PLUGIN_ID,
   requires: [
@@ -262,7 +289,7 @@ const omnisciGridPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciGridViewer(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   completionManager: ICompletionManager,
   editorServices: IEditorServices,
   launcher: ILauncher,
@@ -418,7 +445,7 @@ function activateOmniSciGridViewer(
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
       gridTracker.add(grid);
-      app.shell.addToMainArea(grid);
+      app.shell.add(grid, 'main');
       app.shell.activateById(grid.id);
       grid.content.onModelChanged.connect(() => {
         gridTracker.save(grid);
@@ -437,14 +464,17 @@ function activateOmniSciGridViewer(
   // Update the default connection data for viewers that don't already
   // have it defined.
   const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const connectionData = settings.get('defaultConnection').composite as
-      | IOmniSciConnectionData
-      | null
+    const servers = (settings.get('servers').composite as unknown) as
+      | IOmniSciConnectionData[]
       | undefined;
-    if (!connectionData) {
+    // If there is no server data, return.
+    if (!servers || servers.length === 0) {
       return;
     }
-    defaultConnectionData = connectionData;
+    // Search for a server marked as "master". If that is not found, just
+    // use the first one in the list.
+    defaultConnectionData = servers.find(s => s.master === true) || servers[0];
+
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
         grid.content.connectionData = defaultConnectionData;
@@ -468,7 +498,7 @@ function activateOmniSciGridViewer(
 /**
  * The Omnisci inital notebook extension.
  */
-const omnisciInitialNotebookPlugin: JupyterLabPlugin<void> = {
+const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciInitialNotebook,
   id: INITIAL_NOTEBOOK_PLUGIN_ID,
   requires: [ICommandPalette, INotebookTracker, ISettingRegistry, IStateDB],
@@ -476,7 +506,7 @@ const omnisciInitialNotebookPlugin: JupyterLabPlugin<void> = {
 };
 
 function activateOmniSciInitialNotebook(
-  app: JupyterLab,
+  app: JupyterFrontEnd,
   palette: ICommandPalette,
   tracker: INotebookTracker,
   settingRegistry: ISettingRegistry,
@@ -509,14 +539,17 @@ function activateOmniSciInitialNotebook(
   // Fetch the initial state of the settings.
   Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
     .then(([settings]) => {
-      const connectionData = settings.get('defaultConnection').composite as
-        | IOmniSciConnectionData
-        | null
+      const servers = (settings.get('servers').composite as unknown) as
+        | IOmniSciConnectionData[]
         | undefined;
-      if (!connectionData) {
+      // If there is no server data, return.
+      if (!servers || servers.length === 0) {
         return;
       }
-      defaultConnectionData = connectionData;
+      // Search for a server marked as "master". If that is not found, just
+      // use the first one in the list.
+      defaultConnectionData =
+        servers.find(s => s.master === true) || servers[0];
       settingsLoaded.resolve(void 0);
     })
     .catch((reason: Error) => {
@@ -543,7 +576,7 @@ function activateOmniSciInitialNotebook(
         });
         // Move the notebook so it is in a split pane with the primary tab.
         // It has already been added, so this just has the effect of moving it.
-        app.shell.addToMainArea(notebook, { mode: 'split-left' });
+        app.shell.add(notebook, 'main', { mode: 'split-left' });
 
         await notebook.context.ready;
 
@@ -571,7 +604,7 @@ function activateOmniSciInitialNotebook(
 /**
  * Export the plugin as default.
  */
-const plugins: JupyterLabPlugin<any>[] = [
+const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciConnectionPlugin,
   omnisciVegaPlugin,
   omnisciGridPlugin,
@@ -647,9 +680,9 @@ con.list_tables()`.trim();
     value = value.replace('{{host}}', connection.host);
     value = value.replace('{{protocol}}', connection.protocol);
     value = value.replace('{{password}}', connection.password);
-    value = value.replace('{{database}}', connection.dbname);
-    value = value.replace('{{user}}', connection.user);
-    value = value.replace('{{port}}', connection.port);
+    value = value.replace('{{database}}', connection.database);
+    value = value.replace('{{user}}', connection.username);
+    value = value.replace('{{port}}', `${connection.port}`);
     model.cells.get(0).value.text = value;
   }
 }

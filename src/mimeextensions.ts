@@ -68,7 +68,9 @@ export class RenderedOmniSciVega extends Widget
     }
 
     // Get the data from the mimebundle
-    const data = model.data[VEGA_MIME_TYPE] as IOmniSciVegaMimeBundle;
+    const data = (model.data[
+      VEGA_MIME_TYPE
+    ] as unknown) as IOmniSciVegaMimeBundle;
     const { connection, vega, vegalite } = data;
 
     // Create a new OmniSciVega
@@ -99,7 +101,7 @@ export class RenderedOmniSciVega extends Widget
 /**
  * OmniSci renderer custom mimetype format.
  */
-interface IOmniSciVegaMimeBundle extends JSONObject {
+interface IOmniSciVegaMimeBundle {
   /**
    * Connection data containing all of the info
    * we need to make the connection.
@@ -146,9 +148,9 @@ export class RenderedOmniSciSQLEditor extends Widget
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     // Get the data from the mimebundle
-    const data = model.data[
+    const data = (model.data[
       SQL_EDITOR_MIME_TYPE
-    ] as IOmniSciSQLEditorMimeBundle;
+    ] as unknown) as IOmniSciSQLEditorMimeBundle;
     if (!data) {
       return;
     }
@@ -163,7 +165,7 @@ export class RenderedOmniSciSQLEditor extends Widget
 /**
  * OmniSci renderer custom mimetype format.
  */
-interface IOmniSciSQLEditorMimeBundle extends JSONObject {
+interface IOmniSciSQLEditorMimeBundle {
   /**
    * Connection data containing all of the info
    * we need to make the connection.
