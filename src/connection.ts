@@ -616,31 +616,37 @@ namespace Private {
   export function normalizeConnectionData(
     data: IOmniSciConnectionData
   ): IOmniSciConnectionData {
-    if (data.url) {
-      let { hostname, port, protocol } = URLExt.parse(data.url);
+    let { host, port, protocol } = data;
 
-      // Assume https if protocol is undefined.
-      protocol = protocol || 'https';
-      // Remove ':' characters from the protocols
-      protocol = protocol ? protocol.replace(':', '') : '';
+    // Assume https if protocol is undefined.
+    protocol = (protocol || 'https').replace(':', '');
+    port = port
+      ? port
+      : protocol === 'http'
+        ? 80
+        : protocol === 'https'
+          ? 443
+          : NaN;
+
+    if (data.url) {
+      const parsed = URLExt.parse(data.url);
+      protocol = parsed.protocol;
+      host = parsed.hostname;
+      protocol = (protocol || 'https').replace(':', '');
 
       // Fill in the port with defaults if necessary.
-      let portN: number;
-      if (port) {
-        portN = parseInt(port, 10);
+      if (parsed.port) {
+        port = parseInt(parsed.port, 10);
       } else {
-        portN = protocol === 'http' ? 80 : port === 'https' ? 443 : NaN;
+        port = protocol === 'http' ? 80 : protocol === 'https' ? 443 : NaN;
       }
-
-      const newData: IOmniSciConnectionData = {
-        ...data,
-        host: hostname,
-        port: portN,
-        protocol
-      };
-      return newData;
     }
-    return data;
+    return {
+      ...data,
+      host,
+      port,
+      protocol
+    };
   }
 
   /**
