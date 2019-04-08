@@ -72,7 +72,10 @@ conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
 jlpm install
 jlpm run build
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x --no-build
+
+# Disabled until it has been updated for JL 1.0
+# jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x --no-build
+
 jupyter labextension install .
 pip install -e .
 ```
