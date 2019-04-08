@@ -16,6 +16,8 @@ import { OmniSciSQLEditor } from './grid';
 
 import { compileToVega } from './vega-lite';
 
+import vega5Extension from './vega5-extension';
+
 import '../style/index.css';
 
 /**
@@ -225,7 +227,8 @@ const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
     id: 'jupyterlab-omnisci:sqleditor-factory',
     rendererFactory: sqlEditorRendererFactory,
     dataType: 'string'
-  }
+  },
+  vega5Extension
 ];
 
 export default extensions;
