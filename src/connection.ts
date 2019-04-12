@@ -92,7 +92,7 @@ export interface IOmniSciConnectionData {
   /**
    * The port for the connection.
    */
-  port?: number;
+  port?: number | string;
 
   /**
    * GTM string.
@@ -650,7 +650,7 @@ namespace Private {
     // Assume https if protocol is undefined.
     protocol = (protocol || 'https').replace(':', '');
     port = port
-      ? port
+      ? parseInt(`${port}`, 10)
       : protocol === 'http'
       ? 80
       : protocol === 'https'
