@@ -128,6 +128,11 @@
       "items": {
         "$ref": "#/definitions/connection"
       }
+    },
+    "environment": {
+      "title": "Connection configuration in environment varaibles",
+      "description": "Any properties given here are taken to be environment variables\nand used in python connection code.",
+      "$ref": "#/definitions/connection"
     }
   },
   "additionalProperties": false,

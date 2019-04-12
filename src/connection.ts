@@ -116,6 +116,18 @@ export interface IOmniSciConnectionManager extends IDisposable {
   readonly defaultConnection: IOmniSciConnectionData | undefined;
 
   /**
+   * A connection specifying properties that are stored
+   * in environment variables. For places where code is submitted
+   * to kernels, this may be used to pull from environment variables
+   * instead of supplying credentials from the settings system.
+   *
+   * #### Notes
+   * This is not used for client-side connections like the SQL editor,
+   * as they do not have access to environment variables.
+   */
+  readonly environment: IOmniSciConnectionData | undefined;
+
+  /**
    * A list of predefined connections.
    */
   readonly connections: ReadonlyArray<IOmniSciConnectionData>;
@@ -209,6 +221,20 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   }
 
   /**
+   * A connection specifying properties that are stored
+   * in environment variables. For places where code is submitted
+   * to kernels, this may be used to pull from environment variables
+   * instead of supplying credentials from the settings system.
+   *
+   * #### Notes
+   * This is not used for client-side connections like the SQL editor,
+   * as they do not have access to environment variables.
+   */
+  get environment(): IOmniSciConnectionData | undefined {
+    return this._environment;
+  }
+
+  /**
    * The overall list of connections known to the manager.
    */
   get connections(): ReadonlyArray<IOmniSciConnectionData> {
@@ -258,6 +284,11 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
         | undefined) || [];
     // Combine the settings connection data with any immerse connection data.
     this._labConnections = newServers.map(Private.normalizeConnectionData);
+    const environment = settings.get('environment').composite as
+      | IOmniSciConnectionData
+      | undefined;
+    this._environment =
+      environment && Private.normalizeConnectionData(environment);
     this._defaultConnection = Private.chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
@@ -283,6 +314,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   private _settings: ISettingRegistry.ISettings;
   private _isDisposed = false;
   private _defaultConnection: IOmniSciConnectionData | undefined = undefined;
+  private _environment: IOmniSciConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
   private _labConnections: ReadonlyArray<IOmniSciConnectionData> = [];
   private _immerseConnections: ReadonlyArray<IOmniSciConnectionData> = [];
