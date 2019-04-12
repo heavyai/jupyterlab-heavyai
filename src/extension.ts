@@ -577,8 +577,8 @@ namespace Private {
 import ibis
 
 con = ibis.mapd.connect(
-    host='{{host}}', user='{{user}}', password='{{password}}',
-    port={{port}}, database='{{database}}', protocol='{{protocol}}'
+    host={{host}}, user={{user}}, password={{password}},
+    port={{port}}, database={{database}}, protocol={{protocol}}
 )
 
 con.list_tables()`.trim();
@@ -602,17 +602,19 @@ con.list_tables()`.trim();
       'database'
     ];
     keys.forEach(key => {
-      con[key] = env[key] ? `os.environ[${env[key]}` : connection[key];
+      con[key] = connection[key]
+        ? `'${connection[key]}'`
+        : `os.environ['${env[key]}']`;
     });
 
     let value = IBIS_TEMPLATE;
     value = value.replace('{{os}}', os);
-    value = value.replace('{{host}}', con.host || '');
-    value = value.replace('{{protocol}}', con.protocol || '');
-    value = value.replace('{{password}}', con.password || '');
-    value = value.replace('{{database}}', con.database || '');
-    value = value.replace('{{user}}', con.username || '');
-    value = value.replace('{{port}}', `${con.port || ''}`);
+    value = value.replace('{{host}}', con.host || "''");
+    value = value.replace('{{protocol}}', con.protocol || "''");
+    value = value.replace('{{password}}', con.password || "''");
+    value = value.replace('{{database}}', con.database || "''");
+    value = value.replace('{{user}}', con.username || "''");
+    value = value.replace('{{port}}', `${con.port || "''"}`);
     NotebookActions.insertAbove(notebook);
     notebook.model.cells.get(0)!.value.text = value;
   }

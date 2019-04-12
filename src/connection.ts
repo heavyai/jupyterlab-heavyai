@@ -152,10 +152,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    */
   constructor(options: OmniSciConnectionManager.IOptions) {
     this._settings = options.settings;
-    this._settings.changed.connect(
-      this._onSettingsChanged,
-      this
-    );
+    this._settings.changed.connect(this._onSettingsChanged, this);
     this._onSettingsChanged(this._settings);
     void this._fetchImmerseServers();
   }
@@ -655,10 +652,10 @@ namespace Private {
     port = port
       ? port
       : protocol === 'http'
-        ? 80
-        : protocol === 'https'
-          ? 443
-          : NaN;
+      ? 80
+      : protocol === 'https'
+      ? 443
+      : NaN;
 
     if (data.url) {
       const parsed = URLExt.parse(data.url);
