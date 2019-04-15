@@ -230,6 +230,18 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   get environment(): IOmniSciConnectionData | undefined {
     return this._environment;
   }
+  set environment(value: IOmniSciConnectionData | undefined) {
+    if (
+      (!value && !this._environment) ||
+      JSONExt.deepEqual(value as JSONObject, this._environment as JSONObject)
+    ) {
+      return;
+    } else if (!value) {
+      this._settings.remove('environment');
+      return;
+    }
+    this._settings.set('environment', value as JSONObject);
+  }
 
   /**
    * The overall list of connections known to the manager.

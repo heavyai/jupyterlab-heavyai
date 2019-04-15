@@ -65,6 +65,8 @@ namespace CommandIDs {
 
   export const setConnection = 'omnisci:set-connection';
 
+  export const setEnvironment = 'omnisci:set-environment';
+
   export const injectIbisConnection = 'omnisci:inject-ibis-connection';
 }
 
@@ -128,8 +130,27 @@ async function activateOmniSciConnection(
     label: 'Set Default Omnisci Connection...'
   });
 
-  mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
+  // Add an application-wide connection-setting command.
+  app.commands.addCommand(CommandIDs.setEnvironment, {
+    execute: async () => {
+      const connection = await manager.chooseConnection(
+        'Set OmniSci Connection Environment Variables',
+        manager.environment
+      );
+      manager.environment = connection;
+    },
+    label: 'Set OmniSci Connection Environment...'
+  });
+
+  mainMenu.settingsMenu.addGroup(
+    [
+      { command: CommandIDs.setConnection },
+      { command: CommandIDs.setEnvironment }
+    ],
+    50
+  );
   palette.addItem({ command: CommandIDs.setConnection, category: 'OmniSci' });
+  palette.addItem({ command: CommandIDs.setEnvironment, category: 'OmniSci' });
 
   return manager;
 }
