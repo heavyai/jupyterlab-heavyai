@@ -312,8 +312,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     const environment = settings.get('environment').composite as
       | IOmniSciConnectionData
       | undefined;
-    this._environment =
-      environment && Private.normalizeConnectionData(environment);
+    this._environment = environment;
     this._defaultConnection = Private.chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
