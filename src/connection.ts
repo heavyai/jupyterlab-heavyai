@@ -264,7 +264,23 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     label: string,
     oldData?: IOmniSciConnectionData
   ): Promise<IOmniSciConnectionData | undefined> {
-    return Private.showConnectionDialog(label, oldData, this.connections);
+    return Private.showConnectionDialog({
+      title: label,
+      oldData,
+      knownServers: this.connections,
+      showPassword: false
+    });
+  }
+
+  /**
+   * Prompt the user to populate environment variables.
+   */
+  setEnvironment(): Promise<IOmniSciConnectionData | undefined> {
+    return Private.showConnectionDialog({
+      title: 'Set Connection Environment Variables',
+      oldData: this._environment,
+      showPassword: true
+    });
   }
 
   /**
@@ -378,6 +394,7 @@ export class OmniSciConnectionDialog extends Widget
     let layout = (this.layout = new PanelLayout());
     const oldData = options.oldData;
     this._servers = options.knownServers || [];
+    const showPassword: boolean = !!options.showPassword;
 
     if (this._servers.length) {
       this._select = this._buildSelect(this._servers);
@@ -396,7 +413,9 @@ export class OmniSciConnectionDialog extends Widget
 
     this._user.placeholder = 'User name';
     this._password.placeholder = 'Password';
-    this._password.setAttribute('type', 'password');
+    if (!showPassword) {
+      this._password.setAttribute('type', 'password');
+    }
     this._database.placeholder = 'Database name';
     this._host.placeholder = 'Host name';
     this._protocol.placeholder = 'Protocol';
@@ -555,6 +574,13 @@ export namespace OmniSciConnectionDialog {
      * A list of known servers for selection.
      */
     knownServers?: ReadonlyArray<IOmniSciConnectionData>;
+
+    /**
+     * Whether to show the password field.
+     *
+     * Defaults to `false`.
+     */
+    showPassword?: boolean;
   }
 }
 
@@ -694,23 +720,23 @@ namespace Private {
    * Show a dialog for entering OmniSci connection data.
    */
   export function showConnectionDialog(
-    title: string,
-    oldConnection?: IOmniSciConnectionData,
-    knownServers?: ReadonlyArray<IOmniSciConnectionData>
+    options: IConnectionDialogOptions
   ): Promise<IOmniSciConnectionData | undefined> {
     return showDialog<IOmniSciConnectionData>({
-      title,
-      body: new OmniSciConnectionDialog({
-        knownServers,
-        oldData: oldConnection
-      }),
+      title: options.title,
+      body: new OmniSciConnectionDialog(options),
       buttons: [Dialog.cancelButton(), Dialog.okButton()]
     }).then(result => {
       if (result.button.accept) {
-        return result.value || oldConnection;
+        return result.value || options.oldData;
       } else {
-        return oldConnection;
+        return options.oldData;
       }
     });
+  }
+
+  export interface IConnectionDialogOptions
+    extends OmniSciConnectionDialog.IOptions {
+    title: string;
   }
 }

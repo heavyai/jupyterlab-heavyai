@@ -126,6 +126,7 @@ async function activateOmniSciConnection(
         manager.defaultConnection
       );
       manager.defaultConnection = connection;
+      return connection;
     },
     label: 'Set Default Omnisci Connection...'
   });
@@ -133,11 +134,9 @@ async function activateOmniSciConnection(
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setEnvironment, {
     execute: async () => {
-      const connection = await manager.chooseConnection(
-        'Set OmniSci Connection Environment Variables',
-        manager.environment
-      );
-      manager.environment = connection;
+      const environment = await manager.setEnvironment();
+      manager.environment = environment;
+      return environment;
     },
     label: 'Set OmniSci Connection Environment...'
   });
