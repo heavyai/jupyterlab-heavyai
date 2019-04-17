@@ -5,4 +5,4 @@ dependencies:
   - python=3.6
   - pymapd
   - pip:
-    - jupyterlab==1.0.0a1
+    - jupyterlab==1.0.0a3
