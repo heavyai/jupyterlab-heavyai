@@ -14,9 +14,9 @@ import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
 import {
   IOmniSciConnectionData,
+  IOmniSciConnectionManager,
   makeConnection,
-  OmniSciConnection,
-  showConnectionDialog
+  OmniSciConnection
 } from './connection';
 
 /**
@@ -34,8 +34,15 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    * Construct a new OmniSciSQLEditor widget.
    */
   constructor(options: OmniSciSQLEditor.IOptions) {
-    const content = new OmniSciGrid(options.connectionData);
-    const toolbar = Private.createToolbar(content, options.editorFactory);
+    const connection =
+      options.connectionData ||
+      (options.manager && options.manager.defaultConnection);
+    const content = new OmniSciGrid(connection);
+    const toolbar = Private.createToolbar(
+      content,
+      options.editorFactory,
+      options.manager
+    );
     super({ content, toolbar });
     this.addClass('omnisci-OmniSciSQLEditor');
   }
@@ -121,6 +128,11 @@ export namespace OmniSciSQLEditor {
      * An optional initial connection data structure.
      */
     connectionData?: IOmniSciConnectionData;
+
+    /**
+     * An optional connection manager.
+     */
+    manager?: IOmniSciConnectionManager;
   }
 }
 
@@ -173,10 +185,10 @@ export class OmniSciGrid extends Panel {
   /**
    * The current connection data for the viewer.
    */
-  get connectionData(): IOmniSciConnectionData {
+  get connectionData(): IOmniSciConnectionData | undefined {
     return this._model.connectionData;
   }
-  set connectionData(value: IOmniSciConnectionData) {
+  set connectionData(value: IOmniSciConnectionData | undefined) {
     this._updateModel(value, this._model.query);
   }
 
@@ -225,7 +237,7 @@ export class OmniSciGrid extends Panel {
    * validation failure, it shows the error in the panel.
    */
   private _updateModel(
-    connectionData: IOmniSciConnectionData,
+    connectionData: IOmniSciConnectionData | undefined,
     query: string
   ): void {
     const hasQuery = query !== '';
@@ -371,7 +383,7 @@ export class OmniSciTableModel extends DataModel {
       }
     } else {
       // If we are not streaming, then just return the loaded data.
-      const rowData = this._dataset[row];
+      const rowData = this._dataset![row];
       return rowData[this._fieldNames[column]];
     }
   }
@@ -388,7 +400,7 @@ export class OmniSciTableModel extends DataModel {
    *   an error if the validation fails.
    */
   updateModel(
-    connectionData: IOmniSciConnectionData,
+    connectionData: IOmniSciConnectionData | undefined,
     query: string
   ): Promise<void> {
     if (
@@ -451,9 +463,12 @@ export class OmniSciTableModel extends DataModel {
    * Fetch a block with a given index into memory.
    */
   private _fetchBlock(index: number): Promise<void> {
+    if (!this._connectionPromise) {
+      return Promise.resolve(void 0);
+    }
     // If we are already fetching this block, do nothing.
     if (this._pending.has(index)) {
-      return;
+      return Promise.resolve(void 0);
     }
     this._pending.add(index);
 
@@ -530,6 +545,9 @@ export class OmniSciTableModel extends DataModel {
    * limited by DEFAULT_LIMIT.
    */
   private _fetchDataset(): Promise<void> {
+    if (!this._connectionPromise) {
+      return Promise.resolve(void 0);
+    }
     return this._connectionPromise.then(connection => {
       return Private.makeQuery(connection, this._query, {
         limit: DEFAULT_LIMIT
@@ -576,9 +594,14 @@ export class OmniSciTableModel extends DataModel {
 }
 
 namespace Private {
+  /**
+   * Create a toolbar. If a connection manager is provided,
+   * it will create a change-connection button.
+   */
   export function createToolbar(
     widget: OmniSciGrid,
-    editorFactory: CodeEditor.Factory
+    editorFactory: CodeEditor.Factory,
+    manager?: IOmniSciConnectionManager
   ): Toolbar {
     const toolbar = new Toolbar();
     toolbar.addClass('omnisci-OmniSci-toolbar');
@@ -604,21 +627,25 @@ namespace Private {
         tooltip: 'Query'
       })
     );
-    toolbar.addItem(
-      'Connect',
-      new ToolbarButton({
-        iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
-        onClick: () => {
-          showConnectionDialog(
-            'Set SQL Editor Connection',
-            widget.connectionData
-          ).then(connectionData => {
-            widget.connectionData = connectionData;
-          });
-        },
-        tooltip: 'Enter OmniSci Connection Data'
-      })
-    );
+    if (manager) {
+      toolbar.addItem(
+        'Connect',
+        new ToolbarButton({
+          iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
+          onClick: () => {
+            manager
+              .chooseConnection(
+                'Set SQL Editor Connection',
+                widget.connectionData
+              )
+              .then(connectionData => {
+                widget.connectionData = connectionData;
+              });
+          },
+          tooltip: 'Enter OmniSci Connection Data'
+        })
+      );
+    }
 
     widget.onModelChanged.connect(() => {
       if (widget.query === queryEditor.editor.model.value.text) {

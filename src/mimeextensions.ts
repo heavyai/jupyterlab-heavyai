@@ -150,7 +150,7 @@ export class RenderedOmniSciSQLEditor extends Widget
       SQL_EDITOR_MIME_TYPE
     ] as unknown) as IOmniSciSQLEditorMimeBundle;
     if (!data) {
-      return;
+      return Promise.resolve(void 0);
     }
     this._widget.content.connectionData = data.connection;
     this._widget.content.query = data.query || '';

@@ -23,12 +23,10 @@ import { ILauncher } from '@jupyterlab/launcher';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 
 import {
-  INotebookModel,
   INotebookTracker,
-  NotebookModel
+  Notebook,
+  NotebookActions
 } from '@jupyterlab/notebook';
-
-import { JSONExt, JSONObject, PromiseDelegate } from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
@@ -36,8 +34,9 @@ import { Widget } from '@phosphor/widgets';
 
 import {
   IOmniSciConnectionData,
+  IOmniSciConnectionManager,
   OmniSciCompletionConnector,
-  showConnectionDialog
+  OmniSciConnectionManager
 } from './connection';
 
 import { OmniSciSQLEditor } from './grid';
@@ -65,6 +64,8 @@ namespace CommandIDs {
   export const selectCompleter = 'omnisci:select-completer';
 
   export const setConnection = 'omnisci:set-connection';
+
+  export const setEnvironment = 'omnisci:set-environment';
 
   export const injectIbisConnection = 'omnisci:inject-ibis-connection';
 }
@@ -97,84 +98,62 @@ const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
 /**
  * The Omnisci connection handler extension.
  */
-const omnisciConnectionPlugin: JupyterFrontEndPlugin<void> = {
+const omnisciConnectionPlugin: JupyterFrontEndPlugin<
+  IOmniSciConnectionManager
+> = {
   activate: activateOmniSciConnection,
   id: CONNECTION_PLUGIN_ID,
   requires: [ICommandPalette, IMainMenu, ISettingRegistry],
+  provides: IOmniSciConnectionManager,
   autoStart: true
 };
 
-function activateOmniSciConnection(
+async function activateOmniSciConnection(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry
-): void {
-  let defaultConnectionData: IOmniSciConnectionData;
-  let servers: IOmniSciConnectionData[] = [];
+): Promise<IOmniSciConnectionManager> {
+  // Fetch the initial state of the settings.
+  const settings = await settingRegistry.load(CONNECTION_PLUGIN_ID);
+  const manager = new OmniSciConnectionManager({ settings });
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
-    execute: () => {
-      showConnectionDialog(
+    execute: async () => {
+      const connection = await manager.chooseConnection(
         'Set Default Omnisci Connection',
-        defaultConnectionData
-      ).then(connection => {
-        connection.master = false; // Temporarily set to false.
-        // First loop through the existing servers and unset the master attribute.
-        servers.forEach(s => {
-          s.master = false;
-        });
-        // Next loop through the existing servers and see if one already
-        // matches the new one.
-        const match = servers.find(s => {
-          return JSONExt.deepEqual(s as JSONObject, connection as JSONObject);
-        });
-        // If we found one, set it to the master server.
-        if (match) {
-          match.master = true;
-        } else {
-          connection.master = true;
-          servers = [connection, ...servers];
-        }
-        settingRegistry.set(
-          CONNECTION_PLUGIN_ID,
-          'servers',
-          (servers as unknown) as JSONObject
-        );
-      });
+        manager.defaultConnection
+      );
+      manager.defaultConnection = connection;
+      return connection;
     },
     label: 'Set Default Omnisci Connection...'
   });
 
-  // Update the default connection data for viewers that don't already
-  // have it defined.
-  const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const newServers = (settings.get('servers').composite as unknown) as
-      | IOmniSciConnectionData[]
-      | undefined;
-    // If there is no server data, return.
-    if (!newServers || newServers.length === 0) {
-      return;
-    }
-    servers = newServers;
-    // Search for a server marked as "master". If that is not found, just
-    // use the first one in the list.
-    defaultConnectionData = servers.find(s => s.master === true) || servers[0];
-  };
+  // Add an application-wide connection-setting command.
+  app.commands.addCommand(CommandIDs.setEnvironment, {
+    execute: async () => {
+      const environment = await manager.setEnvironment();
+      manager.environment = environment;
+      return environment;
+    },
+    label: 'Set OmniSci Connection Environment...'
+  });
 
-  // Fetch the initial state of the settings.
-  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
-    .then(([settings]) => {
-      settings.changed.connect(onSettingsUpdated);
-      onSettingsUpdated(settings);
-    })
-    .catch((reason: Error) => {
-      console.error(reason.message);
-    });
-  mainMenu.settingsMenu.addGroup([{ command: CommandIDs.setConnection }], 50);
+  mainMenu.settingsMenu.addGroup(
+    [
+      { command: CommandIDs.setConnection },
+      { command: CommandIDs.setEnvironment }
+    ],
+    50
+  );
   palette.addItem({ command: CommandIDs.setConnection, category: 'OmniSci' });
+  palette.addItem({ command: CommandIDs.setEnvironment, category: 'OmniSci' });
+
+  return manager;
 }
+
 /**
  * The OmniSci-Vega file type.
  */
@@ -193,14 +172,14 @@ const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
 const omnisciVegaPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciVegaViewer,
   id: VEGA_PLUGIN_ID,
-  requires: [ILayoutRestorer, ISettingRegistry],
+  requires: [ILayoutRestorer, IOmniSciConnectionManager],
   autoStart: true
 };
 
 function activateOmniSciVegaViewer(
   app: JupyterFrontEnd,
   restorer: ILayoutRestorer,
-  settingRegistry: ISettingRegistry
+  manager: IOmniSciConnectionManager
 ): void {
   const viewerNamespace = 'omnisci-viewer-widget';
 
@@ -209,7 +188,8 @@ function activateOmniSciVegaViewer(
     modelName: 'text',
     fileTypes: ['json', 'omnisci-vega', 'vega3', 'vega4'],
     defaultFor: ['omnisci-vega'],
-    readOnly: true
+    readOnly: true,
+    manager
   });
   const viewerTracker = new InstanceTracker<OmniSciVegaViewer>({
     namespace: viewerNamespace
@@ -231,42 +211,21 @@ function activateOmniSciVegaViewer(
     const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
     if (types.length > 0) {
-      widget.title.iconClass = types[0].iconClass;
-      widget.title.iconLabel = types[0].iconLabel;
+      widget.title.iconClass = types[0].iconClass || '';
+      widget.title.iconLabel = types[0].iconLabel || '';
     }
   });
 
   // Update the default connection data for viewers that don't already
   // have it defined.
-  const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const servers = (settings.get('servers').composite as unknown) as
-      | IOmniSciConnectionData[]
-      | undefined;
-    // If there is no server data, return.
-    if (!servers || servers.length === 0) {
-      return;
-    }
-    // Search for a server marked as "master". If that is not found, just
-    // use the first one in the list.
-    const defaultConnectionData =
-      servers.find(s => s.master === true) || servers[0];
-    factory.defaultConnectionData = defaultConnectionData;
+  manager.changed.connect(() => {
+    const defaultConnectionData = manager.defaultConnection;
     viewerTracker.forEach(viewer => {
       if (!viewer.connectionData) {
         viewer.connectionData = defaultConnectionData;
       }
     });
-  };
-
-  // Fetch the initial state of the settings.
-  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
-    .then(([settings]) => {
-      settings.changed.connect(onSettingsUpdated);
-      onSettingsUpdated(settings);
-    })
-    .catch((reason: Error) => {
-      console.error(reason.message);
-    });
+  });
 }
 
 /**
@@ -281,7 +240,7 @@ const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
     ILauncher,
     ILayoutRestorer,
     IMainMenu,
-    ISettingRegistry,
+    IOmniSciConnectionManager,
     IStateDB,
     IThemeManager
   ],
@@ -295,7 +254,7 @@ function activateOmniSciGridViewer(
   launcher: ILauncher,
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
-  settingRegistry: ISettingRegistry,
+  manager: IOmniSciConnectionManager,
   state: IStateDB,
   themeManager: IThemeManager
 ): void {
@@ -338,7 +297,9 @@ function activateOmniSciGridViewer(
 
   // Keep the themes up-to-date.
   const updateThemes = () => {
-    const isLight = themeManager.isLight(themeManager.theme);
+    const isLight = themeManager.theme
+      ? themeManager.isLight(themeManager.theme)
+      : true;
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
     renderer = isLight ? Private.LIGHT_RENDERER : Private.DARK_RENDERER;
     gridTracker.forEach(grid => {
@@ -391,7 +352,11 @@ function activateOmniSciGridViewer(
       const current = app.shell.currentWidget;
       if (current && current === gridTracker.currentWidget) {
         anchor = gridTracker.currentWidget;
-      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+      } else if (
+        current &&
+        mimeGridTracker.currentWidget &&
+        current.contains(mimeGridTracker.currentWidget)
+      ) {
         anchor = mimeGridTracker.currentWidget;
       }
       if (anchor) {
@@ -407,7 +372,11 @@ function activateOmniSciGridViewer(
       const current = app.shell.currentWidget;
       if (current && current === gridTracker.currentWidget) {
         anchor = gridTracker.currentWidget;
-      } else if (current && current.contains(mimeGridTracker.currentWidget)) {
+      } else if (
+        current &&
+        mimeGridTracker.currentWidget &&
+        current.contains(mimeGridTracker.currentWidget)
+      ) {
         anchor = mimeGridTracker.currentWidget;
       }
       if (anchor) {
@@ -428,8 +397,6 @@ function activateOmniSciGridViewer(
     selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-enabled`
   });
 
-  let defaultConnectionData: IOmniSciConnectionData | undefined;
-
   app.commands.addCommand(CommandIDs.newGrid, {
     label: 'OmniSci SQL Editor',
     iconClass: 'omnisci-OmniSci-logo',
@@ -437,7 +404,7 @@ function activateOmniSciGridViewer(
       const query = (args['initialQuery'] as string) || '';
       const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        connectionData: defaultConnectionData
+        manager
       });
       grid.content.query = query;
       grid.id = `omnisci-grid-widget-${++Private.id}`;
@@ -461,38 +428,16 @@ function activateOmniSciGridViewer(
     command: CommandIDs.newGrid
   });
 
-  // Update the default connection data for viewers that don't already
+  // Update the default connection data for grids that don't already
   // have it defined.
-  const onSettingsUpdated = (settings: ISettingRegistry.ISettings) => {
-    const servers = (settings.get('servers').composite as unknown) as
-      | IOmniSciConnectionData[]
-      | undefined;
-    // If there is no server data, return.
-    if (!servers || servers.length === 0) {
-      return;
-    }
-    // Search for a server marked as "master". If that is not found, just
-    // use the first one in the list.
-    defaultConnectionData = servers.find(s => s.master === true) || servers[0];
-
+  manager.changed.connect(() => {
+    const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
         grid.content.connectionData = defaultConnectionData;
       }
     });
-  };
-
-  const settingsLoaded = new PromiseDelegate<void>();
-  // Fetch the initial state of the settings.
-  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
-    .then(([settings]) => {
-      settings.changed.connect(onSettingsUpdated);
-      onSettingsUpdated(settings);
-      settingsLoaded.resolve(void 0);
-    })
-    .catch((reason: Error) => {
-      console.error(reason.message);
-    });
+  });
 }
 
 /**
@@ -501,7 +446,12 @@ function activateOmniSciGridViewer(
 const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciInitialNotebook,
   id: INITIAL_NOTEBOOK_PLUGIN_ID,
-  requires: [ICommandPalette, INotebookTracker, ISettingRegistry, IStateDB],
+  requires: [
+    ICommandPalette,
+    INotebookTracker,
+    IOmniSciConnectionManager,
+    IStateDB
+  ],
   autoStart: true
 };
 
@@ -509,23 +459,21 @@ function activateOmniSciInitialNotebook(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
   tracker: INotebookTracker,
-  settingRegistry: ISettingRegistry,
+  manager: IOmniSciConnectionManager,
   state: IStateDB
 ): void {
-  const settingsLoaded = new PromiseDelegate<void>();
-  let defaultConnectionData: IOmniSciConnectionData | undefined;
-
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
     label: 'Inject Ibis OmniSci Connection',
     execute: () => {
-      let current = tracker.currentWidget;
-      if (!current || !defaultConnectionData) {
+      const current = tracker.currentWidget;
+      if (!current) {
         return;
       }
       Private.injectIbisConnection(
-        current.content.model,
-        defaultConnectionData
+        current.content,
+        manager.defaultConnection!,
+        manager.environment
       );
     },
     isEnabled: () => !!tracker.currentWidget
@@ -536,69 +484,51 @@ function activateOmniSciInitialNotebook(
     category: 'OmniSci'
   });
 
-  // Fetch the initial state of the settings.
-  Promise.all([settingRegistry.load(CONNECTION_PLUGIN_ID), app.restored])
-    .then(([settings]) => {
-      const servers = (settings.get('servers').composite as unknown) as
-        | IOmniSciConnectionData[]
-        | undefined;
-      // If there is no server data, return.
-      if (!servers || servers.length === 0) {
-        return;
-      }
-      // Search for a server marked as "master". If that is not found, just
-      // use the first one in the list.
-      defaultConnectionData =
-        servers.find(s => s.master === true) || servers[0];
-      settingsLoaded.resolve(void 0);
-    })
-    .catch((reason: Error) => {
-      console.error(reason.message);
-    });
-
   // Fetch the state, which is used to determine whether to create
   // an initial populated notebook.
-  Promise.all([state.fetch(INITIAL_NOTEBOOK_PLUGIN_ID), settingsLoaded]).then(
-    async ([result]) => {
-      // Determine whether to launch an initial notebook, then immediately
-      // set that value to false. This state setting is intended to be set
-      // by outside actors, rather than as true state restoration.
-      let initial = false;
-      if (result) {
-        initial = !!(result as { initialNotebook: boolean }).initialNotebook;
-      }
-      state.save(INITIAL_NOTEBOOK_PLUGIN_ID, { initialNotebook: false });
-
-      if (initial) {
-        // Create the notebook.
-        const notebook = await app.commands.execute('notebook:create-new', {
-          kernelName: 'python3'
-        });
-        // Move the notebook so it is in a split pane with the primary tab.
-        // It has already been added, so this just has the effect of moving it.
-        app.shell.add(notebook, 'main', { mode: 'split-left' });
-
-        await notebook.context.ready;
-
-        // Define a function for injecting code into the notebook
-        // on content changed. This is a somewhat ugly hack, as
-        // the notebook model is not entirely ready when the context
-        // is ready. Instead, it waits for a new stack frame to add
-        // the initial cell. So as a workaround, we wait until there
-        // is exactly one cell, then inject our code, then disconnect.
-        const inject = (sender: NotebookModel) => {
-          if (sender.cells.length === 1) {
-            if (!defaultConnectionData) {
-              return;
-            }
-            Private.injectIbisConnection(sender, defaultConnectionData);
-            notebook.content.model.contentChanged.disconnect(inject);
-          }
-        };
-        notebook.content.model.contentChanged.connect(inject);
-      }
+  state.fetch(INITIAL_NOTEBOOK_PLUGIN_ID).then(async result => {
+    // Determine whether to launch an initial notebook, then immediately
+    // set that value to false. This state setting is intended to be set
+    // by outside actors, rather than as true state restoration.
+    let initial = false;
+    if (result) {
+      initial = !!(result as { initialNotebook: boolean }).initialNotebook;
     }
-  );
+    state.save(INITIAL_NOTEBOOK_PLUGIN_ID, { initialNotebook: false });
+
+    if (initial) {
+      // Create the notebook.
+      const notebook = await app.commands.execute('notebook:create-new', {
+        kernelName: 'python3'
+      });
+      // Move the notebook so it is in a split pane with the primary tab.
+      // It has already been added, so this just has the effect of moving it.
+      app.shell.add(notebook, 'main', { mode: 'split-left' });
+
+      await notebook.context.ready;
+
+      // Define a function for injecting code into the notebook
+      // on content changed. This is a somewhat ugly hack, as
+      // the notebook model is not entirely ready when the context
+      // is ready. Instead, it waits for a new stack frame to add
+      // the initial cell. So as a workaround, we wait until there
+      // is exactly one cell, then inject our code, then disconnect.
+      const inject = () => {
+        if (notebook.content.model.cells.length === 1) {
+          if (!Private.connectionPopulated(manager.defaultConnection)) {
+            return;
+          }
+          Private.injectIbisConnection(
+            notebook.content,
+            manager.defaultConnection!,
+            manager.environment
+          );
+          notebook.content.model.contentChanged.disconnect(inject);
+        }
+      };
+      notebook.content.model.contentChanged.connect(inject);
+    }
+  });
 }
 
 /**
@@ -663,26 +593,66 @@ namespace Private {
    * A template for an Ibis mapd client.
    */
   const IBIS_TEMPLATE = `
+{{os}}
 import ibis
 
 con = ibis.mapd.connect(
-    host='{{host}}', user='{{user}}', password='{{password}}',
-    port={{port}}, database='{{database}}', protocol='{{protocol}}'
+    host={{host}}, user={{user}}, password={{password}},
+    port={{port}}, database={{database}}, protocol={{protocol}}
 )
 
 con.list_tables()`.trim();
 
   export function injectIbisConnection(
-    model: INotebookModel,
-    connection: IOmniSciConnectionData
+    notebook: Notebook,
+    connection: IOmniSciConnectionData,
+    environment?: IOmniSciConnectionData
   ) {
+    const env = environment || {};
+    const con: IOmniSciConnectionData = {};
+    let os = Object.keys(env).length === 0 ? '' : 'import os';
+    // Merge the connection with any environment variables
+    // that have been specified.
+    const keys: ReadonlyArray<keyof IOmniSciConnectionData> = [
+      'host',
+      'protocol',
+      'port',
+      'username',
+      'password',
+      'database'
+    ];
+    keys.forEach(key => {
+      con[key] = connection[key]
+        ? `'${connection[key]}'`
+        : `os.environ['${env[key]}']`;
+    });
+
     let value = IBIS_TEMPLATE;
-    value = value.replace('{{host}}', connection.host);
-    value = value.replace('{{protocol}}', connection.protocol);
-    value = value.replace('{{password}}', connection.password);
-    value = value.replace('{{database}}', connection.database);
-    value = value.replace('{{user}}', connection.username);
-    value = value.replace('{{port}}', `${connection.port}`);
-    model.cells.get(0).value.text = value;
+    value = value.replace('{{os}}', os);
+    value = value.replace('{{host}}', con.host || "''");
+    value = value.replace('{{protocol}}', con.protocol || "''");
+    value = value.replace('{{password}}', con.password || "''");
+    value = value.replace('{{database}}', con.database || "''");
+    value = value.replace('{{user}}', con.username || "''");
+    value = value.replace('{{port}}', `${con.port || "''"}`);
+    NotebookActions.insertAbove(notebook);
+    notebook.model.cells.get(0)!.value.text = value;
+  }
+
+  /**
+   * Test whether a partial connection is complete enough to be successful.
+   */
+  export function connectionPopulated(
+    con: IOmniSciConnectionData | undefined
+  ): boolean {
+    return !!(
+      con &&
+      con.host &&
+      con.protocol &&
+      con.password &&
+      con.database &&
+      con.username &&
+      con.port
+    );
   }
 }
