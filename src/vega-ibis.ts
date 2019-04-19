@@ -32,7 +32,7 @@ const NAME_PREFIX = 'ibis-';
 const TRANSFORM = 'ibis';
 
 function commTarget(comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) {
-  ibisTransform.conn(comm);
+  // ibisTransform.conn(comm);
 }
 
 function createNew(
@@ -80,7 +80,7 @@ class Renderer extends Widget implements IRenderMime.IRenderer {
  * Moves all transforms into a custom transform inside a ibis transform
  */
 function transformVegaSpec(vgSpec: vega.Spec): void {
-  for (const data of vgSpec.data) {
+  for (const data of vgSpec.data!) {
     if (!data.name.startsWith(NAME_PREFIX)) {
       continue;
     }
