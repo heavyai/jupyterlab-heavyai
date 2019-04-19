@@ -1,4 +1,7 @@
-import { JupyterLab, JupyterLabPlugin } from '@jupyterlab/application';
+import {
+  JupyterFrontEnd,
+  JupyterFrontEndPlugin
+} from '@jupyterlab/application';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
 import { IRenderMimeRegistry, IRenderMime } from '@jupyterlab/rendermime';
@@ -12,7 +15,7 @@ import * as vega from 'vega';
 import ibisTransform from './ibis-transform';
 const PLUGIN_ID = 'jupyterlab-omnisci:vega-ibis';
 
-const plugin: JupyterLabPlugin<void> = {
+const plugin: JupyterFrontEndPlugin<void> = {
   activate,
   id: PLUGIN_ID,
   requires: [IRenderMimeRegistry],
@@ -28,10 +31,8 @@ const NAME_PREFIX = 'ibis-';
 
 const TRANSFORM = 'ibis';
 
-
 function commTarget(comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) {
-    ibisTransform.conn(comm);
-    comm.
+  ibisTransform.conn(comm);
 }
 
 function createNew(
@@ -43,10 +44,12 @@ function createNew(
       newValue.registerCommTarget(COMM_ID, commTarget);
     }
   });
-  return new DisposableDelegate(() => {});
+  return new DisposableDelegate(() => {
+    /* no-op */
+  });
 }
 
-function activate(app: JupyterLab, rendermime: IRenderMimeRegistry) {
+function activate(app: JupyterFrontEnd, rendermime: IRenderMimeRegistry) {
   app.docRegistry.addWidgetExtension('Notebook', { createNew });
 
   rendermime.addFactory({
@@ -89,6 +92,5 @@ function transformVegaSpec(vgSpec: vega.Spec): void {
     ];
   }
 }
-
 
 (vega as any).transforms[TRANSFORM] = ibisTransform;
