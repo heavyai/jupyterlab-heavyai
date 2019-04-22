@@ -22,9 +22,6 @@ NAME_PREFIX = 'ibis-'
 COMM_ID = 'vega-ibis'
 COMM = ipykernel.comm.Comm(target_name=COMM_ID, data=None)
 
-ipykernel.comm.CommManager.
-altair.data_transformers.register("vega-ibis", vega_ibis_transformation)
-
 
 def vega_ibis_transformation(data):
     """
@@ -43,9 +40,6 @@ def vega_ibis_transformation(data):
     return {"name": f"{NAME_PREFIX}{expr_hash}"}
 
 
-altair.renderers.register("vega-ibis", vega_ibis_renderer)
-
-
 def vega_ibis_renderer(spec):
     """
     Exports the spec with a new mimetype that will trigger the ibis-vega pipeline.
@@ -53,16 +47,11 @@ def vega_ibis_renderer(spec):
     return {MIMETYPE: spec}
 
 
-
-
-
-
 CommData = mypy_extensions.TypedDict('CommData', {
     "data": typing.Dict[str, object],
     "expr_hash": int,
     "transform": typing.List[typing.Dict]
 })
-
 
 
 @COMM.on_msg
@@ -75,3 +64,6 @@ def on_comm_data(data: CommData) -> None:
     """
 
     print(data)
+
+altair.renderers.register("vega-ibis", vega_ibis_renderer)
+altair.data_transformers.register("vega-ibis", vega_ibis_transformation)
