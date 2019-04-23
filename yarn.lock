@@ -167,6 +167,26 @@
     "@phosphor/signaling" "^1.2.2"
     "@phosphor/widgets" "^1.6.0"
 
+"@jupyterlab/console@^1.0.0-alpha.6":
+  version "1.0.0-alpha.6"
+  resolved "https://registry.yarnpkg.com/@jupyterlab/console/-/console-1.0.0-alpha.6.tgz#724fe604e4b7cf0796e137af3fd73e080864671a"
+  integrity sha512-XhVYRMmvQc8IPb6xrozXsMzc9kAHKmLJR9ATcZuZ+mjH60T22R4PnJKLgGaQzJZzKs5iZs8UJUgjzjQGHz3+aA==
+  dependencies:
+    "@jupyterlab/apputils" "^1.0.0-alpha.6"
+    "@jupyterlab/cells" "^1.0.0-alpha.7"
+    "@jupyterlab/codeeditor" "^1.0.0-alpha.6"
+    "@jupyterlab/coreutils" "^3.0.0-alpha.6"
+    "@jupyterlab/observables" "^2.2.0-alpha.6"
+    "@jupyterlab/rendermime" "^1.0.0-alpha.6"
+    "@jupyterlab/services" "^4.0.0-alpha.6"
+    "@phosphor/algorithm" "^1.1.2"
+    "@phosphor/coreutils" "^1.3.0"
+    "@phosphor/disposable" "^1.1.2"
+    "@phosphor/dragdrop" "^1.3.0"
+    "@phosphor/messaging" "^1.2.2"
+    "@phosphor/signaling" "^1.2.2"
+    "@phosphor/widgets" "^1.6.0"
+
 "@jupyterlab/coreutils@^3.0.0-alpha.6":
   version "3.0.0-alpha.6"
   resolved "https://registry.yarnpkg.com/@jupyterlab/coreutils/-/coreutils-3.0.0-alpha.6.tgz#b0ec4600d357fdeb3f8d93c559f6aa9e493066a7"

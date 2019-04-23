@@ -49,6 +49,7 @@ import {
 } from './mimeextensions';
 
 import vegaIbisPlugin from './vega-ibis';
+import vegaLiteCompiler from './vega-compiler';
 
 /**
  * The name of the factory that creates pdf widgets.
@@ -541,7 +542,8 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciVegaPlugin,
   omnisciGridPlugin,
   omnisciInitialNotebookPlugin,
-  vegaIbisPlugin
+  vegaIbisPlugin,
+  vegaLiteCompiler
 ];
 export default plugins;
 
