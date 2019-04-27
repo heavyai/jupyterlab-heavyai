@@ -19,3 +19,7 @@ __pycache__
 *.tgz
 *.gz
 *.whl
+.env
+*.tmp
+.settings
+.DS_Store
