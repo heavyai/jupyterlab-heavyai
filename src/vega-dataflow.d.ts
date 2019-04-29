@@ -11,4 +11,5 @@ declare module 'vega-dataflow' {
     evaluate: any;
     run: any;
   }
+  export function ingest(datum: any): any;
 }

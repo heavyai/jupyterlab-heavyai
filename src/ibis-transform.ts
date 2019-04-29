@@ -21,7 +21,13 @@ class QueryIbis extends dataflow.Transform implements Transform {
   static readonly Definition = {
     type: 'QueryIbis',
     metadata: { changes: true, source: true },
-    params: [{ name: 'query', type: 'string', required: true }]
+    params: [
+      {
+        name: 'query',
+        type: 'string',
+        required: true
+      }
+    ]
   };
 
   get value(): any {
@@ -33,7 +39,19 @@ class QueryIbis extends dataflow.Transform implements Transform {
 
   async transform(_: any, pulse: any): Promise<any> {
     console.log('TRANSFORM');
-    const result = this._value;
+    const result = [
+      { a: 'A', b: 28 },
+      { a: 'B', b: 55 },
+      { a: 'C', b: 43 },
+      { a: 'D', b: 91 },
+      { a: 'E', b: 81 },
+      { a: 'F', b: 53 },
+      { a: 'G', b: 19 },
+      { a: 'H', b: 87 },
+      { a: 'I', b: 52 }
+    ];
+    result.forEach(dataflow.ingest);
+
     /* tslint:disable-next-line */
     const out = pulse.fork(pulse.NO_FIELDS & pulse.NO_SOURCE);
     out.rem = this._value;
