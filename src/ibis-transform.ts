@@ -13,16 +13,23 @@ class QueryIbis extends dataflow.Transform implements Transform {
     super([], params);
   }
 
-  get value(): any {
-    return this._value;
-  }
-
+  /**
+   * The definition for the transform. Used by the vega dataflow logic
+   * to decide how to use the transform.
+   */
   /* tslint:disable-next-line */
-  readonly Definition = {
-    type: 'QueryCore',
+  static readonly Definition = {
+    type: 'QueryIbis',
     metadata: { changes: true, source: true },
     params: [{ name: 'query', type: 'string', required: true }]
   };
+
+  get value(): any {
+    return this._value;
+  }
+  set value(val: any) {
+    this._value = val;
+  }
 
   async transform(_: any, pulse: any): Promise<any> {
     console.log('TRANSFORM');
