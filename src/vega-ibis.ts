@@ -5,7 +5,6 @@ import {
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { INotebookModel, NotebookPanel } from '@jupyterlab/notebook';
 import { IRenderMimeRegistry, IRenderMime } from '@jupyterlab/rendermime';
-import { Kernel, KernelMessage } from '@jupyterlab/services';
 import { DisposableDelegate, IDisposable } from '@phosphor/disposable';
 import { Widget } from '@phosphor/widgets';
 
@@ -21,15 +20,9 @@ const plugin: JupyterFrontEndPlugin<void> = {
 };
 export default plugin;
 
-const COMM_ID = 'vega-ibis';
-
-const MIMETYPE = 'application/vnd.vega.v5+json; ibis=true';
+const MIMETYPE = 'application/vnd.vega.ibis.v5+json';
 
 const TRANSFORM = 'queryibis';
-
-function commTarget(comm: Kernel.IComm, msg: KernelMessage.ICommOpenMsg) {
-  // ibisTransform.conn(comm);
-}
 
 function createNew(
   nb: NotebookPanel,
@@ -37,7 +30,7 @@ function createNew(
 ): IDisposable {
   context.session.kernelChanged.connect((_, { newValue, oldValue }) => {
     if (newValue) {
-      newValue.registerCommTarget(COMM_ID, commTarget);
+      ibisTransform.kernel = newValue;
     }
   });
   return new DisposableDelegate(() => {
@@ -52,11 +45,11 @@ function activate(app: JupyterFrontEnd, rendermime: IRenderMimeRegistry) {
     safe: true,
     defaultRank: 50,
     mimeTypes: [MIMETYPE],
-    createRenderer: options => new Renderer()
+    createRenderer: options => new VegaIbisRenderer()
   });
 }
 
-class Renderer extends Widget implements IRenderMime.IRenderer {
+class VegaIbisRenderer extends Widget implements IRenderMime.IRenderer {
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     const spec = model.data[MIMETYPE] as any;
     const view = new vega.View(vega.parse(spec)).initialize(this.node);
