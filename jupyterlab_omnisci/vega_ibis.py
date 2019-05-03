@@ -1,4 +1,6 @@
 import typing
+import copy
+import random
 
 import ibis
 import altair
@@ -9,17 +11,8 @@ import mypy_extensions
 __all__: typing.List[str] = []
 
 
-# We need to persist this global mapping because the ibis hash
-# is stored in the Vega Lite spec and is sent back whenever we need to compute
-# new data.
-HASH_TO_IBIS: typing.Dict[int, ibis.Expr] = {}
-
 # New Vega Lite renderer mimetype which can process ibis expressions in names
 MIMETYPE = "application/vnd.vega.ibis.v5+json"
-
-NAME_PREFIX = 'ibis-'
-
-ibis_expr = None
 
 EMPTY_VEGA = {
   "$schema": "https://vega.github.io/schema/vega/v5.json",
@@ -98,17 +91,51 @@ def monkeypatch_altair():
 
     def ipython_display(self):
         spec = self.to_dict()
+        _add_target()
         compile_comm = Comm(target_name='jupyterlab-omnisci:vega-compiler', data=spec)
         d = display({ MIMETYPE: EMPTY_VEGA }, raw=True, display_id=True)
 
         @compile_comm.on_msg
         def _recv(msg):
-            d.update({ MIMETYPE: msg['content']['data']}, raw=True)
+            vega_spec = msg['content']['data']
+            if not vega_spec.get('$schema'):
+                return
+            transformed = _transform(vega_spec)
+            d.update({ MIMETYPE: transformed}, raw=True)
 
 
 
     altair.Chart.__init__ = updated_chart_init
     altair.Chart._ipython_display_ = ipython_display
+
+def _transform(spec):
+    new = copy.deepcopy(spec)
+    new['data'][0]['transform'] = [
+        {
+            'type': "queryibis",
+            'query': {}
+        }
+    ]
+    new['data'][0]['values'] = []
+    return new
+
+def _add_target():
+    def target_func(comm, msg):
+        @comm.on_msg
+        def _recv(msg):
+            # Use msg['content']['data'] for the data in the message
+
+            # Send data to the frontend
+            comm.send([{'a': 'A', 'b': random.randint(0,100)},
+                {'a': 'B', 'b': random.randint(0,100)},
+                {'a': 'C', 'b': random.randint(0,100)},
+                {'a': 'D', 'b': random.randint(0,100)},
+                {'a': 'E', 'b': random.randint(0,100)},
+                {'a': 'F', 'b': random.randint(0,100)},
+                {'a': 'G', 'b': random.randint(0,100)},
+                {'a': 'H', 'b': random.randint(0,100)},
+                {'a': 'I', 'b': random.randint(0,100)}])
+    get_ipython().kernel.comm_manager.register_target('queryibis', target_func)
 
 altair.renderers.register("vega-ibis", vega_ibis_renderer)
 altair.data_transformers.register("vega-ibis", vega_ibis_transformer)
