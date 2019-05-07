@@ -1,6 +1,5 @@
-import typing
 import copy
-import random
+from typing import *
 import warnings
 
 import ibis
@@ -9,8 +8,10 @@ import pandas
 from ipykernel.comm import Comm
 from IPython import get_ipython
 
-__all__: typing.List[str] = []
+__all__: List[str] = []
 
+
+_expr_map = {}
 
 # New Vega Lite renderer mimetype which can process ibis expressions in names
 MIMETYPE = "application/vnd.vega.ibis.v5+json"
@@ -32,14 +33,6 @@ EMPTY_VEGA = {
   "marks": []
 }
 
-def empty(expr: ibis.Expr) -> pandas.DataFrame:
-    """
-    Creates an empty DF for a ibis expression, based on the schema
-
-    https://github.com/ibis-project/ibis/issues/1676#issuecomment-441472528
-    """
-    return expr.schema().apply_to(pandas.DataFrame(columns=expr.columns))
-
 def monkeypatch_altair():
     """
     Needed until https://github.com/altair-viz/altair/issues/843 is fixed to let Altair
@@ -53,18 +46,17 @@ def monkeypatch_altair():
         those types and set the `ibis` attribute to the original ibis expression.
         """
         if data is not None and isinstance(data, ibis.Expr):
-            expr = data
-            data = empty(expr)
-            data.ibis = expr
+            name = f"ibis{hash(data)}"
+            _expr_map[name] = data
+            data = altair.NamedData(name=name)
 
         return original_chart_init(self, data=data, *args, **kwargs)
 
     def ipython_display(self):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            spec = self.to_dict()
+        expr = _expr_map[self.data.name]
+        spec = _get_vegalite(self, expr.schema())
         d = display({ MIMETYPE: EMPTY_VEGA }, raw=True, display_id=True)
-        _add_target(self.data.ibis)
+        _add_target(expr)
 
         compile_comm = Comm(target_name='jupyterlab-omnisci:vega-compiler', data=spec)
 
@@ -76,10 +68,52 @@ def monkeypatch_altair():
             transformed = _transform(vega_spec)
             d.update({ MIMETYPE: transformed}, raw=True)
 
-
-
     altair.Chart.__init__ = updated_chart_init
     altair.Chart._ipython_display_ = ipython_display
+
+def _get_vegalite(chart: altair.Chart, schema: ibis.Schema) -> Dict[str, Any]:
+    """
+    Given an altair chart, and an ibis expression,
+    get a vega-lite spec from them. This is more complex
+    than calling chart.to_dict() because we use the expression schema
+    to infer altair encoding types.
+    """
+    enc = chart.encoding
+    for attr in dir(enc):
+        field = getattr(enc, attr)
+        if field == altair.Undefined:
+            continue
+        if field.field !=altair.Undefined:
+            name = field.field
+        else:
+            name = field.shorthand.split(':')[0]
+        field.type = _infer_vegalite_type(schema[name])
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        spec = chart.to_dict()
+    return spec
+
+def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
+    """
+    Given an Ibis DataType from a schema object, infer
+    a vega-lite type from it.
+    Similar to https://github.com/altair-viz/altair/blob/f54515c610fd5618264a41a370cca5d282856b5f/altair/utils/core.py#L66-L91
+    """
+    dtype = str(ibis_type)
+    if dtype in [
+            'integer', 'signedinteger, unsignedinteger', 'floating', 'int8',
+            'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64',
+            'float16', 'float32', 'float64', 'decimal'
+            ]:
+        return 'quantitative'
+    if dtype in ['category', 'boolean', 'string', 'bytes']:
+        return 'nominal'
+    if dtype in ['timestamp', 'date']:
+        return 'temporal'
+    # Default to nominal
+    return 'nominal'
+
 
 def _transform(spec):
     new = copy.deepcopy(spec)
