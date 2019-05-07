@@ -96,9 +96,8 @@ def _get_vegalite(chart: altair.Chart, schema: ibis.Schema) -> Dict[str, Any]:
 
 def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
     """
-    Given an Ibis DataType from a schema object, infer
-    a vega-lite type from it.
-    Similar to https://github.com/altair-viz/altair/blob/f54515c610fd5618264a41a370cca5d282856b5f/altair/utils/core.py#L66-L91
+    Given an Ibis DataType from a schema object, infer a vega-lite type from it.
+    Similar to _infer_vegalite_type from altair.core.
     """
     dtype = str(ibis_type)
     if dtype in [
@@ -131,7 +130,8 @@ def _add_target(expr: ibis.Expr):
         @comm.on_msg
         def _recv(msg):
             data = expr.execute()
-            comm.send(data.to_dict(orient='records'))
+            display(altair.to_values(data))
+            comm.send(altair.to_values(data)["values"])
 
     get_ipython().kernel.comm_manager.register_target('queryibis', target_func)
 
