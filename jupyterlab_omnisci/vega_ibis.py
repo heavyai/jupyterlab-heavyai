@@ -89,10 +89,7 @@ def _get_vegalite(chart: altair.Chart, schema: ibis.Schema) -> Dict[str, Any]:
             name = field.shorthand.split(':')[0]
         field.type = _infer_vegalite_type(schema[name])
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        spec = chart.to_dict()
-    return spec
+    return chart.to_dict()
 
 def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
     """
