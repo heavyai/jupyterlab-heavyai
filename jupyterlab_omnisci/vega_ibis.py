@@ -46,7 +46,7 @@ def monkeypatch_altair():
         those types and set the `ibis` attribute to the original ibis expression.
         """
         if data is not None and isinstance(data, ibis.Expr):
-            name = f"ibis{hash(data)}"
+            name = f"ibis-{hash(data)}"
             _expr_map[name] = data
             data = altair.NamedData(name=name)
 
@@ -111,15 +111,17 @@ def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
     return 'nominal'
 
 
-def _transform(spec):
+def _transform(spec: Dict[str, Any]):
     new = copy.deepcopy(spec)
-    new['data'][0]['transform'] = [
-        {
-            'type': "queryibis",
-            'query': {}
-        }
-    ]
-    new['data'][0]['values'] = []
+    for data in new['data']:
+        name = data.get('name')
+        if name and _expr_map.get(name) is not None:
+            data['transform'] = [
+                {
+                    'type': "queryibis",
+                    'query': {}
+                }
+            ]
     return new
 
 def _add_target(expr: ibis.Expr):
