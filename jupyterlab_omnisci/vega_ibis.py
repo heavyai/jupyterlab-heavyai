@@ -103,6 +103,9 @@ get_ipython().kernel.comm_manager.register_target(
     "jupyterlab-omnisci:vega-compiler", compiler_target_function
 )
 
+# For debugging
+_executed_expressions = []
+
 
 def query_target_func(comm, msg):
     # These are the paramaters passed to the vega transform
@@ -110,6 +113,7 @@ def query_target_func(comm, msg):
 
     expr_name: str = parameters.pop("name")
     expr = _expr_map[expr_name]
+    _executed_expressions.append(expr)
     data = expr.execute()
     comm.send(altair.to_values(data)["values"])
 
@@ -120,7 +124,65 @@ get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func
 def _transform(spec: typing.Dict[str, typing.Any]):
     new = copy.deepcopy(spec)
     for data in new["data"]:
+        # Handle initial named data
         name = data.get("name")
         if name and _expr_map.get(name) is not None:
             data["transform"] = [{"type": "queryibis", "name": name}]
+            continue
+
+        # Handle transform of named data
+        if "source" in data and data["source"] in _expr_map:
+            expr = _expr_map[data["source"]]
+            transforms = data.get("transform", None)
+            if transforms is None:
+                continue
+            # loop through the transforms. if we can handle all of them, great, we can create
+            # a new expression for all of them composed on each other.
+            # If not, leave it as is
+            for transform in transforms:
+                if transform["type"] == "aggregate":
+                    groupby, = transform["groupby"]
+                    op, = transform["ops"]
+                    field, = transform["fields"]
+                    as_, = transform["as"]
+                    expr = expr.group_by(groupby).aggregate(
+                        [getattr(expr[field], translate_op(op))().name(as_)]
+                    )
+                else:
+                    break
+            else:
+                # only executed if the inner loop did NOT break
+                del data["source"]
+                name = str(hash(expr))
+                _expr_map[name] = expr
+                data["transform"] = [{"type": "queryibis", "name": name}]
+
+            continue
+
+    return _cleanup_spec(new)
+
+
+def _cleanup_spec(spec):
+    """
+    Goes through the spec and removes data sources that are not referenced anywhere else in the spec.
+
+    Does this by turning the spec into a string and seeing if the name of the data is in the string
+    """
+
+    nonreferenced_data = []
+    for data in spec["data"]:
+        name = data["name"]
+        # create a vesion of the spec where this data is removed
+        without_this_data = copy.deepcopy(spec)
+        without_this_data["data"].remove(data)
+        has_reference = name in str(without_this_data)
+        if not has_reference:
+            nonreferenced_data.append(data)
+
+    new = copy.deepcopy(spec)
+    new["data"] = [data for data in new["data"] if data not in nonreferenced_data]
     return new
+
+
+def translate_op(op: str) -> str:
+    return {"mean": "mean", "average": "mean"}.get(op, op)
