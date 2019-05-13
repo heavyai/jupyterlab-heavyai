@@ -20,7 +20,7 @@ class QueryIbis extends dataflow.Transform implements Transform {
   /**
    * The current kernel instance for the QueryIbis transform.
    */
-  static kernel: Kernel.IKernelConnection;
+  static kernel: Kernel.IKernelConnection | null;
 
   /**
    * The definition for the transform. Used by the vega dataflow logic
@@ -49,6 +49,10 @@ class QueryIbis extends dataflow.Transform implements Transform {
   async transform(parameters: any, pulse: any): Promise<any> {
     let result: JSONObject[] = [];
     const kernel = QueryIbis.kernel;
+    if (!kernel) {
+      console.error('Not connected to kernel');
+      return;
+    }
     const comm = await kernel.connectToComm('queryibis');
     const delegate = new PromiseDelegate<void>();
     comm.open();
