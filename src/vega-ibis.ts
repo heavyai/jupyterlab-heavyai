@@ -28,6 +28,7 @@ function createNew(
   nb: NotebookPanel,
   context: DocumentRegistry.IContext<INotebookModel>
 ): IDisposable {
+  ibisTransform.kernel = context.session.kernel;
   context.session.kernelChanged.connect((_, { newValue, oldValue }) => {
     if (newValue) {
       ibisTransform.kernel = newValue;

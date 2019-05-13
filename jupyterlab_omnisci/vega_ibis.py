@@ -5,6 +5,7 @@
 import copy
 import typing
 import warnings
+import pathlib
 
 import ibis
 import altair
@@ -60,6 +61,7 @@ def monkeypatch_altair():
         expr = _expr_map[self.data.name]
         spec = _get_vegalite(self, expr.schema())
         d = display({MIMETYPE: EMPTY_VEGA}, raw=True, display_id=True)
+
         _add_target(expr)
 
         compile_comm = Comm(target_name="jupyterlab-omnisci:vega-compiler", data=spec)
@@ -140,13 +142,16 @@ def _transform(spec: typing.Dict[str, typing.Any]):
     return new
 
 
+LOG = pathlib.Path("./log")
+
+
 def _add_target(expr: ibis.Expr):
     def target_func(comm, msg):
-        @comm.on_msg
-        def _recv(msg):
-            data = expr.execute()
-            display(altair.to_values(data))
-            comm.send(altair.to_values(data)["values"])
+        LOG.write_text(f"Registering {comm} {msg}")
+
+        data = expr.execute()
+        display(altair.to_values(data))
+        comm.send(altair.to_values(data)["values"])
 
     get_ipython().kernel.comm_manager.register_target("queryibis", target_func)
 
