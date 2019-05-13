@@ -17,21 +17,21 @@ _expr_map = {}
 MIMETYPE = "application/vnd.vega.ibis.v5+json"
 
 EMPTY_VEGA = {
-  "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "description": "An empty vega v5 spec",
-  "width": 500,
-  "height": 200,
-  "padding": 5,
-  "autosize": "pad",
-
-  "signals": [],
-  "data": [],
-  "scales": [],
-  "projections": [],
-  "axes": [],
-  "legends": [],
-  "marks": []
+    "$schema": "https://vega.github.io/schema/vega/v5.json",
+    "description": "An empty vega v5 spec",
+    "width": 500,
+    "height": 200,
+    "padding": 5,
+    "autosize": "pad",
+    "signals": [],
+    "data": [],
+    "scales": [],
+    "projections": [],
+    "axes": [],
+    "legends": [],
+    "marks": [],
 }
+
 
 def monkeypatch_altair():
     """
@@ -55,21 +55,22 @@ def monkeypatch_altair():
     def ipython_display(self):
         expr = _expr_map[self.data.name]
         spec = _get_vegalite(self, expr.schema())
-        d = display({ MIMETYPE: EMPTY_VEGA }, raw=True, display_id=True)
+        d = display({MIMETYPE: EMPTY_VEGA}, raw=True, display_id=True)
         _add_target(expr)
 
-        compile_comm = Comm(target_name='jupyterlab-omnisci:vega-compiler', data=spec)
+        compile_comm = Comm(target_name="jupyterlab-omnisci:vega-compiler", data=spec)
 
         @compile_comm.on_msg
         def _recv(msg):
-            vega_spec = msg['content']['data']
-            if not vega_spec.get('$schema'):
+            vega_spec = msg["content"]["data"]
+            if not vega_spec.get("$schema"):
                 return
             transformed = _transform(vega_spec)
-            d.update({ MIMETYPE: transformed}, raw=True)
+            d.update({MIMETYPE: transformed}, raw=True)
 
     altair.Chart.__init__ = updated_chart_init
     altair.Chart._ipython_display_ = ipython_display
+
 
 def _get_vegalite(chart: altair.Chart, schema: ibis.Schema) -> Dict[str, Any]:
     """
@@ -83,13 +84,14 @@ def _get_vegalite(chart: altair.Chart, schema: ibis.Schema) -> Dict[str, Any]:
         field = getattr(enc, attr)
         if field == altair.Undefined:
             continue
-        if field.field !=altair.Undefined:
+        if field.field != altair.Undefined:
             name = field.field
         else:
-            name = field.shorthand.split(':')[0]
+            name = field.shorthand.split(":")[0]
         field.type = _infer_vegalite_type(schema[name])
 
     return chart.to_dict()
+
 
 def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
     """
@@ -98,31 +100,39 @@ def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
     """
     dtype = str(ibis_type)
     if dtype in [
-            'integer', 'signedinteger, unsignedinteger', 'floating', 'int8',
-            'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64',
-            'float16', 'float32', 'float64', 'decimal'
-            ]:
-        return 'quantitative'
-    if dtype in ['category', 'boolean', 'string', 'bytes']:
-        return 'nominal'
-    if dtype in ['timestamp', 'date']:
-        return 'temporal'
+        "integer",
+        "signedinteger, unsignedinteger",
+        "floating",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float16",
+        "float32",
+        "float64",
+        "decimal",
+    ]:
+        return "quantitative"
+    if dtype in ["category", "boolean", "string", "bytes"]:
+        return "nominal"
+    if dtype in ["timestamp", "date"]:
+        return "temporal"
     # Default to nominal
-    return 'nominal'
+    return "nominal"
 
 
 def _transform(spec: Dict[str, Any]):
     new = copy.deepcopy(spec)
-    for data in new['data']:
-        name = data.get('name')
+    for data in new["data"]:
+        name = data.get("name")
         if name and _expr_map.get(name) is not None:
-            data['transform'] = [
-                {
-                    'type': "queryibis",
-                    'query': {}
-                }
-            ]
+            data["transform"] = [{"type": "queryibis", "query": {}}]
     return new
+
 
 def _add_target(expr: ibis.Expr):
     def target_func(comm, msg):
@@ -132,6 +142,7 @@ def _add_target(expr: ibis.Expr):
             display(altair.to_values(data))
             comm.send(altair.to_values(data)["values"])
 
-    get_ipython().kernel.comm_manager.register_target('queryibis', target_func)
+    get_ipython().kernel.comm_manager.register_target("queryibis", target_func)
+
 
 monkeypatch_altair()
