@@ -16,7 +16,7 @@ from IPython import get_ipython
 __all__: typing.List[str] = []
 
 
-_expr_map = {}
+_expr_map: typing.Dict[str, ibis.Expr] = {}
 
 # New Vega Lite renderer mimetype which can process ibis expressions in names
 MIMETYPE = "application/vnd.vega.ibis.v5+json"
@@ -38,6 +38,15 @@ EMPTY_VEGA = {
 }
 
 
+def empty(expr: ibis.Expr) -> pandas.DataFrame:
+    """
+    Creates an empty DF for a ibis expression, based on the schema
+
+    https://github.com/ibis-project/ibis/issues/1676#issuecomment-441472528
+    """
+    return expr.schema().apply_to(pandas.DataFrame(columns=expr.columns))
+
+
 def monkeypatch_altair():
     """
     Needed until https://github.com/altair-viz/altair/issues/843 is fixed to let Altair
@@ -51,92 +60,61 @@ def monkeypatch_altair():
         those types and set the `ibis` attribute to the original ibis expression.
         """
         if data is not None and isinstance(data, ibis.Expr):
-            name = f"ibis-{hash(data)}"
-            _expr_map[name] = data
-            data = altair.NamedData(name=name)
+            expr = data
+            data = empty(expr)
+            data.ibis = expr
 
         return original_chart_init(self, data=data, *args, **kwargs)
 
-    def ipython_display(self):
-        if (
-            isinstance(self.data, altair.NamedData)
-            and _expr_map.get(self.data.name) is not None
-        ):
-            expr = _expr_map[self.data.name]
-            spec = _get_vegalite(self, expr.schema())
-            _add_target(expr)
-        else:
-            spec = self.to_dict()
-
-        d = display({MIMETYPE: EMPTY_VEGA}, raw=True, display_id=True)
-
-        compile_comm = Comm(target_name="jupyterlab-omnisci:vega-compiler", data=spec)
-
-        @compile_comm.on_msg
-        def _recv(msg):
-            vega_spec = msg["content"]["data"]
-            if not vega_spec.get("$schema"):
-                return
-            transformed = _transform(vega_spec)
-            d.update({MIMETYPE: transformed}, raw=True)
-
     altair.Chart.__init__ = updated_chart_init
-    altair.Chart._ipython_display_ = ipython_display
 
 
-def _get_vegalite(
-    chart: altair.Chart, schema: ibis.Schema
-) -> typing.Dict[str, typing.Any]:
+monkeypatch_altair()
+
+
+def altair_data_transformer(data):
     """
-    Given an altair chart, and an ibis expression,
-    get a vega-lite spec from them. This is more complex
-    than calling chart.to_dict() because we use the expression schema
-    to infer altair encoding types.
+    turn a pandas DF with the Ibis query that made it attached to it into
+    a valid Vega Lite data dict. Since this has to be JSON serializiable
+    (because of how Altair is set up), we create a unique name and
+    save the ibis expression globally with that name so we can pick it up later.
     """
-    enc = chart.encoding
-    for attr in dir(enc):
-        field = getattr(enc, attr)
-        if field == altair.Undefined:
-            continue
-        if field.field != altair.Undefined:
-            name = field.field
-        else:
-            name = field.shorthand.split(":")[0]
-        field.type = _infer_vegalite_type(schema[name])
-
-    return chart.to_dict()
+    assert isinstance(data, pandas.DataFrame)
+    expr = data.ibis
+    name = str(hash(expr))
+    _expr_map[name] = expr
+    return {"name": name}
 
 
-def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
-    """
-    Given an Ibis DataType from a schema object, infer a vega-lite type from it.
-    Similar to _infer_vegalite_type from altair.core.
-    """
-    dtype = str(ibis_type)
-    if dtype in [
-        "integer",
-        "signedinteger, unsignedinteger",
-        "floating",
-        "int8",
-        "int16",
-        "int32",
-        "int64",
-        "uint8",
-        "uint16",
-        "uint32",
-        "uint64",
-        "float16",
-        "float32",
-        "float64",
-        "decimal",
-    ]:
-        return "quantitative"
-    if dtype in ["category", "boolean", "string", "bytes"]:
-        return "nominal"
-    if dtype in ["timestamp", "date"]:
-        return "temporal"
-    # Default to nominal
-    return "nominal"
+def altair_renderer(spec):
+    return {MIMETYPE: spec}
+
+
+altair.data_transformers.register("ibis", altair_data_transformer)
+altair.renderers.register("ibis", altair_renderer)
+
+
+def compiler_target_function(comm, msg):
+    updated_spec = _transform(msg["content"]["data"])
+    comm.send(updated_spec)
+
+
+get_ipython().kernel.comm_manager.register_target(
+    "jupyterlab-omnisci:vega-compiler", compiler_target_function
+)
+
+
+def query_target_func(comm, msg):
+    # These are the paramaters passed to the vega transform
+    parameters = msg["content"]["data"]
+
+    expr_name: str = parameters.pop("name")
+    expr = _expr_map[expr_name]
+    data = expr.execute()
+    comm.send(altair.to_values(data)["values"])
+
+
+get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func)
 
 
 def _transform(spec: typing.Dict[str, typing.Any]):
@@ -144,16 +122,5 @@ def _transform(spec: typing.Dict[str, typing.Any]):
     for data in new["data"]:
         name = data.get("name")
         if name and _expr_map.get(name) is not None:
-            data["transform"] = [{"type": "queryibis", "query": {}}]
+            data["transform"] = [{"type": "queryibis", "name": name}]
     return new
-
-
-def _add_target(expr: ibis.Expr):
-    def target_func(comm, msg):
-        data = expr.execute()
-        comm.send(altair.to_values(data)["values"])
-
-    get_ipython().kernel.comm_manager.register_target("queryibis", target_func)
-
-
-monkeypatch_altair()

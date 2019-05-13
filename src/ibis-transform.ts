@@ -32,7 +32,7 @@ class QueryIbis extends dataflow.Transform implements Transform {
     metadata: { changes: true, source: true },
     params: [
       {
-        name: 'query',
+        name: 'name',
         type: 'string',
         required: true
       }
@@ -55,7 +55,7 @@ class QueryIbis extends dataflow.Transform implements Transform {
     }
     const comm = await kernel.connectToComm('queryibis');
     const delegate = new PromiseDelegate<void>();
-    comm.open();
+    comm.open(parameters);
     comm.onMsg = msg => {
       result = msg.content.data as JSONObject[];
       delegate.resolve(void 0);
