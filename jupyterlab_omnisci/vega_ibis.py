@@ -1,5 +1,9 @@
+"""
+
+"""
+
 import copy
-from typing import *
+import typing
 import warnings
 
 import ibis
@@ -8,7 +12,7 @@ import pandas
 from ipykernel.comm import Comm
 from IPython import get_ipython
 
-__all__: List[str] = []
+__all__: typing.List[str] = []
 
 
 _expr_map = {}
@@ -72,7 +76,9 @@ def monkeypatch_altair():
     altair.Chart._ipython_display_ = ipython_display
 
 
-def _get_vegalite(chart: altair.Chart, schema: ibis.Schema) -> Dict[str, Any]:
+def _get_vegalite(
+    chart: altair.Chart, schema: ibis.Schema
+) -> typing.Dict[str, typing.Any]:
     """
     Given an altair chart, and an ibis expression,
     get a vega-lite spec from them. This is more complex
@@ -125,7 +131,7 @@ def _infer_vegalite_type(ibis_type: ibis.expr.datatypes.DataType) -> str:
     return "nominal"
 
 
-def _transform(spec: Dict[str, Any]):
+def _transform(spec: typing.Dict[str, typing.Any]):
     new = copy.deepcopy(spec)
     for data in new["data"]:
         name = data.get("name")
