@@ -150,7 +150,6 @@ def _add_target(expr: ibis.Expr):
         LOG.write_text(f"Registering {comm} {msg}")
 
         data = expr.execute()
-        display(altair.to_values(data))
         comm.send(altair.to_values(data)["values"])
 
     get_ipython().kernel.comm_manager.register_target("queryibis", target_func)
