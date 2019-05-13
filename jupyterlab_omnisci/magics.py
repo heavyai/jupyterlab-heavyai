@@ -1,4 +1,3 @@
-
 """
 Importing this module registers Jupyter cell magics for rendering
 Vega Lite and Vega in the MapD server and for rendering a SQL editor given a query.

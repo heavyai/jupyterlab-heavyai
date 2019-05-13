@@ -22,7 +22,7 @@ setup(
     install_requires=[
         "vdom",
         "pyyaml",
-        "altair==3.0.0rc1",
+        "altair>=3",
         "ipywidgets",
         "ibis-framework==1.0.0",
         "vega_datasets"

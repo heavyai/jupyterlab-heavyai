@@ -16,10 +16,10 @@ HASH_TO_IBIS: typing.Dict[int, ibis.Expr] = {}
 # New Vega Lite renderer mimetype which can process ibis expressions in names
 MIMETYPE = "application/vnd.vegalite.v3+json; ibis=true"
 
-NAME_PREFIX = 'ibis-'
+NAME_PREFIX = "ibis-"
 
 # Comm opened by client to send expression and transforms
-COMM_ID = 'vega-ibis'
+COMM_ID = "vega-ibis"
 COMM = ipykernel.comm.Comm(target_name=COMM_ID, data=None)
 
 
@@ -47,16 +47,20 @@ def vega_ibis_renderer(spec):
     return {MIMETYPE: spec}
 
 
-CommData = mypy_extensions.TypedDict('CommData', {
-    "data": typing.Dict[str, object],
-    "expr_hash": int,
-    "transform": typing.List[typing.Dict]
-})
+CommData = mypy_extensions.TypedDict(
+    "CommData",
+    {
+        "data": typing.Dict[str, object],
+        "expr_hash": int,
+        "transform": typing.List[typing.Dict],
+    },
+)
 
 
 @COMM.on_msg
 def comm_on_msg(msg) -> None:
     on_comm_data(msg["content"]["data"])
+
 
 def on_comm_data(data: CommData) -> None:
     """
@@ -64,6 +68,7 @@ def on_comm_data(data: CommData) -> None:
     """
 
     print(data)
+
 
 altair.renderers.register("vega-ibis", vega_ibis_renderer)
 altair.data_transformers.register("vega-ibis", vega_ibis_transformation)

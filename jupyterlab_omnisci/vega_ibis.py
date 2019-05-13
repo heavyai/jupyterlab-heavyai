@@ -1,5 +1,5 @@
 """
-
+Functionality for server-side ibis transforms of vega charts.
 """
 
 import copy
@@ -58,11 +58,17 @@ def monkeypatch_altair():
         return original_chart_init(self, data=data, *args, **kwargs)
 
     def ipython_display(self):
-        expr = _expr_map[self.data.name]
-        spec = _get_vegalite(self, expr.schema())
-        d = display({MIMETYPE: EMPTY_VEGA}, raw=True, display_id=True)
+        if (
+            isinstance(self.data, altair.NamedData)
+            and _expr_map.get(self.data.name) is not None
+        ):
+            expr = _expr_map[self.data.name]
+            spec = _get_vegalite(self, expr.schema())
+            _add_target(expr)
+        else:
+            spec = self.to_dict()
 
-        _add_target(expr)
+        d = display({MIMETYPE: EMPTY_VEGA}, raw=True, display_id=True)
 
         compile_comm = Comm(target_name="jupyterlab-omnisci:vega-compiler", data=spec)
 
@@ -142,13 +148,8 @@ def _transform(spec: typing.Dict[str, typing.Any]):
     return new
 
 
-LOG = pathlib.Path("./log")
-
-
 def _add_target(expr: ibis.Expr):
     def target_func(comm, msg):
-        LOG.write_text(f"Registering {comm} {msg}")
-
         data = expr.execute()
         comm.send(altair.to_values(data)["values"])
 
