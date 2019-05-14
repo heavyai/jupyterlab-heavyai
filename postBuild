@@ -1,4 +1,0 @@
-jlpm install
-jlpm run build
-jupyter labextension install .
-pip install -e .

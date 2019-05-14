@@ -4,6 +4,6 @@ set -o xtrace
 
 jlpm install
 jlpm run build
-# jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
 jupyter labextension install .
 pip install -e .
