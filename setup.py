@@ -13,7 +13,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="jupyterlab-omnisci",  # Required
-    version="0.1.0",  # Required
+    version="0.9.0",  # Required
     description="Omnisci integration with JupyterLab",  # Required
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
@@ -22,9 +22,10 @@ setup(
     install_requires=[
         "vdom",
         "pyyaml",
-        "altair==3.0.0rc1",
+        "altair==3.0.1",
         "ipywidgets",
         "ibis-framework==1.0.0",
-        "vega_datasets"
+        "vega_datasets",
+        "jupyterlab==1.0.0a3"
     ]
 )
