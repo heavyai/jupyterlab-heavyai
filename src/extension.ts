@@ -472,7 +472,7 @@ function activateOmniSciInitialNotebook(
       }
       Private.injectIbisConnection(
         current.content,
-        manager.defaultConnection!,
+        manager.defaultConnection,
         manager.environment
       );
     },
@@ -520,7 +520,7 @@ function activateOmniSciInitialNotebook(
           }
           Private.injectIbisConnection(
             notebook.content,
-            manager.defaultConnection!,
+            manager.defaultConnection,
             manager.environment
           );
           notebook.content.model.contentChanged.disconnect(inject);
@@ -593,8 +593,7 @@ namespace Private {
    * A template for an Ibis mapd client.
    */
   const IBIS_TEMPLATE = `
-{{os}}
-import ibis
+{{os}}import ibis
 
 con = ibis.mapd.connect(
     host={{host}}, user={{user}}, password={{password}},
@@ -605,12 +604,12 @@ con.list_tables()`.trim();
 
   export function injectIbisConnection(
     notebook: Notebook,
-    connection: IOmniSciConnectionData,
+    connection?: IOmniSciConnectionData,
     environment?: IOmniSciConnectionData
   ) {
     const env = environment || {};
     const con: IOmniSciConnectionData = {};
-    let os = Object.keys(env).length === 0 ? '' : 'import os';
+    let os = Object.keys(env).length === 0 ? '' : 'import os\n';
     // Merge the connection with any environment variables
     // that have been specified.
     const keys: ReadonlyArray<keyof IOmniSciConnectionData> = [
@@ -622,19 +621,21 @@ con.list_tables()`.trim();
       'database'
     ];
     keys.forEach(key => {
-      con[key] = connection[key]
-        ? `'${connection[key]}'`
-        : `os.environ['${env[key]}']`;
+      if (connection && connection[key]) {
+        con[key] = `"${connection[key]}"`;
+      } else if (env[key]) {
+        con[key] = `os.environ['${env[key]}']`;
+      }
     });
 
     let value = IBIS_TEMPLATE;
     value = value.replace('{{os}}', os);
-    value = value.replace('{{host}}', con.host || "''");
-    value = value.replace('{{protocol}}', con.protocol || "''");
-    value = value.replace('{{password}}', con.password || "''");
-    value = value.replace('{{database}}', con.database || "''");
-    value = value.replace('{{user}}', con.username || "''");
-    value = value.replace('{{port}}', `${con.port || "''"}`);
+    value = value.replace('{{host}}', con.host || '""');
+    value = value.replace('{{protocol}}', con.protocol || '""');
+    value = value.replace('{{password}}', con.password || '""');
+    value = value.replace('{{database}}', con.database || '""');
+    value = value.replace('{{user}}', con.username || '""');
+    value = value.replace('{{port}}', `${con.port || '""'}`);
     NotebookActions.insertAbove(notebook);
     notebook.model.cells.get(0)!.value.text = value;
   }
