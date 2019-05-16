@@ -14,7 +14,7 @@ all within JupyterLab.
 First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package:
 
 ```bash
-conda install -c conda-forge pymapd
+conda install -c conda-forge pymapd nodejs
 
 pip install jupyterlab-omnisci
 ```
@@ -84,7 +84,7 @@ pip install -e .
 First create a test environment:
 
 ```bash
-conda create -n tmp -c conda-forge pymapd
+conda create -n tmp -c conda-forge pymapd nodejs
 conda activate tmp
 ```
 
