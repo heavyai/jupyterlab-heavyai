@@ -183,6 +183,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     }
     // Do nothing if there is no change.
     if (
+      this._defaultConnection &&
       JSONExt.deepEqual(
         this._defaultConnection as JSONObject,
         value as JSONObject
