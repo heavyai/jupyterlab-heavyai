@@ -13,6 +13,8 @@ import pandas
 from ipykernel.comm import Comm
 from IPython import get_ipython
 
+from ibis_vega_transform import apply
+
 __all__: typing.List[str] = []
 
 
@@ -81,7 +83,7 @@ def altair_data_transformer(data):
     """
     assert isinstance(data, pandas.DataFrame)
     expr = data.ibis
-    name = str(hash(expr))
+    name = f"ibis:{hash(expr)}"
     _expr_map[name] = expr
     return {"name": name}
 
@@ -136,28 +138,14 @@ def _transform(spec: typing.Dict[str, typing.Any]):
             transforms = data.get("transform", None)
             if transforms is None:
                 continue
-            # loop through the transforms. if we can handle all of them, great, we can create
-            # a new expression for all of them composed on each other.
-            # If not, leave it as is
-            for transform in transforms:
-                if transform["type"] == "aggregate":
-                    groupby, = transform["groupby"]
-                    op, = transform["ops"]
-                    field, = transform["fields"]
-                    as_, = transform["as"]
-                    expr = expr.group_by(groupby).aggregate(
-                        [getattr(expr[field], translate_op(op))().name(as_)]
-                    )
-                else:
-                    break
-            else:
-                # only executed if the inner loop did NOT break
+            try:
+                new_expr = apply(expr, transforms)
                 del data["source"]
-                name = str(hash(expr))
-                _expr_map[name] = expr
+                name = f"ibis:{hash(new_expr)}"
+                _expr_map[name] = new_expr
                 data["transform"] = [{"type": "queryibis", "name": name}]
-
-            continue
+            except Exception as e:
+                raise ValueError(f"Failed to convert {transforms} with error message message '{e}'")
 
     return _cleanup_spec(new)
 
