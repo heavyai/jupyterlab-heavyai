@@ -448,6 +448,7 @@ const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   id: INITIAL_NOTEBOOK_PLUGIN_ID,
   requires: [
     ICommandPalette,
+    IMainMenu,
     INotebookTracker,
     IOmniSciConnectionManager,
     IStateDB
@@ -458,6 +459,7 @@ const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
 function activateOmniSciInitialNotebook(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
+  menu: IMainMenu,
   tracker: INotebookTracker,
   manager: IOmniSciConnectionManager,
   state: IStateDB
@@ -487,6 +489,7 @@ function activateOmniSciInitialNotebook(
     command: CommandIDs.injectIbisConnection,
     category: 'OmniSci'
   });
+  menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
 
   // Fetch the state, which is used to determine whether to create
   // an initial populated notebook.
