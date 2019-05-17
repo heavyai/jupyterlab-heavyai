@@ -464,15 +464,19 @@ function activateOmniSciInitialNotebook(
 ): void {
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
-    label: 'Inject Ibis OmniSci Connection',
-    execute: () => {
+    label: 'Insert Ibis OmniSci Connection…',
+    execute: async () => {
       const current = tracker.currentWidget;
       if (!current) {
         return;
       }
+      const connection = await manager.chooseConnection(
+        'Choose Ibis Connection',
+        manager.defaultConnection
+      );
       Private.injectIbisConnection(
         current.content,
-        manager.defaultConnection,
+        connection,
         manager.environment
       );
     },
@@ -637,7 +641,7 @@ con.list_tables()`.trim();
     value = value.replace('{{user}}', con.username || '""');
     value = value.replace('{{port}}', `${con.port || '""'}`);
     NotebookActions.insertAbove(notebook);
-    notebook.model.cells.get(0)!.value.text = value;
+    notebook.activeCell!.model.value.text = value;
   }
 
   /**
