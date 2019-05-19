@@ -37,6 +37,11 @@ export type OmniSciConnection = any;
 
 /**
  * Connection data for the omnisci browser client.
+ *
+ * #### Notes
+ * This interface is intended to be API compatible with the servers.json
+ * server specification that is used by OmniSci Immerse. As such,
+ * it includes a number of fields that we do not use in this package.
  */
 export interface IOmniSciConnectionData {
   /**
@@ -363,25 +368,21 @@ export namespace OmniSciConnectionManager {
 /**
  * Make a connection to the Omnisci backend.
  */
-export function makeConnection(
-  data: IOmniSciConnectionData
+export async function makeConnection(
+  data: IOmniSciConnectionData,
+  sessionId?: string
 ): Promise<OmniSciConnection> {
-  return new Promise<OmniSciConnection>((resolve, reject) => {
-    new MapdCon()
-      .protocol(data.protocol)
-      .host(data.host)
-      .port(data.port)
-      .dbName(data.database)
-      .user(data.username)
-      .password(data.password)
-      .connect((error: any, con: any) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(con);
-        }
-      });
-  });
+  let con = new MapdCon()
+    .protocol(data.protocol)
+    .host(data.host)
+    .port(data.port)
+    .dbName(data.database)
+    .user(data.username)
+    .password(data.password);
+  if (sessionId) {
+    con = con.sessionId(sessionId);
+  }
+  return await con.connectAsync();
 }
 
 /**
@@ -601,10 +602,10 @@ export class OmniSciCompletionConnector extends DataConnector<
   /**
    * Construct a new completion connector.
    */
-  constructor(data: IOmniSciConnectionData | undefined) {
+  constructor(options: OmniSciCompletionConnector.IOptions = {}) {
     super();
-    if (data) {
-      this._connection = makeConnection(data);
+    if (options.connection) {
+      this._connection = makeConnection(options.connection, options.sessionId);
     }
   }
 
@@ -660,6 +661,26 @@ export class OmniSciCompletionConnector extends DataConnector<
     );
   }
   private _connection: Promise<OmniSciConnection> | undefined = undefined;
+}
+
+/**
+ * A namespace for OmniSciCompletionConnector statics.
+ */
+export namespace OmniSciCompletionConnector {
+  /**
+   * Options used to create the completion connector.
+   */
+  export interface IOptions {
+    /**
+     * Connection data for the backend.
+     */
+    connection?: IOmniSciConnectionData;
+
+    /**
+     * A session ID for an already authenticated session.
+     */
+    sessionId?: string;
+  }
 }
 
 /**
