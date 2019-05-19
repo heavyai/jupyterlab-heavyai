@@ -223,6 +223,13 @@ export class OmniSciGrid extends Panel {
   }
 
   /**
+   * Get the session ID for the current connection.
+   */
+  async getSessionId(): Promise<string | undefined> {
+    return await this._model.getSessionId();
+  }
+
+  /**
    * A change signal emitted when the connection or
    * query data change.
    */
@@ -319,6 +326,17 @@ export class OmniSciTableModel extends DataModel {
   }
 
   /**
+   * Get the session ID for the current connection.
+   */
+  getSessionId(): string | undefined {
+    if (!this._connection) {
+      return undefined;
+    }
+    const ids = this._connection.sessionId();
+    return ids.length ? ids[0] : undefined;
+  }
+
+  /**
    * Get data from the model.
    */
   data(region: DataModel.CellRegion, row: number, column: number): any {
@@ -403,6 +421,7 @@ export class OmniSciTableModel extends DataModel {
     connectionData: IOmniSciConnectionData | undefined,
     query: string
   ): Promise<void> {
+    // If nothing has changed, do nothing.
     if (
       this._query === query &&
       connectionData &&
@@ -423,7 +442,7 @@ export class OmniSciTableModel extends DataModel {
    * Reset the model. Should be called when either
    * the query or the connection data change.
    */
-  private _updateModel(): Promise<void> {
+  private async _updateModel(): Promise<void> {
     // Clear the data of any previous model
     for (let key of Object.keys(this._dataBlocks)) {
       delete this._dataBlocks[Number(key)];
@@ -437,22 +456,19 @@ export class OmniSciTableModel extends DataModel {
 
     if (this.query && this.connectionData) {
       this._streaming = Private.shouldChunkRequests(this._query);
-      this._connectionPromise = makeConnection(this.connectionData);
-      return this._connectionPromise
-        .then(connection => {
-          return Private.validateQuery(connection, this._query).then(() => {
-            this.emitChanged({ type: 'model-reset' });
-            if (this._streaming) {
-              return this._fetchBlock(0);
-            } else {
-              return this._fetchDataset();
-            }
-          });
-        })
-        .catch(err => {
-          this.emitChanged({ type: 'model-reset' });
-          throw err;
-        });
+      this._connection = await makeConnection(this.connectionData);
+      try {
+        void (await Private.validateQuery(this._connection, this._query));
+        this.emitChanged({ type: 'model-reset' });
+        if (this._streaming) {
+          return this._fetchBlock(0);
+        } else {
+          return this._fetchDataset();
+        }
+      } catch (err) {
+        this.emitChanged({ type: 'model-reset' });
+        throw err;
+      }
     } else {
       this.emitChanged({ type: 'model-reset' });
       return Promise.resolve(void 0);
@@ -462,8 +478,8 @@ export class OmniSciTableModel extends DataModel {
   /**
    * Fetch a block with a given index into memory.
    */
-  private _fetchBlock(index: number): Promise<void> {
-    if (!this._connectionPromise) {
+  private async _fetchBlock(index: number): Promise<void> {
+    if (!this._connection) {
       return Promise.resolve(void 0);
     }
     // If we are already fetching this block, do nothing.
@@ -480,44 +496,39 @@ export class OmniSciTableModel extends DataModel {
     const indices = Object.keys(this._dataBlocks).map(key => Number(key));
     const maxIndex = Math.max(...indices);
 
-    return this._connectionPromise.then(connection => {
-      return Private.makeQuery(connection, query).then((res: any) => {
-        this._pending.delete(index);
-        if (!this._fieldNames.length) {
-          this._fieldNames = res.fields.map(
-            (field: any) => field.name as string
-          );
-          this.emitChanged({ type: 'model-reset' });
-        }
-        this._dataBlocks[index] = res.results;
-        if (index <= maxIndex || this._tableLength !== -1) {
-          // In this case, we are not appending, so emit a changed
-          // signal.
-          this.emitChanged({
-            type: 'cells-changed',
-            region: 'body',
-            rowIndex: offset,
-            columnIndex: 0,
-            rowSpan: res.results.length,
-            columnSpan: this._fieldNames.length
-          });
-        } else {
-          if (res.results.length < BLOCK_SIZE) {
-            // If the length of the result is less than the block size,
-            // we have found the table length. Set that.
-            this._tableLength = offset + res.results.length;
-            this._maxBlock = index;
-          }
-          // Emit a rows-inserted signal.
-          this.emitChanged({
-            type: 'rows-inserted',
-            region: 'body',
-            index: offset,
-            span: res.results.length
-          });
-        }
+    const res: any = await Private.makeQuery(this._connection, query);
+    this._pending.delete(index);
+    if (!this._fieldNames.length) {
+      this._fieldNames = res.fields.map((field: any) => field.name as string);
+      this.emitChanged({ type: 'model-reset' });
+    }
+    this._dataBlocks[index] = res.results;
+    if (index <= maxIndex || this._tableLength !== -1) {
+      // In this case, we are not appending, so emit a changed
+      // signal.
+      this.emitChanged({
+        type: 'cells-changed',
+        region: 'body',
+        rowIndex: offset,
+        columnIndex: 0,
+        rowSpan: res.results.length,
+        columnSpan: this._fieldNames.length
       });
-    });
+    } else {
+      if (res.results.length < BLOCK_SIZE) {
+        // If the length of the result is less than the block size,
+        // we have found the table length. Set that.
+        this._tableLength = offset + res.results.length;
+        this._maxBlock = index;
+      }
+      // Emit a rows-inserted signal.
+      this.emitChanged({
+        type: 'rows-inserted',
+        region: 'body',
+        index: offset,
+        span: res.results.length
+      });
+    }
   }
 
   /**
@@ -544,45 +555,42 @@ export class OmniSciTableModel extends DataModel {
    * If we are not chunking the data, then just load the whole thing,
    * limited by DEFAULT_LIMIT.
    */
-  private _fetchDataset(): Promise<void> {
-    if (!this._connectionPromise) {
+  private async _fetchDataset(): Promise<void> {
+    if (!this._connection) {
       return Promise.resolve(void 0);
     }
-    return this._connectionPromise.then(connection => {
-      return Private.makeQuery(connection, this._query, {
-        limit: DEFAULT_LIMIT
-      }).then((res: any) => {
-        this._fieldNames = res.fields.map((field: any) => field.name as string);
-        this.emitChanged({ type: 'model-reset' });
-        this._tableLength = res.results.length;
-        // If the dataset already exists, emit a cells-changed signal.
-        // Otherwise, emit a 'rows-inserted' signal.
-        if (this._dataset) {
-          this._dataset = res.results;
-          this.emitChanged({
-            type: 'cells-changed',
-            region: 'body',
-            rowIndex: 0,
-            columnIndex: 0,
-            rowSpan: res.results.length,
-            columnSpan: this._fieldNames.length
-          });
-        } else {
-          this._dataset = res.results;
-          this.emitChanged({
-            type: 'rows-inserted',
-            region: 'body',
-            index: 0,
-            span: res.results.length
-          });
-        }
-      });
+    const res: any = await Private.makeQuery(this._connection, this._query, {
+      limit: DEFAULT_LIMIT
     });
+    this._fieldNames = res.fields.map((field: any) => field.name as string);
+    this.emitChanged({ type: 'model-reset' });
+    this._tableLength = res.results.length;
+    // If the dataset already exists, emit a cells-changed signal.
+    // Otherwise, emit a 'rows-inserted' signal.
+    if (this._dataset) {
+      this._dataset = res.results;
+      this.emitChanged({
+        type: 'cells-changed',
+        region: 'body',
+        rowIndex: 0,
+        columnIndex: 0,
+        rowSpan: res.results.length,
+        columnSpan: this._fieldNames.length
+      });
+    } else {
+      this._dataset = res.results;
+      this.emitChanged({
+        type: 'rows-inserted',
+        region: 'body',
+        index: 0,
+        span: res.results.length
+      });
+    }
   }
 
   private _query = '';
   private _connectionData: IOmniSciConnectionData | undefined;
-  private _connectionPromise: Promise<OmniSciConnection> | undefined;
+  private _connection: OmniSciConnection | undefined;
 
   private _fieldNames: string[];
   private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
