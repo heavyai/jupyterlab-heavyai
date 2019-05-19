@@ -243,12 +243,12 @@ export class OmniSciGrid extends Panel {
    * If the update fails, either due to a connection failure or a query
    * validation failure, it shows the error in the panel.
    */
-  private _updateModel(
+  private async _updateModel(
     connectionData: IOmniSciConnectionData | undefined,
     query: string
-  ): void {
+  ): Promise<void> {
     const hasQuery = query !== '';
-    this._model
+    await this._model
       .updateModel(connectionData, query)
       .then(() => {
         this._content.setHidden(!hasQuery);
@@ -279,7 +279,7 @@ export class OmniSciTableModel extends DataModel {
    */
   constructor() {
     super();
-    this._updateModel();
+    void this._updateModel();
   }
 
   /**
@@ -417,25 +417,30 @@ export class OmniSciTableModel extends DataModel {
    *   and the connection and query data have been validated. It throws
    *   an error if the validation fails.
    */
-  updateModel(
+  async updateModel(
     connectionData: IOmniSciConnectionData | undefined,
     query: string
   ): Promise<void> {
-    // If nothing has changed, do nothing.
-    if (
-      this._query === query &&
+    const sameConnection =
       connectionData &&
       this._connectionData &&
+      this._connection &&
       JSONExt.deepEqual(
         connectionData as JSONObject,
         this._connectionData as JSONObject
-      )
-    ) {
+      );
+    // If nothing has changed, do nothing.
+    if (sameConnection && this._query === query) {
       return Promise.resolve(void 0);
     }
+    if (!sameConnection) {
+      this._connectionData = connectionData;
+      this._connection = connectionData
+        ? await makeConnection(connectionData)
+        : undefined;
+    }
     this._query = query;
-    this._connectionData = connectionData;
-    return this._updateModel();
+    await this._updateModel();
   }
 
   /**
@@ -456,22 +461,30 @@ export class OmniSciTableModel extends DataModel {
 
     if (this.query && this.connectionData) {
       this._streaming = Private.shouldChunkRequests(this._query);
-      this._connection = await makeConnection(this.connectionData);
-      try {
-        void (await Private.validateQuery(this._connection, this._query));
-        this.emitChanged({ type: 'model-reset' });
-        if (this._streaming) {
-          return this._fetchBlock(0);
-        } else {
-          return this._fetchDataset();
-        }
-      } catch (err) {
-        this.emitChanged({ type: 'model-reset' });
-        throw err;
-      }
+      await this._makeQuery();
     } else {
       this.emitChanged({ type: 'model-reset' });
-      return Promise.resolve(void 0);
+    }
+  }
+
+  /**
+   * Make a query to the database.
+   */
+  private async _makeQuery(): Promise<void> {
+    if (!this._connection || !this._query) {
+      return;
+    }
+    try {
+      void (await Private.validateQuery(this._connection, this._query));
+      this.emitChanged({ type: 'model-reset' });
+      if (this._streaming) {
+        return this._fetchBlock(0);
+      } else {
+        return this._fetchDataset();
+      }
+    } catch (err) {
+      this.emitChanged({ type: 'model-reset' });
+      throw err;
     }
   }
 

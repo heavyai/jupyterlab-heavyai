@@ -375,12 +375,16 @@ export async function makeConnection(
   let con = new MapdCon()
     .protocol(data.protocol)
     .host(data.host)
-    .port(data.port)
-    .dbName(data.database)
-    .user(data.username)
-    .password(data.password);
-  if (sessionId) {
-    con = con.sessionId(sessionId);
+    .port(data.port);
+  if (sessionId && false) {
+    // This does not quite work yet, mapd-connector requires
+    // database, username, and password rather than session ID.
+    con = con.sessionId([sessionId]);
+  } else {
+    con = con
+      .dbName(data.database)
+      .user(data.username)
+      .password(data.password);
   }
   return await con.connectAsync();
 }

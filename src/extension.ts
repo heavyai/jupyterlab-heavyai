@@ -273,18 +273,22 @@ function activateOmniSciGridViewer(
   });
 
   // Create a completion handler for each grid that is created.
-  gridTracker.widgetAdded.connect((sender, explorer) => {
+  gridTracker.widgetAdded.connect(async (sender, explorer) => {
     const editor = explorer.input.editor;
-    const connector = new OmniSciCompletionConnector(
-      explorer.content.connectionData
-    );
+    const sessionId = await explorer.content.getSessionId();
+    const connector = new OmniSciCompletionConnector({
+      connection: explorer.content.connectionData,
+      sessionId
+    });
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
-    explorer.content.onModelChanged.connect(() => {
-      handle.connector = new OmniSciCompletionConnector(
-        explorer.content.connectionData
-      );
+    explorer.content.onModelChanged.connect(async () => {
+      const sessionId = await explorer.content.getSessionId();
+      handle.connector = new OmniSciCompletionConnector({
+        connection: explorer.content.connectionData,
+        sessionId
+      });
     });
     // Set the theme for the new widget.
     explorer.content.style = style;
@@ -328,18 +332,23 @@ function activateOmniSciGridViewer(
   });
   // When a new grid widget is added, hook up the machinery for
   // completions and theming.
-  mimeGridTracker.widgetAdded.connect((sender, mime) => {
-    const editor = mime.widget.input.editor;
-    const connector = new OmniSciCompletionConnector(
-      mime.widget.content.connectionData
-    );
+  mimeGridTracker.widgetAdded.connect(async (sender, mime) => {
+    const grid = mime.widget;
+    const sessionId = await grid.content.getSessionId();
+    const editor = grid.input.editor;
+    const connector = new OmniSciCompletionConnector({
+      connection: grid.content.connectionData,
+      sessionId
+    });
     const parent = mime;
     const handle = completionManager.register({ connector, editor, parent });
 
-    mime.widget.content.onModelChanged.connect(() => {
-      handle.connector = new OmniSciCompletionConnector(
-        mime.widget.content.connectionData
-      );
+    grid.content.onModelChanged.connect(async () => {
+      const sessionId = await grid.content.getSessionId();
+      handle.connector = new OmniSciCompletionConnector({
+        connection: grid.content.connectionData,
+        sessionId
+      });
     });
     mime.widget.content.style = style;
     mime.widget.content.renderer = renderer;
