@@ -353,9 +353,10 @@
     "@blueprintjs/select" "^3.3.0"
     react "~16.8.4"
 
-"@mapd/connector@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@mapd/connector/-/connector-4.0.1.tgz#6040d08d933a84958b326a6384fedae778bab7df"
+"@mapd/connector@^4.4.0":
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/@mapd/connector/-/connector-4.4.0.tgz#e4edd4bcb2f946aa4107dd8a1f0154565236edf9"
+  integrity sha512-NJmXje07ebyBPAvbvA4nzFeZp/uO+clwme9M0I50omRmqHUlERKZtNosetuHk7KhTwc9YVH6N15QikXztWd2Nw==
   dependencies:
     codecov "^2.2.0"
     script-loader "^0.7.0"
