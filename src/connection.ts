@@ -366,21 +366,37 @@ export namespace OmniSciConnectionManager {
 }
 
 /**
- * Make a connection to the Omnisci backend.
+ * Make a connection to the OmniSci backend.
+ *
+ * @param data: connection data for the OmniSci database.
+ *   Must include at least protocol, host, and port. If a session ID
+ *   is not given, it must also incldue database, usernamem and password.
+ *
+ * @param sessionId: an optional session ID for an already-authenticated
+ *   database session.
+ *
+ * @returns a promise that resolves with the connection object.
  */
 export async function makeConnection(
   data: IOmniSciConnectionData,
   sessionId?: string
 ): Promise<OmniSciConnection> {
+  // Whether or not we have a session id, we need protocol,
+  // host, and port to be defined.
   let con = new MapdCon()
     .protocol(data.protocol)
     .host(data.host)
     .port(data.port);
-  if (sessionId && false) {
-    // This does not quite work yet, mapd-connector requires
-    // database, username, and password rather than session ID.
-    con = con.sessionId([sessionId]);
+  if (sessionId) {
+    // Set fake dbname and user arrays if we are provided a session ID.
+    // These are not necessary to make the connection, but the initClients
+    // function checks for them anyways.
+    // Once the clients have been initialized, set the session id,
+    // but do *not* call connect, as that requires username, db and password.
+    con = con.dbName(['']).user(['']);
+    return con.initClients().sessionId([sessionId]);
   } else {
+    // If we don't have a session id, provide user authentication.
     con = con
       .dbName(data.database)
       .user(data.username)

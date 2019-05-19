@@ -353,12 +353,12 @@
     "@blueprintjs/select" "^3.3.0"
     react "~16.8.4"
 
-"@mapd/connector@^4.4.0":
+"@mapd/connector@omnisci/mapd-connector#master":
   version "4.4.0"
-  resolved "https://registry.yarnpkg.com/@mapd/connector/-/connector-4.4.0.tgz#e4edd4bcb2f946aa4107dd8a1f0154565236edf9"
-  integrity sha512-NJmXje07ebyBPAvbvA4nzFeZp/uO+clwme9M0I50omRmqHUlERKZtNosetuHk7KhTwc9YVH6N15QikXztWd2Nw==
+  resolved "https://codeload.github.com/omnisci/mapd-connector/tar.gz/dfbf412fd66265b7704639b4a319127d589c90a3"
   dependencies:
     codecov "^2.2.0"
+    eventemitter3 "^3.1.0"
     script-loader "^0.7.0"
     thrift "^0.10.0"
 
@@ -1360,6 +1360,11 @@ esutils@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.2.tgz#0abf4f1caa5bcb1f7a9d8acc6dea4faaa04bac9b"
   integrity sha1-Cr9PHKpbyx96nYrMbepPqqBLrJs=
+
+eventemitter3@^3.1.0:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-3.1.2.tgz#2d3d48f9c346698fce83a85d7d664e98535df6e7"
+  integrity sha512-tvtQIeLVHjDkJYnzf2dgVMxfuSGJeM/7UCG17TT4EumTfNtF+0nebF/4zWOIkCreAbtNqhGEboB6BWrwqNaw4Q==
 
 execa@^0.9.0:
   version "0.9.0"
