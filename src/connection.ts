@@ -183,6 +183,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     }
     // Do nothing if there is no change.
     if (
+      this._defaultConnection &&
       JSONExt.deepEqual(
         this._defaultConnection as JSONObject,
         value as JSONObject
@@ -541,6 +542,12 @@ export class OmniSciConnectionDialog extends Widget
       const option = document.createElement('option');
       option.value = `${idx++}`;
       option.textContent = server.host || 'Unknown host';
+      option.title = `Hostname: ${server.host || 'unknown'}
+Protocol: ${server.protocol || 'unknown'}
+Port: ${server.port || 'unknown'}
+Database: ${server.database || 'unknown'}
+User: ${server.username || 'unknown'}
+Password ${server.password ? '*****' : 'unknown'}`;
       select.appendChild(option);
     });
     return select;

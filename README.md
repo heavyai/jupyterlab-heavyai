@@ -3,7 +3,7 @@
 Connect to OmniSci, query their databases, and render the OmniSci-flavored Vega specification,
 all within JupyterLab.
 
-[![](https://img.shields.io/pypi/v/jupyterlab-omnisci.svg)](https://pypi.python.org/pypi/jupyterlab-omnisci) [![](https://img.shields.io/npm/v/jupyterlab-omnisci.svg?style=flat-square)](https://www.npmjs.com/package/jupyterlab-omnisci)
+[![](https://img.shields.io/pypi/v/jupyterlab-omnisci.svg?style=flat-square)](https://pypi.python.org/pypi/jupyterlab-omnisci) [![](https://img.shields.io/npm/v/jupyterlab-omnisci.svg?style=flat-square)](https://www.npmjs.com/package/jupyterlab-omnisci)
 
 [![binder logo](https://beta.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/4.%20Extract%20Use%20Cases%20-%20VL%20examples.ipynb)
 
@@ -14,7 +14,7 @@ all within JupyterLab.
 First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package:
 
 ```bash
-conda install -c conda-forge jupyterlab=0.35.4 pymapd python=3.6
+conda install -c conda-forge pymapd nodejs
 
 pip install jupyterlab-omnisci
 ```
@@ -22,11 +22,11 @@ pip install jupyterlab-omnisci
 Then install the `jupyterlab-omnisci` JupyterLab extension.
 
 ```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
 jupyter labextension install jupyterlab-omnisci
 ```
 
-Then launch Jupyter Lab:
+Then launch JupyterLab:
 
 ```bash
 jupyter lab
@@ -73,8 +73,7 @@ conda activate jupyterlab-omnisci
 jlpm install
 jlpm run build
 
-# Disabled until it has been updated for JL 1.0
-# jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.38.x --no-build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
 
 jupyter labextension install .
 pip install -e .
@@ -82,23 +81,49 @@ pip install -e .
 
 ## Releasing
 
-### Python Package
+First create a test environment:
 
-First bump the version number in `setup.py`.
+```bash
+conda create -n tmp -c conda-forge pymapd nodejs
+conda activate tmp
+```
 
-Then, follow the [setuptools docs](https://setuptools.readthedocs.io/en/latest/setuptools.html#distributing-a-setuptools-based-project) on how to release
-a package:
+Then bump the Python version in `setup.py` and upload a test version:
 
 ```bash
 pip install --upgrade setuptools wheel twine
+rm -rf dist/
 python setup.py sdist bdist_wheel
 twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-# try installing
+```
+
+Install the test version in your new environment:
+
+```bash
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple jupyterlab_omnisci
-# upload for real
+```
+
+Now bump the version for the Javascript package in `package.json`. The run a build,
+create a tarball, and install it as a JupyterLab extension:
+
+```bash
+yarn run build
+yarn pack --filename out.tgz
+jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
+jupyter labextension install out.tgz
+```
+
+Now open JupyterLab and run through all the notebooks in `notebooks` to make sure
+they still render correctly.
+
+Now you can publish the Python package:
+
+```bash
 twine upload dist/*
 ```
 
-### JS Package
+And publish the node package:
 
-First bump the version in `package.json`.
+```
+npm publish out.tgz
+```

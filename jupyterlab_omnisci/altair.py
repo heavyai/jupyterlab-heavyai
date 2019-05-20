@@ -196,8 +196,8 @@ class VegaLiteOmniSci(DisplayObject):
                     "host": conn.host,
                     "protocol": conn.protocol,
                     "port": conn.port,
-                    "user": conn.user,
-                    "dbname": conn.db_name,
+                    "username": conn.user,
+                    "database": conn.db_name,
                     "password": conn.password,
                 },
             }
