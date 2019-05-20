@@ -66,17 +66,21 @@ Check out the [introduction notebook](./notebooks/Introduction.ipynb) to see how
 To install from source, run the following in a terminal:
 
 ```bash
-git clone https://github.com/Quansight/jupyterlab-omnisci
+git clone git@github.com:Quansight/jupyterlab-omnisci.git
+git clone git@github.com:jakevdp/altair-transform.git
+git clone git@github.com:ian-r-rose/vega-ibis-transform.git
+
 cd jupyterlab-omnisci
 conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
+pip install -e ../altair-transform -e ../vega-ibis-transform -e .
+
 jlpm install
 jlpm run build
 
 jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
 
 jupyter labextension install .
-pip install -e .
 ```
 
 ## Releasing
