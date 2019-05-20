@@ -541,8 +541,9 @@ function activateOmniSciNotebook(
     state.remove(NOTEBOOK_PLUGIN_ID);
 
     if (initial) {
+      await app.restored;
       // Create the SQL editor
-      await app.commands.execute(CommandIDs.newGrid, {
+      const grid = await app.commands.execute(CommandIDs.newGrid, {
         initialQuery,
         connectionData: connectionData || null,
         sessionId
@@ -554,7 +555,7 @@ function activateOmniSciNotebook(
       });
       // Move the notebook so it is in a split pane with the primary tab.
       // It has already been added, so this just has the effect of moving it.
-      app.shell.add(notebook, 'main');
+      app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
 
       await notebook.context.ready;
 
