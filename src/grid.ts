@@ -278,9 +278,11 @@ export class OmniSciGrid extends Panel {
         this._error.node.textContent = '';
       })
       .catch((err: any) => {
+        let msg =
+          (err.error_msg as string) || (err.message as string) || String(err);
         this._content.hide();
         this._error.show();
-        this._error.node.textContent = err ? err.message || err : 'Error';
+        this._error.node.textContent = msg;
       });
     this._onModelChanged.emit(void 0);
   }
