@@ -46,13 +46,6 @@ class OmniSciVegaRenderer:
         connection, session = _make_connection(connection)
         self.connection = connection
         self.session = session
-        # If we have a live session id, we can safely delete authentication
-        # material before sending it over the wire.
-        if session:
-            connection.pop("password", "")
-            connection.pop("username", "")
-            connection.pop("database", "")
-
         self.data = data
         self.vl_data = vl_data
 
@@ -95,12 +88,6 @@ class OmniSciSQLEditorRenderer:
         connection, session = _make_connection(connection)
         self.connection = connection
         self.session = session
-        # If we have a live session id, we can safely delete authentication
-        # material before sending it over the wire.
-        if session:
-            connection.pop("password", "")
-            connection.pop("username", "")
-            connection.pop("database", "")
 
         if isinstance(query, str):
             self.query = query
@@ -167,34 +154,49 @@ def omnisci_sqleditor(line, cell):
 
 def _make_connection(connection):
     """
-    Given a connection client, return a dictionary with connection
-    data for the client. If it is already a dictionary, return that.
+    Given a connection client, return JSON-serializable dictionary
+    with connection data for the client, as well as a session id if available.
+    If it is already a dictionary, return that.
 
-    Works for Ibis clients, pymapd connections, and dictionaries.
+    Parameters
+    ----------
+    connection: ibis.mapd.MapDClient or pymapd.Connection or dict
+        A connection object.
+
+    Returns
+    -------
+    connection, session: (dict, str)
+        A tuple containing the serializable connection data and session id,
+        if available. If the session id is not available (for instance, if
+        a dict is provided), then returns None for the second item.
     """
     if isinstance(connection, ibis.mapd.MapDClient):
-        return (
-            dict(
-                host=connection.host,
-                port=connection.port,
-                database=connection.db_name,
-                password=connection.password,
-                protocol=connection.protocol,
-                username=connection.user,
-            ),
-            connection.con._session,
+        con = dict(
+            host=connection.host,
+            port=connection.port,
+            database=connection.db_name,
+            password=connection.password,
+            protocol=connection.protocol,
+            username=connection.user,
         )
+        session = connection.con._session
     elif isinstance(connection, pymapd.Connection):
-        return (
-            dict(
-                host=connection._host,
-                port=connection._port,
-                database=connection._dbname,
-                password=connection._password,
-                protocol=connection._protocol,
-                username=connection._user,
-            ),
-            connection.session,
+        con = dict(
+            host=connection._host,
+            port=connection._port,
+            database=connection._dbname,
+            password=connection._password,
+            protocol=connection._protocol,
+            username=connection._user,
         )
+        session = connection.session
     else:
-        return connection
+        con = connection
+        session = None
+    # If we have a live session id, we can safely delete authentication
+    # material before sending it over the wire.
+    if session:
+        connection.pop("password", "")
+        connection.pop("username", "")
+        connection.pop("database", "")
+    return con, session
