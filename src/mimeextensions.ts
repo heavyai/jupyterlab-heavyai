@@ -151,7 +151,7 @@ export class RenderedOmniSciSQLEditor extends Widget
   /**
    * Render the SQL editor into this widget's node.
    */
-  renderModel(model: IRenderMime.IMimeModel): Promise<void> {
+  async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     // Get the data from the mimebundle
     const data = (model.data[
       SQL_EDITOR_MIME_TYPE
@@ -159,7 +159,10 @@ export class RenderedOmniSciSQLEditor extends Widget
     if (!data) {
       return Promise.resolve(void 0);
     }
-    this._widget.content.setConnectionData(data.connection, data.sessionId);
+    await this._widget.content.setConnectionData(
+      data.connection,
+      data.sessionId
+    );
     this._widget.content.query = data.query || '';
     return Promise.resolve(void 0);
   }

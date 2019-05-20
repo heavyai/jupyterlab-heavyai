@@ -28,6 +28,8 @@ import {
   NotebookActions
 } from '@jupyterlab/notebook';
 
+import { ReadonlyJSONObject } from '@phosphor/coreutils';
+
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
 import { Widget } from '@phosphor/widgets';
@@ -268,14 +270,27 @@ function activateOmniSciGridViewer(
   // Handle state restoration.
   restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
-    args: widget => ({ initialQuery: widget.content.query }),
+    args: widget => {
+      const con = widget.content.connectionData;
+      const connection = {
+        host: con.host,
+        protocol: con.protocol,
+        port: con.port
+      };
+      const sessionId = widget.content.sessionId;
+      return {
+        initialQuery: widget.content.query,
+        connectionData: connection,
+        sessionId: sessionId || null
+      };
+    },
     name: widget => widget.id
   });
 
   // Create a completion handler for each grid that is created.
-  gridTracker.widgetAdded.connect(async (sender, explorer) => {
+  gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.input.editor;
-    const sessionId = await explorer.content.getSessionId();
+    const sessionId = explorer.content.sessionId;
     const connector = new OmniSciCompletionConnector({
       connection: explorer.content.connectionData,
       sessionId
@@ -283,8 +298,8 @@ function activateOmniSciGridViewer(
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
-    explorer.content.onModelChanged.connect(async () => {
-      const sessionId = await explorer.content.getSessionId();
+    explorer.content.onModelChanged.connect(() => {
+      const sessionId = explorer.content.sessionId;
       handle.connector = new OmniSciCompletionConnector({
         connection: explorer.content.connectionData,
         sessionId
@@ -332,9 +347,9 @@ function activateOmniSciGridViewer(
   });
   // When a new grid widget is added, hook up the machinery for
   // completions and theming.
-  mimeGridTracker.widgetAdded.connect(async (sender, mime) => {
+  mimeGridTracker.widgetAdded.connect((sender, mime) => {
     const grid = mime.widget;
-    const sessionId = await grid.content.getSessionId();
+    const sessionId = grid.content.sessionId;
     const editor = grid.input.editor;
     const connector = new OmniSciCompletionConnector({
       connection: grid.content.connectionData,
@@ -343,8 +358,8 @@ function activateOmniSciGridViewer(
     const parent = mime;
     const handle = completionManager.register({ connector, editor, parent });
 
-    grid.content.onModelChanged.connect(async () => {
-      const sessionId = await grid.content.getSessionId();
+    grid.content.onModelChanged.connect(() => {
+      const sessionId = grid.content.sessionId;
       handle.connector = new OmniSciCompletionConnector({
         connection: grid.content.connectionData,
         sessionId
@@ -411,12 +426,18 @@ function activateOmniSciGridViewer(
     iconClass: 'omnisci-OmniSci-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
+      const connectionData =
+        (args['connectionData'] as IOmniSciConnectionData) || undefined;
+      const sessionId = (args['sessionId'] as string) || undefined;
       const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        manager
+        manager,
+        connectionData,
+        sessionId,
+        initialQuery: query
       });
-      grid.content.query = query;
-      grid.id = `omnisci-grid-widget-${++Private.id}`;
+      Private.id++;
+      grid.id = `omnisci-grid-widget-${Private.id}`;
       grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
@@ -452,8 +473,8 @@ function activateOmniSciGridViewer(
 /**
  * The Omnisci inital notebook extension.
  */
-const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateOmniSciInitialNotebook,
+const omnisciNotebookPlugin: JupyterFrontEndPlugin<void> = {
+  activate: activateOmniSciNotebook,
   id: NOTEBOOK_PLUGIN_ID,
   requires: [
     ICommandPalette,
@@ -465,7 +486,7 @@ const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   autoStart: true
 };
 
-function activateOmniSciInitialNotebook(
+function activateOmniSciNotebook(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
   menu: IMainMenu,
@@ -509,22 +530,31 @@ function activateOmniSciInitialNotebook(
     let initial = false;
     let connectionData: IOmniSciConnectionData | undefined = undefined;
     let sessionId: string | undefined = undefined;
+    let initialQuery = '';
     if (result) {
-      const res = (result as any) as Private.IInitialNotebookData;
-      initial = !!res.initialNotebook;
-      connectionData = res.connection;
-      sessionId = res.sessionId;
+      const res = (result as any) as Private.IInitialStateData;
+      initial = true;
+      connectionData = res.connectionData;
+      sessionId = res.sessionId || '';
+      initialQuery = res.initialQuery || '';
     }
-    state.save(NOTEBOOK_PLUGIN_ID, {});
+    state.remove(NOTEBOOK_PLUGIN_ID);
 
     if (initial) {
+      // Create the SQL editor
+      const grid = await app.commands.execute(CommandIDs.newGrid, {
+        initialQuery,
+        connectionData: connectionData || null,
+        sessionId
+      } as ReadonlyJSONObject);
+
       // Create the notebook.
       const notebook = await app.commands.execute('notebook:create-new', {
         kernelName: 'python3'
       });
       // Move the notebook so it is in a split pane with the primary tab.
       // It has already been added, so this just has the effect of moving it.
-      app.shell.add(notebook, 'main', { mode: 'split-left' });
+      app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
 
       await notebook.context.ready;
 
@@ -557,7 +587,7 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciConnectionPlugin,
   omnisciVegaPlugin,
   omnisciGridPlugin,
-  omnisciInitialNotebookPlugin
+  omnisciNotebookPlugin
 ];
 export default plugins;
 
@@ -573,16 +603,16 @@ namespace Private {
   /**
    * An interface for the initial notebook statedb.
    */
-  export interface IInitialNotebookData {
+  export interface IInitialStateData {
     /**
-     * Whether to create an initial notebook.
+     * Connection data for the initial state.
      */
-    initialNotebook?: boolean;
+    connectionData?: IOmniSciConnectionData;
 
     /**
-     * Connection data for the notebook.
+     * An initial query to use.
      */
-    connection?: IOmniSciConnectionData;
+    initialQuery?: string;
 
     /**
      * An ID for a pre-authenticated session.

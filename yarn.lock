@@ -418,6 +418,7 @@
 "@phosphor/coreutils@^1.3.0":
   version "1.3.0"
   resolved "https://registry.yarnpkg.com/@phosphor/coreutils/-/coreutils-1.3.0.tgz#63292d381c012c5ab0d0196e83ced829b7e04a42"
+  integrity sha1-YyktOBwBLFqw0Blug87YKbfgSkI=
 
 "@phosphor/coreutils@^1.3.1":
   version "1.3.1"

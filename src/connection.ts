@@ -624,7 +624,10 @@ export class OmniSciCompletionConnector extends DataConnector<
    */
   constructor(options: OmniSciCompletionConnector.IOptions = {}) {
     super();
-    if (options.connection) {
+    // Note: unlike other places, this expects an authenticated
+    // session ID to work.
+    // TODO: remove this restriction.
+    if (options.connection && options.sessionId) {
       this._connection = makeConnection(options.connection, options.sessionId);
     }
   }

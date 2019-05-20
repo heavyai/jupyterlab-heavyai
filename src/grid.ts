@@ -39,7 +39,8 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
       (options.manager && options.manager.defaultConnection);
     const content = new OmniSciGrid({
       connectionData: connection,
-      sessionId: options.sessionId
+      sessionId: options.sessionId,
+      initialQuery: options.initialQuery || ''
     });
     const toolbar = Private.createToolbar(
       content,
@@ -138,6 +139,11 @@ export namespace OmniSciSQLEditor {
     sessionId?: string;
 
     /**
+     * An optional initial query for the editor.
+     */
+    initialQuery?: string;
+
+    /**
      * An optional connection manager.
      */
     manager?: IOmniSciConnectionManager;
@@ -187,7 +193,11 @@ export class OmniSciGrid extends Panel {
     this._content.hide(); // Initially hide the grid until we set the query.
 
     // Initialize the data model.
-    this._updateModel(options.connectionData, '', options.sessionId);
+    this._updateModel(
+      options.connectionData,
+      options.initialQuery || '',
+      options.sessionId
+    );
   }
 
   /**
@@ -196,11 +206,11 @@ export class OmniSciGrid extends Panel {
   get connectionData(): IOmniSciConnectionData | undefined {
     return this._model.connectionData;
   }
-  setConnectionData(
+  async setConnectionData(
     value: IOmniSciConnectionData | undefined,
     sessionId?: string
-  ) {
-    this._updateModel(value, this._model.query, sessionId);
+  ): Promise<void> {
+    await this._updateModel(value, this._model.query, sessionId);
   }
 
   /**
@@ -230,14 +240,14 @@ export class OmniSciGrid extends Panel {
     return this._model.query;
   }
   set query(value: string) {
-    this._updateModel(this._model.connectionData, value);
+    this._updateModel(this._model.connectionData, value, this._model.sessionId);
   }
 
   /**
    * Get the session ID for the current connection.
    */
-  async getSessionId(): Promise<string | undefined> {
-    return await this._model.getSessionId();
+  get sessionId(): string | undefined {
+    return this._model.sessionId;
   }
 
   /**
@@ -299,6 +309,11 @@ export namespace OmniSciGrid {
      * An optional pre-authenticated session ID for the grid.
      */
     sessionId?: string;
+
+    /**
+     * An optional initial query for the editor.
+     */
+    initialQuery?: string;
   }
 }
 
@@ -360,7 +375,7 @@ export class OmniSciTableModel extends DataModel {
   /**
    * Get the session ID for the current connection.
    */
-  getSessionId(): string | undefined {
+  get sessionId(): string | undefined {
     if (!this._connection) {
       return undefined;
     }
