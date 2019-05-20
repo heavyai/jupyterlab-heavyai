@@ -4,13 +4,10 @@ Functionality for server-side ibis transforms of vega charts.
 
 import copy
 import typing
-import warnings
-import pathlib
 
-import ibis
 import altair
+import ibis
 import pandas
-from ipykernel.comm import Comm
 from IPython import get_ipython
 
 from ibis_vega_transform import apply
@@ -96,17 +93,21 @@ altair.data_transformers.register("ibis", altair_data_transformer)
 altair.renderers.register("ibis", altair_renderer)
 
 
+# For debugging
+_executed_expressions = []
+_incoming_specs = []
+
+
 def compiler_target_function(comm, msg):
-    updated_spec = _transform(msg["content"]["data"])
+    spec = msg["content"]["data"]
+    _incoming_specs.append(spec)
+    updated_spec = _transform(spec)
     comm.send(updated_spec)
 
 
 get_ipython().kernel.comm_manager.register_target(
     "jupyterlab-omnisci:vega-compiler", compiler_target_function
 )
-
-# For debugging
-_executed_expressions = []
 
 
 def query_target_func(comm, msg):
@@ -145,7 +146,9 @@ def _transform(spec: typing.Dict[str, typing.Any]):
                 _expr_map[name] = new_expr
                 data["transform"] = [{"type": "queryibis", "name": name}]
             except Exception as e:
-                raise ValueError(f"Failed to convert {transforms} with error message message '{e}'")
+                raise ValueError(
+                    f"Failed to convert {transforms} with error message message '{e}'"
+                )
 
     return _cleanup_spec(new)
 
