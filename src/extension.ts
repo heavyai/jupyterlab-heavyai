@@ -542,7 +542,7 @@ function activateOmniSciNotebook(
 
     if (initial) {
       // Create the SQL editor
-      const grid = await app.commands.execute(CommandIDs.newGrid, {
+      await app.commands.execute(CommandIDs.newGrid, {
         initialQuery,
         connectionData: connectionData || null,
         sessionId
@@ -554,7 +554,7 @@ function activateOmniSciNotebook(
       });
       // Move the notebook so it is in a split pane with the primary tab.
       // It has already been added, so this just has the effect of moving it.
-      app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
+      app.shell.add(notebook, 'main');
 
       await notebook.context.ready;
 
@@ -716,7 +716,7 @@ con.list_tables()`.trim();
       value = value.replace('{{os}}', os);
       value = value.replace('{{host}}', con.host || '""');
       value = value.replace('{{protocol}}', con.protocol || '""');
-      value = value.replace('{{session}}', sessionId);
+      value = value.replace('{{session}}', `"${sessionId}"`);
       value = value.replace('{{port}}', `${con.port || '""'}`);
     } else {
       value = IBIS_TEMPLATE;
