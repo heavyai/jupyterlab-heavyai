@@ -20,11 +20,7 @@ export class OmniSciVega extends Widget {
   /**
    * Construct a new OmniSci widget.
    */
-  constructor(
-    vega: JSONObject,
-    connectionData: IOmniSciConnectionData,
-    vegaLite?: JSONObject
-  ) {
+  constructor(options: OmniSciVega.IOptions) {
     super();
     this.addClass('omnisci-OmniSciVega');
     this._img = document.createElement('img');
@@ -33,11 +29,14 @@ export class OmniSciVega extends Widget {
     this.node.appendChild(this._img);
     this.node.appendChild(this._error);
 
-    this._connectionPromise = makeConnection(connectionData);
-    this._vega = vega;
+    this._connectionPromise = makeConnection(
+      options.connection,
+      options.sessionId
+    );
+    this._vega = options.vega;
 
     // _vegaLite is just for debugging, in case we get an error, we can show it.
-    this._vegaLite = vegaLite;
+    this._vegaLite = options.vegaLite;
     this._renderData();
   }
 
@@ -54,7 +53,7 @@ export class OmniSciVega extends Widget {
             // If there was an error, clear any image data,
             // and set the text content of the error node.
             this._setImageData('');
-            this._error.textContent = error;
+            this._error.textContent = error.error_msg || error;
             this._rendered.reject(error);
             return;
           }
@@ -109,6 +108,37 @@ export class OmniSciVega extends Widget {
   private _connectionPromise: Promise<OmniSciConnection>;
   private _img: HTMLImageElement;
   private _error: HTMLElement;
+}
+
+/**
+ * A namespace for OmniSciVega statics.
+ */
+export namespace OmniSciVega {
+  /**
+   * Options used to create a new OmniSciVega widget.
+   */
+  export interface IOptions {
+    /**
+     * The vega spec to render.
+     */
+    vega: JSONObject;
+
+    /**
+     * Connection information.
+     */
+    connection: IOmniSciConnectionData;
+
+    /**
+     * An optional vega-lite spec which was used to generate the vega spec.
+     * Only used for debugging purposes, can be shown upon errors.
+     */
+    vegaLite?: JSONObject;
+
+    /**
+     * An optional session ID for a pre-authenticated session.
+     */
+    sessionId?: string;
+  }
 }
 
 /**

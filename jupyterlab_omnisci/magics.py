@@ -5,6 +5,7 @@ Vega Lite and Vega in the MapD server and for rendering a SQL editor given a que
 
 import ast
 import yaml
+import urllib.parse
 
 import ibis
 import pymapd
@@ -59,7 +60,7 @@ class OmniSciVegaRenderer:
         if self.data:
             bundle["vega"] = self.data
         else:
-            bundle["vegalite"] = self.vl_data
+            bundle["vegaLite"] = self.vl_data
         return {"application/vnd.omnisci.vega+json": bundle}
 
 
@@ -119,7 +120,7 @@ def omnisci_vega(line, cell):
     vega data.
     """
     connection_data = ast.literal_eval(line)
-    vega = yaml.load(cell)
+    vega = yaml.safe_load(cell)
     display(OmniSciVegaRenderer(connection_data, vega))
 
 
@@ -134,7 +135,7 @@ def omnisci_vegalite(line, cell):
     vega lite data.
     """
     connection_data = ast.literal_eval(line)
-    vl = yaml.load(cell)
+    vl = yaml.safe_load(cell)
     display(OmniSciVegaRenderer(connection_data, vl_data=vl))
 
 
@@ -181,22 +182,23 @@ def _make_connection(connection):
         )
         session = connection.con._session
     elif isinstance(connection, pymapd.Connection):
+        parsed = urllib.parse.urlparse(connection._host)
         con = dict(
-            host=connection._host,
+            host=parsed.hostname,
             port=connection._port,
             database=connection._dbname,
             password=connection._password,
             protocol=connection._protocol,
             username=connection._user,
         )
-        session = connection.session
+        session = connection._session
     else:
         con = connection
         session = None
     # If we have a live session id, we can safely delete authentication
     # material before sending it over the wire.
     if session:
-        connection.pop("password", "")
-        connection.pop("username", "")
-        connection.pop("database", "")
+        con.pop("password", "")
+        con.pop("username", "")
+        con.pop("database", "")
     return con, session

@@ -95,7 +95,10 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
       return Promise.resolve(void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
-    this._widget = new OmniSciVega(data, this._connectionData);
+    this._widget = new OmniSciVega({
+      vega: data,
+      connection: this._connectionData
+    });
     this.content.node.appendChild(this._widget.node);
     const spinner = new Spinner();
     this.content.node.appendChild(spinner.node);

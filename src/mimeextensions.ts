@@ -69,14 +69,15 @@ export class RenderedOmniSciVega extends Widget
     const data = (model.data[
       VEGA_MIME_TYPE
     ] as unknown) as IOmniSciVegaMimeBundle;
-    const { connection, vega, vegalite } = data;
+    const { connection, sessionId, vega, vegaLite } = data;
 
     // Create a new OmniSciVega
-    const vegaWidget = new OmniSciVega(
-      vega || compileToVega(vegalite),
+    const vegaWidget = new OmniSciVega({
+      sessionId,
       connection,
-      vegalite
-    );
+      vega: vega || compileToVega(vegaLite),
+      vegaLite
+    });
     layout.widget = vegaWidget;
     return vegaWidget.renderedImage
       .then(data => {
@@ -115,10 +116,11 @@ interface IOmniSciVegaMimeBundle {
    * The vega JSON object to render, including the SQL query.
    */
   vega?: JSONObject;
+
   /**
    * The vega lite JSON object to render, including the SQL query.
    */
-  vegalite?: JSONObject;
+  vegaLite?: JSONObject;
 }
 
 /**
