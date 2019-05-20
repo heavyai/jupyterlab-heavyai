@@ -1,4 +1,3 @@
-
 """
 Importing this module registers Jupyter cell magics for rendering
 Vega Lite and Vega in the MapD server and for rendering a SQL editor given a query.
@@ -44,7 +43,16 @@ class OmniSciVegaRenderer:
         """
         if (not (data or vl_data)) or (data and vl_data):
             raise RuntimeError("Either vega or vega lite data must be specified")
-        self.connection = _make_connection(connection)
+        connection, session = _make_connection(connection)
+        self.connection = connection
+        self.session = session
+        # If we have a live session id, we can safely delete authentication
+        # material before sending it over the wire.
+        if session:
+            connection.pop("password", "")
+            connection.pop("username", "")
+            connection.pop("database", "")
+
         self.data = data
         self.vl_data = vl_data
 
@@ -54,7 +62,7 @@ class OmniSciVegaRenderer:
         data, which is a custom mimetype for rendering omnisci vega
         in Jupyter notebooks.
         """
-        bundle = {"connection": self.connection}
+        bundle = {"connection": self.connection, "sessionId": self.session}
         if self.data:
             bundle["vega"] = self.data
         else:
@@ -84,7 +92,16 @@ class OmniSciSQLEditorRenderer:
         query: string or ibis expression.
             An initial query for the SQL editor.
         """
-        self.connection = _make_connection(connection)
+        connection, session = _make_connection(connection)
+        self.connection = connection
+        self.session = session
+        # If we have a live session id, we can safely delete authentication
+        # material before sending it over the wire.
+        if session:
+            connection.pop("password", "")
+            connection.pop("username", "")
+            connection.pop("database", "")
+
         if isinstance(query, str):
             self.query = query
         elif hasattr(query, "compile") and hasattr(query.compile, "__call__"):
@@ -96,7 +113,11 @@ class OmniSciSQLEditorRenderer:
         data, which is a custom mimetype for rendering omnisci vega
         in Jupyter notebooks.
         """
-        data = {"connection": self.connection, "query": self.query}
+        data = {
+            "connection": self.connection,
+            "sessionId": self.session,
+            "query": self.query,
+        }
         return {"application/vnd.omnisci.sqleditor+json": data}
 
 
@@ -152,22 +173,28 @@ def _make_connection(connection):
     Works for Ibis clients, pymapd connections, and dictionaries.
     """
     if isinstance(connection, ibis.mapd.MapDClient):
-        return dict(
-            host=connection.host,
-            port=connection.port,
-            database=connection.db_name,
-            password=connection.password,
-            protocol=connection.protocol,
-            username=connection.user,
+        return (
+            dict(
+                host=connection.host,
+                port=connection.port,
+                database=connection.db_name,
+                password=connection.password,
+                protocol=connection.protocol,
+                username=connection.user,
+            ),
+            connection.con._session,
         )
     elif isinstance(connection, pymapd.Connection):
-        return dict(
-            host=connection._host,
-            port=connection._port,
-            database=connection._dbname,
-            password=connection._password,
-            protocol=connection._protocol,
-            username=connection._user,
+        return (
+            dict(
+                host=connection._host,
+                port=connection._port,
+                database=connection._dbname,
+                password=connection._password,
+                protocol=connection._protocol,
+                username=connection._user,
+            ),
+            connection.session,
         )
     else:
         return connection

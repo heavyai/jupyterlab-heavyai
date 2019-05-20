@@ -37,7 +37,10 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
     const connection =
       options.connectionData ||
       (options.manager && options.manager.defaultConnection);
-    const content = new OmniSciGrid(connection);
+    const content = new OmniSciGrid({
+      connectionData: connection,
+      sessionId: options.sessionId
+    });
     const toolbar = Private.createToolbar(
       content,
       options.editorFactory,
@@ -130,6 +133,11 @@ export namespace OmniSciSQLEditor {
     connectionData?: IOmniSciConnectionData;
 
     /**
+     * An optional pre-authenticated session ID for the SQL editor.
+     */
+    sessionId?: string;
+
+    /**
      * An optional connection manager.
      */
     manager?: IOmniSciConnectionManager;
@@ -143,7 +151,7 @@ export class OmniSciGrid extends Panel {
   /**
    * Construct a new OmniSciGrid widget.
    */
-  constructor(connectionData?: IOmniSciConnectionData) {
+  constructor(options: OmniSciGrid.IOptions = {}) {
     super();
     this.addClass('omnisci-OmniSciGrid');
     // Create the Layout
@@ -179,7 +187,7 @@ export class OmniSciGrid extends Panel {
     this._content.hide(); // Initially hide the grid until we set the query.
 
     // Initialize the data model.
-    this._updateModel(connectionData, '');
+    this._updateModel(options.connectionData, '', options.sessionId);
   }
 
   /**
@@ -188,8 +196,11 @@ export class OmniSciGrid extends Panel {
   get connectionData(): IOmniSciConnectionData | undefined {
     return this._model.connectionData;
   }
-  set connectionData(value: IOmniSciConnectionData | undefined) {
-    this._updateModel(value, this._model.query);
+  setConnectionData(
+    value: IOmniSciConnectionData | undefined,
+    sessionId?: string
+  ) {
+    this._updateModel(value, this._model.query, sessionId);
   }
 
   /**
@@ -245,11 +256,12 @@ export class OmniSciGrid extends Panel {
    */
   private async _updateModel(
     connectionData: IOmniSciConnectionData | undefined,
-    query: string
+    query: string,
+    sessionId?: string
   ): Promise<void> {
     const hasQuery = query !== '';
     await this._model
-      .updateModel(connectionData, query)
+      .updateModel(connectionData, query, sessionId)
       .then(() => {
         this._content.setHidden(!hasQuery);
         this._error.hide();
@@ -268,6 +280,26 @@ export class OmniSciGrid extends Panel {
   private _content: StackedPanel;
   private _error: Widget;
   private _onModelChanged = new Signal<this, void>(this);
+}
+
+/**
+ * A namespace for OmniSciGrid statics.
+ */
+export namespace OmniSciGrid {
+  /**
+   * Options for creating a new OmniSciGrid.
+   */
+  export interface IOptions {
+    /**
+     * An optional initial connection data structure.
+     */
+    connectionData?: IOmniSciConnectionData;
+
+    /**
+     * An optional pre-authenticated session ID for the grid.
+     */
+    sessionId?: string;
+  }
 }
 
 /**
@@ -419,7 +451,8 @@ export class OmniSciTableModel extends DataModel {
    */
   async updateModel(
     connectionData: IOmniSciConnectionData | undefined,
-    query: string
+    query: string,
+    sessionId?: string
   ): Promise<void> {
     const sameConnection =
       connectionData &&
@@ -436,7 +469,7 @@ export class OmniSciTableModel extends DataModel {
     if (!sameConnection) {
       this._connectionData = connectionData;
       this._connection = connectionData
-        ? await makeConnection(connectionData)
+        ? await makeConnection(connectionData, sessionId)
         : undefined;
     }
     this._query = query;
@@ -660,7 +693,7 @@ namespace Private {
                 widget.connectionData
               )
               .then(connectionData => {
-                widget.connectionData = connectionData;
+                widget.setConnectionData(connectionData);
               });
           },
           tooltip: 'Enter OmniSci Connection Data'

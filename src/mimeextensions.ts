@@ -107,6 +107,11 @@ interface IOmniSciVegaMimeBundle {
   connection: IOmniSciConnectionData;
 
   /**
+   * A session ID for a pre-authenticated session.
+   */
+  sessionId?: string;
+
+  /**
    * The vega JSON object to render, including the SQL query.
    */
   vega?: JSONObject;
@@ -142,7 +147,7 @@ export class RenderedOmniSciSQLEditor extends Widget
   }
 
   /**
-   * Render OmniSci image into this widget's node.
+   * Render the SQL editor into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     // Get the data from the mimebundle
@@ -152,7 +157,7 @@ export class RenderedOmniSciSQLEditor extends Widget
     if (!data) {
       return Promise.resolve(void 0);
     }
-    this._widget.content.connectionData = data.connection;
+    this._widget.content.setConnectionData(data.connection, data.sessionId);
     this._widget.content.query = data.query || '';
     return Promise.resolve(void 0);
   }
@@ -169,6 +174,11 @@ interface IOmniSciSQLEditorMimeBundle {
    * we need to make the connection.
    */
   connection: IOmniSciConnectionData;
+
+  /**
+   * A session ID for a pre-authenticated session.
+   */
+  sessionId?: string;
 
   /**
    * The initial SQL query.

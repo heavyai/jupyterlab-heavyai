@@ -443,7 +443,7 @@ function activateOmniSciGridViewer(
     const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
-        grid.content.connectionData = defaultConnectionData;
+        grid.content.setConnectionData(defaultConnectionData);
       }
     });
   });
