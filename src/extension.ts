@@ -93,7 +93,7 @@ const VEGA_PLUGIN_ID = 'jupyterlab-omnisci:vega';
 
 const SQL_EDITOR_PLUGIN_ID = 'jupyterlab-omnisci:sql-editor';
 
-const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
+const NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:notebook';
 
 /**
  * The Omnisci connection handler extension.
@@ -454,7 +454,7 @@ function activateOmniSciGridViewer(
  */
 const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciInitialNotebook,
-  id: INITIAL_NOTEBOOK_PLUGIN_ID,
+  id: NOTEBOOK_PLUGIN_ID,
   requires: [
     ICommandPalette,
     IMainMenu,
@@ -502,15 +502,20 @@ function activateOmniSciInitialNotebook(
 
   // Fetch the state, which is used to determine whether to create
   // an initial populated notebook.
-  state.fetch(INITIAL_NOTEBOOK_PLUGIN_ID).then(async result => {
+  state.fetch(NOTEBOOK_PLUGIN_ID).then(async result => {
     // Determine whether to launch an initial notebook, then immediately
     // set that value to false. This state setting is intended to be set
     // by outside actors, rather than as true state restoration.
     let initial = false;
+    let connectionData: IOmniSciConnectionData | undefined = undefined;
+    let sessionId: string | undefined = undefined;
     if (result) {
-      initial = !!(result as { initialNotebook: boolean }).initialNotebook;
+      const res = (result as any) as Private.IInitialNotebookData;
+      initial = !!res.initialNotebook;
+      connectionData = res.connection;
+      sessionId = res.sessionId;
     }
-    state.save(INITIAL_NOTEBOOK_PLUGIN_ID, { initialNotebook: false });
+    state.save(NOTEBOOK_PLUGIN_ID, {});
 
     if (initial) {
       // Create the notebook.
@@ -531,13 +536,11 @@ function activateOmniSciInitialNotebook(
       // is exactly one cell, then inject our code, then disconnect.
       const inject = () => {
         if (notebook.content.model.cells.length === 1) {
-          if (!Private.connectionPopulated(manager.defaultConnection)) {
-            return;
-          }
           Private.injectIbisConnection(
             notebook.content,
-            manager.defaultConnection,
-            manager.environment
+            connectionData,
+            undefined,
+            sessionId
           );
           notebook.content.model.contentChanged.disconnect(inject);
         }
@@ -566,6 +569,26 @@ namespace Private {
    * A counter for widget ids.
    */
   export let id = 0;
+
+  /**
+   * An interface for the initial notebook statedb.
+   */
+  export interface IInitialNotebookData {
+    /**
+     * Whether to create an initial notebook.
+     */
+    initialNotebook?: boolean;
+
+    /**
+     * Connection data for the notebook.
+     */
+    connection?: IOmniSciConnectionData;
+
+    /**
+     * An ID for a pre-authenticated session.
+     */
+    sessionId?: string;
+  }
 
   /**
    * The light theme for the data grid.
@@ -618,10 +641,23 @@ con = ibis.mapd.connect(
 
 con.list_tables()`.trim();
 
+  /**
+   * A template for an Ibis mapd client when a session ID is available.
+   */
+  const SESSION_IBIS_TEMPLATE = `
+{{os}}import ibis
+
+con = ibis.mapd.connect(
+    host={{host}}, port={{port}}, protocol={{protocol}}, sessionid={{session}}
+)
+
+con.list_tables()`.trim();
+
   export function injectIbisConnection(
     notebook: Notebook,
     connection?: IOmniSciConnectionData,
-    environment?: IOmniSciConnectionData
+    environment?: IOmniSciConnectionData,
+    sessionId?: string
   ) {
     const env = environment || {};
     const con: IOmniSciConnectionData = {};
@@ -644,32 +680,25 @@ con.list_tables()`.trim();
       }
     });
 
-    let value = IBIS_TEMPLATE;
-    value = value.replace('{{os}}', os);
-    value = value.replace('{{host}}', con.host || '""');
-    value = value.replace('{{protocol}}', con.protocol || '""');
-    value = value.replace('{{password}}', con.password || '""');
-    value = value.replace('{{database}}', con.database || '""');
-    value = value.replace('{{user}}', con.username || '""');
-    value = value.replace('{{port}}', `${con.port || '""'}`);
+    let value = '';
+    if (sessionId) {
+      value = SESSION_IBIS_TEMPLATE;
+      value = value.replace('{{os}}', os);
+      value = value.replace('{{host}}', con.host || '""');
+      value = value.replace('{{protocol}}', con.protocol || '""');
+      value = value.replace('{{session}}', sessionId);
+      value = value.replace('{{port}}', `${con.port || '""'}`);
+    } else {
+      value = IBIS_TEMPLATE;
+      value = value.replace('{{os}}', os);
+      value = value.replace('{{host}}', con.host || '""');
+      value = value.replace('{{protocol}}', con.protocol || '""');
+      value = value.replace('{{password}}', con.password || '""');
+      value = value.replace('{{database}}', con.database || '""');
+      value = value.replace('{{user}}', con.username || '""');
+      value = value.replace('{{port}}', `${con.port || '""'}`);
+    }
     NotebookActions.insertAbove(notebook);
     notebook.activeCell!.model.value.text = value;
-  }
-
-  /**
-   * Test whether a partial connection is complete enough to be successful.
-   */
-  export function connectionPopulated(
-    con: IOmniSciConnectionData | undefined
-  ): boolean {
-    return !!(
-      con &&
-      con.host &&
-      con.protocol &&
-      con.password &&
-      con.database &&
-      con.username &&
-      con.port
-    );
   }
 }
