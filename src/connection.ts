@@ -542,6 +542,12 @@ export class OmniSciConnectionDialog extends Widget
       const option = document.createElement('option');
       option.value = `${idx++}`;
       option.textContent = server.host || 'Unknown host';
+      option.title = `Hostname: ${server.host || 'unknown'}
+Protocol: ${server.protocol || 'unknown'}
+Port: ${server.port || 'unknown'}
+Database: ${server.database || 'unknown'}
+User: ${server.username || 'unknown'}
+Password ${server.password ? '*****' : 'unknown'}`;
       select.appendChild(option);
     });
     return select;

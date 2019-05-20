@@ -448,6 +448,7 @@ const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
   id: INITIAL_NOTEBOOK_PLUGIN_ID,
   requires: [
     ICommandPalette,
+    IMainMenu,
     INotebookTracker,
     IOmniSciConnectionManager,
     IStateDB
@@ -458,21 +459,26 @@ const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
 function activateOmniSciInitialNotebook(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
+  menu: IMainMenu,
   tracker: INotebookTracker,
   manager: IOmniSciConnectionManager,
   state: IStateDB
 ): void {
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
-    label: 'Inject Ibis OmniSci Connection',
-    execute: () => {
+    label: 'Insert Ibis OmniSci Connection…',
+    execute: async () => {
       const current = tracker.currentWidget;
       if (!current) {
         return;
       }
+      const connection = await manager.chooseConnection(
+        'Choose Ibis Connection',
+        manager.defaultConnection
+      );
       Private.injectIbisConnection(
         current.content,
-        manager.defaultConnection,
+        connection,
         manager.environment
       );
     },
@@ -483,6 +489,7 @@ function activateOmniSciInitialNotebook(
     command: CommandIDs.injectIbisConnection,
     category: 'OmniSci'
   });
+  menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
 
   // Fetch the state, which is used to determine whether to create
   // an initial populated notebook.
@@ -637,7 +644,7 @@ con.list_tables()`.trim();
     value = value.replace('{{user}}', con.username || '""');
     value = value.replace('{{port}}', `${con.port || '""'}`);
     NotebookActions.insertAbove(notebook);
-    notebook.model.cells.get(0)!.value.text = value;
+    notebook.activeCell!.model.value.text = value;
   }
 
   /**
