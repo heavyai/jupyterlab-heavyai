@@ -4,6 +4,8 @@ Functionality for server-side ibis transforms of vega charts.
 
 import copy
 import typing
+import re
+import json
 
 import altair
 import ibis
@@ -71,6 +73,9 @@ def monkeypatch_altair():
 monkeypatch_altair()
 
 
+DATA_NAME_PREFIX = "ibis:"
+
+
 def altair_data_transformer(data):
     """
     turn a pandas DF with the Ibis query that made it attached to it into
@@ -80,9 +85,16 @@ def altair_data_transformer(data):
     """
     assert isinstance(data, pandas.DataFrame)
     expr = data.ibis
-    name = f"ibis:{hash(expr)}"
-    _expr_map[name] = expr
+    h = str(hash(expr))
+    name = f"{DATA_NAME_PREFIX}{h}"
+    _expr_map[h] = expr
     return {"name": name}
+
+
+def _retrieve_expr_key(name: str) -> typing.Optional[str]:
+    if not name.startswith(DATA_NAME_PREFIX):
+        return None
+    return name[len(DATA_NAME_PREFIX) :]
 
 
 def altair_renderer(spec):
@@ -96,12 +108,14 @@ altair.renderers.register("ibis", altair_renderer)
 # For debugging
 _executed_expressions = []
 _incoming_specs = []
+_outgoing_specs = []
 
 
 def compiler_target_function(comm, msg):
     spec = msg["content"]["data"]
     _incoming_specs.append(spec)
     updated_spec = _transform(spec)
+    _outgoing_specs.append(updated_spec)
     comm.send(updated_spec)
 
 
@@ -112,11 +126,40 @@ get_ipython().kernel.comm_manager.register_target(
 
 def query_target_func(comm, msg):
     # These are the paramaters passed to the vega transform
-    parameters = msg["content"]["data"]
+    parameters: dict = msg["content"]["data"]
 
-    expr_name: str = parameters.pop("name")
-    expr = _expr_map[expr_name]
+    name: str = parameters.pop("name")
+    transforms: typing.Optional[str] = parameters.pop("transforms", None)
+
+    expr = _expr_map[name]
+    if transforms:
+
+        # Replace all string instances of data references with value in schema
+        for k, v in parameters.items():
+            # All data items are added to parameters as `:<data name>`.
+            # They also should  be in the `data` paramater, but you have to call
+            # this with a tuple which I am not sure where to get from
+            # https://github.com/vega/vega/blob/65fe7cb2485be90e16298d9dff87bf56045afb8d/packages/vega-transforms/src/Filter.js#L48
+            if not k.startswith(":"):
+                continue
+            k = k[1:]
+            # Dump the string representation so that the internal " characters are escaped.
+            res = json.dumps(json.dumps(v))[1:-1]
+            quoted_versions = [f"'{k}'", f'"{k}"', f"\\'{k}\\'", f'\\"{k}\\"']
+            for q in quoted_versions:
+                transforms = transforms.replace(f"data({q})", res).replace(
+                    f"vlSelectionTest({q}", f"vlSelectionTest({res}"
+                )
+
+        try:
+            expr = apply(expr, json.loads(transforms))
+        except Exception as e:
+            raise ValueError(
+                f"Failed to convert {transforms} with error message message '{e}'"
+            )
+
     _executed_expressions.append(expr)
+
     data = expr.execute()
     comm.send(altair.to_values(data)["values"])
 
@@ -124,31 +167,54 @@ def query_target_func(comm, msg):
 get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func)
 
 
+def _extract_used_data(transforms) -> typing.Set[str]:
+    """
+    Given a list of transforms, returns a set of the data fields they depend on.
+    """
+    return {m.group(1) for m in re.finditer(r'data\("(.+?)"\)', str(transforms))}
+
+
+assert _extract_used_data(
+    [
+        {
+            "type": "filter",
+            "expr": '!(length(data("Filter_store"))) || (vlSelectionTest("Filter_store", datum))',
+        }
+    ]
+) == {"Filter_store"}
+
+
 def _transform(spec: typing.Dict[str, typing.Any]):
     new = copy.deepcopy(spec)
     for data in new["data"]:
         # Handle initial named data
-        name = data.get("name")
-        if name and _expr_map.get(name) is not None:
-            data["transform"] = [{"type": "queryibis", "name": name}]
+
+        name = data.get("name", "")
+        key = _retrieve_expr_key(name)
+        if key:
+            data["transform"] = [{"type": "queryibis", "name": key}]
             continue
 
-        # Handle transform of named data
-        if "source" in data and data["source"] in _expr_map:
-            expr = _expr_map[data["source"]]
+        source = data.get("source", "")
+        key = _retrieve_expr_key(source)
+        if key:
             transforms = data.get("transform", None)
             if transforms is None:
                 continue
-            try:
-                new_expr = apply(expr, transforms)
-                del data["source"]
-                name = f"ibis:{hash(new_expr)}"
-                _expr_map[name] = new_expr
-                data["transform"] = [{"type": "queryibis", "name": name}]
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to convert {transforms} with error message message '{e}'"
-                )
+            del data["source"]
+            data["transform"] = [
+                {
+                    "type": "queryibis",
+                    "name": key,
+                    "data": "{"
+                    + ", ".join(
+                        f"{field}: data('{field}')"
+                        for field in _extract_used_data(transforms)
+                    )
+                    + "}",
+                    "transforms": json.dumps(transforms),
+                }
+            ]
 
     return _cleanup_spec(new)
 
