@@ -8,6 +8,7 @@ import re
 import json
 
 import altair
+import altair.vegalite.v3.display
 import ibis
 import pandas
 from IPython import get_ipython
@@ -76,6 +77,11 @@ monkeypatch_altair()
 DATA_NAME_PREFIX = "ibis:"
 
 
+# Whether to fallback to getting the dataset as a pandas dataframe
+# and rendering it manually, that way.
+FALLBACK = False
+
+
 def altair_data_transformer(data):
     """
     turn a pandas DF with the Ibis query that made it attached to it into
@@ -85,6 +91,8 @@ def altair_data_transformer(data):
     """
     assert isinstance(data, pandas.DataFrame)
     expr = data.ibis
+    if FALLBACK:
+        return altair.default_data_transformer(expr.limit(1000).execute())
     h = str(hash(expr))
     name = f"{DATA_NAME_PREFIX}{h}"
     _expr_map[h] = expr
@@ -98,6 +106,8 @@ def _retrieve_expr_key(name: str) -> typing.Optional[str]:
 
 
 def altair_renderer(spec):
+    if FALLBACK:
+        return altair.vegalite.v3.display.default_renderer(spec)
     return {MIMETYPE: spec}
 
 
