@@ -3,9 +3,9 @@ Functionality for server-side ibis transforms of vega charts.
 """
 
 import copy
-import typing
-import re
 import json
+import re
+import typing
 
 import altair
 import altair.vegalite.v3.display
@@ -153,16 +153,12 @@ def query_target_func(comm, msg):
             if not k.startswith(":"):
                 continue
             k = k[1:]
-            # Dump the string representation so that the internal " characters are escaped.
-            res = json.dumps(json.dumps(v))[1:-1]
-            quoted_versions = [f"'{k}'", f'"{k}"', f"\\'{k}\\'", f'\\"{k}\\"']
-            for q in quoted_versions:
-                transforms = transforms.replace(f"data({q})", res).replace(
-                    f"vlSelectionTest({q}", f"vlSelectionTest({res}"
-                )
-
+            res = json.dumps(v)
+            for t in transforms:
+                if t["type"] == "filter" or t["type"] == "formula":
+                    t["expr"] = _patch_vegaexpr(t["expr"], k, res)
         try:
-            expr = apply(expr, json.loads(transforms))
+            expr = apply(expr, transforms)
         except Exception as e:
             raise ValueError(
                 f"Failed to convert {transforms} with error message message '{e}'"
@@ -172,6 +168,12 @@ def query_target_func(comm, msg):
 
     data = expr.execute()
     comm.send(altair.to_values(data)["values"])
+
+def _patch_vegaexpr(expr: str, name: str, value: str) -> str:
+    expr = expr.replace(f"data(\"{name}\")", value)
+    expr = expr.replace(f"vlSelectionTest(\"{name}\"", f"vlSelectionTest({value}")
+    return expr
+
 
 
 get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func)
@@ -222,7 +224,7 @@ def _transform(spec: typing.Dict[str, typing.Any]):
                         for field in _extract_used_data(transforms)
                     )
                     + "}",
-                    "transforms": json.dumps(transforms),
+                    "transforms": transforms,
                 }
             ]
 
