@@ -23,22 +23,6 @@ _expr_map: typing.Dict[str, ibis.Expr] = {}
 # New Vega Lite renderer mimetype which can process ibis expressions in names
 MIMETYPE = "application/vnd.vega.ibis.v5+json"
 
-EMPTY_VEGA = {
-    "$schema": "https://vega.github.io/schema/vega/v5.json",
-    "description": "An empty vega v5 spec",
-    "width": 500,
-    "height": 200,
-    "padding": 5,
-    "autosize": "pad",
-    "signals": [],
-    "data": [],
-    "scales": [],
-    "projections": [],
-    "axes": [],
-    "legends": [],
-    "marks": [],
-}
-
 
 def empty(expr: ibis.Expr) -> pandas.DataFrame:
     """
@@ -69,9 +53,6 @@ def monkeypatch_altair():
         return original_chart_init(self, data=data, *args, **kwargs)
 
     altair.Chart.__init__ = updated_chart_init
-
-
-monkeypatch_altair()
 
 
 DATA_NAME_PREFIX = "ibis:"
@@ -111,10 +92,6 @@ def altair_renderer(spec):
     return {MIMETYPE: spec}
 
 
-altair.data_transformers.register("ibis", altair_data_transformer)
-altair.renderers.register("ibis", altair_renderer)
-
-
 # For debugging
 _executed_expressions = []
 _incoming_specs = []
@@ -127,11 +104,6 @@ def compiler_target_function(comm, msg):
     updated_spec = _transform(spec)
     _outgoing_specs.append(updated_spec)
     comm.send(updated_spec)
-
-
-get_ipython().kernel.comm_manager.register_target(
-    "jupyterlab-omnisci:vega-compiler", compiler_target_function
-)
 
 
 def query_target_func(comm, msg):
@@ -177,9 +149,6 @@ def _patch_vegaexpr(expr: str, name: str, value: str) -> str:
         f"vlSelectionTest\({quote}{name}{quote}", f"vlSelectionTest({value}", expr
     )
     return expr
-
-
-get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func)
 
 
 def _extract_used_data(transforms) -> typing.Set[str]:
@@ -256,5 +225,14 @@ def _cleanup_spec(spec):
     return new
 
 
-def translate_op(op: str) -> str:
-    return {"mean": "mean", "average": "mean"}.get(op, op)
+#######################################
+# Customizing the runtime environment #
+#######################################
+
+monkeypatch_altair()
+altair.data_transformers.register("ibis", altair_data_transformer)
+altair.renderers.register("ibis", altair_renderer)
+get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func)
+get_ipython().kernel.comm_manager.register_target(
+    "jupyterlab-omnisci:vega-compiler", compiler_target_function
+)
