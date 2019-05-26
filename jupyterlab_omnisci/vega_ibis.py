@@ -169,11 +169,14 @@ def query_target_func(comm, msg):
     data = expr.execute()
     comm.send(altair.to_values(data)["values"])
 
-def _patch_vegaexpr(expr: str, name: str, value: str) -> str:
-    expr = expr.replace(f"data(\"{name}\")", value)
-    expr = expr.replace(f"vlSelectionTest(\"{name}\"", f"vlSelectionTest({value}")
-    return expr
 
+def _patch_vegaexpr(expr: str, name: str, value: str) -> str:
+    quote = "(['\"])"
+    expr = re.sub(f"data\({quote}{name}{quote}\)", value, expr)
+    expr = re.sub(
+        f"vlSelectionTest\({quote}{name}{quote}", f"vlSelectionTest({value}", expr
+    )
+    return expr
 
 
 get_ipython().kernel.comm_manager.register_target("queryibis", query_target_func)
