@@ -83,10 +83,11 @@ def altair_data_transformer(data):
 def _is_ibis(name: str) -> bool:
     return name.startswith(DATA_NAME_PREFIX)
 
+
 def _retrieve_expr_key(name: str) -> typing.Optional[str]:
     if not name.startswith(DATA_NAME_PREFIX):
         return None
-    return name[len(DATA_NAME_PREFIX):]
+    return name[len(DATA_NAME_PREFIX) :]
 
 
 def altair_renderer(spec):
@@ -173,7 +174,7 @@ assert _extract_used_data(
 def _transform(spec: typing.Dict[str, typing.Any]):
     new = copy.deepcopy(spec)  # make a copy of the spec
     _transforms = {}  # Store references to ibis query transforms
-    _root_expressions = {} # Keep track of the sources backed in ibis expressions
+    _root_expressions = {}  # Keep track of the sources backed in ibis expressions
 
     # We iteratively pass through the data, looking
     # for named ibis data sources and data sources that
