@@ -80,10 +80,13 @@ def altair_data_transformer(data):
     return {"name": name}
 
 
+def _is_ibis(name: str) -> bool:
+    return name.startswith(DATA_NAME_PREFIX)
+
 def _retrieve_expr_key(name: str) -> typing.Optional[str]:
     if not name.startswith(DATA_NAME_PREFIX):
         return None
-    return name[len(DATA_NAME_PREFIX) :]
+    return name[len(DATA_NAME_PREFIX):]
 
 
 def altair_renderer(spec):
@@ -111,11 +114,10 @@ def query_target_func(comm, msg):
     parameters: dict = msg["content"]["data"]
 
     name: str = parameters.pop("name")
-    transforms: typing.Optional[str] = parameters.pop("transforms", None)
+    transforms: typing.Optional[str] = parameters.pop("transform", None)
 
     expr = _expr_map[name]
     if transforms:
-
         # Replace all string instances of data references with value in schema
         for k, v in parameters.items():
             # All data items are added to parameters as `:<data name>`.
@@ -169,36 +171,65 @@ assert _extract_used_data(
 
 
 def _transform(spec: typing.Dict[str, typing.Any]):
-    new = copy.deepcopy(spec)
-    for data in new["data"]:
-        # Handle initial named data
+    new = copy.deepcopy(spec)  # make a copy of the spec
+    _transforms = {}  # Store references to ibis query transforms
+    _root_expressions = {} # Keep track of the sources backed in ibis expressions
 
-        name = data.get("name", "")
-        key = _retrieve_expr_key(name)
-        if key:
-            data["transform"] = [{"type": "queryibis", "name": key}]
-            continue
+    # We iteratively pass through the data, looking
+    # for named ibis data sources and data sources that
+    # reference our named sources. When we can pass through
+    # the entire set of data without encountering one,
+    # then we are done.
+    done = False
+    while not done:
+        for data in new["data"]:
+            # First check for named data which matches an initial
+            # ibis expression passed in directly via altair.
+            name = data.get("name", "")
+            if _is_ibis(name) and name not in _root_expressions:
+                key = _retrieve_expr_key(name)
+                new_transform = {"type": "queryibis", "name": key}
+                # If the named data has transforms, set them
+                # in the ibis transform, and keep a reference
+                # to them in case we need to incorporate them
+                # into downstream data attributes.
+                old_transform = data.get("transform", None)
+                if old_transform:
+                    _transforms[name] = old_transform
+                    new_transform["transform"] = old_transform
+                data["transform"] = [new_transform]
+                _root_expressions[name] = name
+                break
 
-        source = data.get("source", "")
-        key = _retrieve_expr_key(source)
-        if key:
-            transforms = data.get("transform", None)
-            if transforms is None:
-                continue
-            del data["source"]
-            data["transform"] = [
-                {
-                    "type": "queryibis",
-                    "name": key,
-                    "data": "{"
-                    + ", ".join(
-                        f"{field}: data('{field}')"
-                        for field in _extract_used_data(transforms)
-                    )
-                    + "}",
-                    "transforms": transforms,
-                }
-            ]
+            # Next check to see if the data sources an upstream data set.
+            # If it is one of ours, transform that as well.
+            source = data.get("source", "")
+            if source and source in _root_expressions:
+                del data["source"]
+                source_transforms = _transforms.get(source, [])
+                old_transforms = data.get("transform", [])
+                new_transforms = source_transforms + old_transforms
+                data["transform"] = [
+                    {
+                        "type": "queryibis",
+                        "name": _retrieve_expr_key(_root_expressions[source]),
+                        "data": "{"
+                        + ", ".join(
+                            f"{field}: data('{field}')"
+                            for field in _extract_used_data(new_transforms)
+                        )
+                        + "}",
+                        "transform": new_transforms,
+                    }
+                ]
+                _root_expressions[name] = _root_expressions[source]
+                _transforms[name] = new_transforms
+                break
+        # If we make it through the data sources without a `break`
+        # statement, there are no more data sources to transform,
+        # so we are done.
+        else:
+            done = True
 
     return _cleanup_spec(new)
 

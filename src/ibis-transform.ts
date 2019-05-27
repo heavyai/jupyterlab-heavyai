@@ -42,8 +42,9 @@ class QueryIbis extends dataflow.Transform implements Transform {
         required: false
       },
       {
-        name: 'transforms',
-        type: 'string',
+        name: 'transform',
+        type: 'transform',
+        array: true,
         required: false
       }
     ]
