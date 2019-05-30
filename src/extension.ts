@@ -679,7 +679,7 @@ con.list_tables()`.trim();
 {{os}}import ibis
 
 con = ibis.mapd.connect(
-    host={{host}}, port={{port}}, protocol={{protocol}}, sessionid={{session}}
+    host={{host}}, port={{port}}, protocol={{protocol}}, session_id={{session}}
 )
 
 con.list_tables()`.trim();
