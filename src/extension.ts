@@ -1,5 +1,6 @@
 import {
   ILayoutRestorer,
+  IRouter,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
@@ -70,6 +71,10 @@ namespace CommandIDs {
   export const setEnvironment = 'omnisci:set-environment';
 
   export const injectIbisConnection = 'omnisci:inject-ibis-connection';
+
+  export const createNotebook = 'omnisci:create-notebook';
+
+  export const createWorkspace = 'omnisci:create-workspace';
 }
 
 /**
@@ -481,7 +486,7 @@ const omnisciNotebookPlugin: JupyterFrontEndPlugin<void> = {
     IMainMenu,
     INotebookTracker,
     IOmniSciConnectionManager,
-    IStateDB
+    IRouter
   ],
   autoStart: true
 };
@@ -492,7 +497,7 @@ function activateOmniSciNotebook(
   menu: IMainMenu,
   tracker: INotebookTracker,
   manager: IOmniSciConnectionManager,
-  state: IStateDB
+  router: IRouter
 ): void {
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
@@ -506,48 +511,23 @@ function activateOmniSciNotebook(
         'Choose Ibis Connection',
         manager.defaultConnection
       );
-      Private.injectIbisConnection(
-        current.content,
+      Private.injectIbisConnection({
+        notebook: current.content,
         connection,
-        manager.environment
-      );
+        environment: manager.environment
+      });
     },
     isEnabled: () => !!tracker.currentWidget
   });
 
-  palette.addItem({
-    command: CommandIDs.injectIbisConnection,
-    category: 'OmniSci'
-  });
-  menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
-
-  // Fetch the state, which is used to determine whether to create
-  // an initial populated notebook.
-  state.fetch(NOTEBOOK_PLUGIN_ID).then(async result => {
-    // Determine whether to launch an initial notebook, then immediately
-    // set that value to false. This state setting is intended to be set
-    // by outside actors, rather than as true state restoration.
-    let initial = false;
-    let connectionData: IOmniSciConnectionData | undefined = undefined;
-    let sessionId: string | undefined = undefined;
-    let initialQuery = '';
-    if (result) {
-      const res = (result as any) as Private.IInitialStateData;
-      initial = true;
-      connectionData = res.connectionData;
-      sessionId = res.sessionId || '';
-      initialQuery = res.initialQuery || '';
-    }
-    state.remove(NOTEBOOK_PLUGIN_ID);
-
-    if (initial) {
-      await app.restored;
-      // Create the SQL editor
-      const grid = await app.commands.execute(CommandIDs.newGrid, {
-        initialQuery,
-        connectionData: connectionData || null,
-        sessionId
-      } as ReadonlyJSONObject);
+  // Add a command to create a new notebook with an ibis connection.
+  app.commands.addCommand(CommandIDs.createNotebook, {
+    label: 'Notebook with OmniSci Connection',
+    iconClass: 'omnisci-OmniSci-logo',
+    execute: async args => {
+      const connectionData: IOmniSciConnectionData =
+        (args['connection'] as IOmniSciConnectionData) || {};
+      const sessionId = (args['session'] as string) || '';
 
       // Create the notebook.
       const notebook = await app.commands.execute('notebook:create-new', {
@@ -555,7 +535,7 @@ function activateOmniSciNotebook(
       });
       // Move the notebook so it is in a split pane with the primary tab.
       // It has already been added, so this just has the effect of moving it.
-      app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
+      app.shell.add(notebook, 'main');
 
       await notebook.context.ready;
 
@@ -567,17 +547,59 @@ function activateOmniSciNotebook(
       // is exactly one cell, then inject our code, then disconnect.
       const inject = () => {
         if (notebook.content.model.cells.length === 1) {
-          Private.injectIbisConnection(
-            notebook.content,
-            connectionData,
-            undefined,
-            sessionId
-          );
           notebook.content.model.contentChanged.disconnect(inject);
+          Private.injectIbisConnection({
+            notebook: notebook.content,
+            connection: connectionData,
+            sessionId
+          });
         }
       };
       notebook.content.model.contentChanged.connect(inject);
+
+      return notebook;
     }
+  });
+
+  // Add a command to set up a new workspace with a notebook and SQL editor.
+  // This specifically does not ask for user input, as we want it to
+  // be triggerable via routing.
+  app.commands.addCommand(CommandIDs.createWorkspace, {
+    label: 'Create OmniSci Workspace',
+    execute: async () => {
+      await app.restored;
+      let connectionData: IOmniSciConnectionData = {
+        host: 'most',
+        port: 3,
+        protocol: 'ghost'
+      };
+      let sessionId = 'mysession';
+      let initialQuery = 'SELECT ALL YOUR BASE';
+      // Create the SQL editor
+      const grid = await app.commands.execute(CommandIDs.newGrid, ({
+        initialQuery,
+        connectionData,
+        sessionId
+      } as any) as ReadonlyJSONObject);
+      const notebook = await app.commands.execute(CommandIDs.createNotebook, ({
+        connectionData,
+        sessionId
+      } as any) as ReadonlyJSONObject);
+      // Move the notebook to be side by side with the grid.
+      app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
+    }
+  });
+
+  palette.addItem({
+    command: CommandIDs.injectIbisConnection,
+    category: 'OmniSci'
+  });
+  menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
+
+  menu.fileMenu.newMenu.addGroup([{ command: CommandIDs.createNotebook }], 11);
+  palette.addItem({
+    command: CommandIDs.createWorkspace,
+    category: 'OmniSci'
   });
 }
 
@@ -684,13 +706,14 @@ con = ibis.mapd.connect(
 
 con.list_tables()`.trim();
 
-  export function injectIbisConnection(
-    notebook: Notebook,
-    connection?: IOmniSciConnectionData,
-    environment?: IOmniSciConnectionData,
-    sessionId?: string
-  ) {
-    const env = environment || {};
+  export function injectIbisConnection(options: {
+    notebook: Notebook;
+    connection?: IOmniSciConnectionData;
+    environment?: IOmniSciConnectionData;
+    sessionId?: string;
+  }) {
+    const notebook = options.notebook;
+    const env = options.environment || {};
     const con: IOmniSciConnectionData = {};
     let os = Object.keys(env).length === 0 ? '' : 'import os\n';
     // Merge the connection with any environment variables
@@ -704,20 +727,20 @@ con.list_tables()`.trim();
       'database'
     ];
     keys.forEach(key => {
-      if (connection && connection[key]) {
-        con[key] = `"${connection[key]}"`;
+      if (options.connection && options.connection[key]) {
+        con[key] = `"${options.connection[key]}"`;
       } else if (env[key]) {
         con[key] = `os.environ['${env[key]}']`;
       }
     });
 
     let value = '';
-    if (sessionId) {
+    if (options.sessionId) {
       value = SESSION_IBIS_TEMPLATE;
       value = value.replace('{{os}}', os);
       value = value.replace('{{host}}', con.host || '""');
       value = value.replace('{{protocol}}', con.protocol || '""');
-      value = value.replace('{{session}}', `"${sessionId}"`);
+      value = value.replace('{{session}}', `"${options.sessionId}"`);
       value = value.replace('{{port}}', `${con.port || '""'}`);
     } else {
       value = IBIS_TEMPLATE;
@@ -729,7 +752,11 @@ con.list_tables()`.trim();
       value = value.replace('{{user}}', con.username || '""');
       value = value.replace('{{port}}', `${con.port || '""'}`);
     }
-    NotebookActions.insertAbove(notebook);
-    notebook.activeCell!.model.value.text = value;
+    NotebookActions.insertAbove(options.notebook);
+    const model =
+      (notebook.activeCell && notebook.activeCell.model) ||
+      notebook.model.cells.get(0);
+    // Assert exists because we have verified by creating.
+    model!.value.text = value;
   }
 }
