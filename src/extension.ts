@@ -15,7 +15,7 @@ import { IEditorServices } from '@jupyterlab/codeeditor';
 
 import { ICompletionManager } from '@jupyterlab/completer';
 
-import { ISettingRegistry, IStateDB } from '@jupyterlab/coreutils';
+import { ISettingRegistry, IStateDB, URLExt } from '@jupyterlab/coreutils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
@@ -28,6 +28,8 @@ import {
   Notebook,
   NotebookActions
 } from '@jupyterlab/notebook';
+
+import { ServerConnection } from '@jupyterlab/services';
 
 import { ReadonlyJSONObject } from '@phosphor/coreutils';
 
@@ -570,13 +572,10 @@ function activateOmniSciNotebook(
     label: 'Create OmniSci Workspace',
     execute: async () => {
       await app.restored;
-      let connectionData: IOmniSciConnectionData = {
-        host: 'most',
-        port: 3,
-        protocol: 'ghost'
-      };
-      let sessionId = 'mysession';
-      let initialQuery = 'SELECT ALL YOUR BASE';
+      const initialData = await Private.fetchInitialStateData();
+      const connectionData = initialData.connection;
+      const sessionId = initialData.session;
+      const initialQuery = initialData.initialQuery;
       // Create the SQL editor
       const grid = await app.commands.execute(CommandIDs.newGrid, ({
         initialQuery,
@@ -642,7 +641,7 @@ namespace Private {
     /**
      * Connection data for the initial state.
      */
-    connectionData?: IOmniSciConnectionData;
+    connection?: IOmniSciConnectionData;
 
     /**
      * An initial query to use.
@@ -652,7 +651,28 @@ namespace Private {
     /**
      * An ID for a pre-authenticated session.
      */
-    sessionId?: string;
+    session?: string;
+  }
+
+  /**
+   * Settings for a connection to the server.
+   */
+  const serverSettings = ServerConnection.makeSettings();
+
+  export async function fetchInitialStateData(): Promise<IInitialStateData> {
+    const url = URLExt.join(
+      serverSettings.baseUrl,
+      serverSettings.pageUrl,
+      'omnisci',
+      'session'
+    );
+    const response = await ServerConnection.makeRequest(
+      url,
+      {},
+      serverSettings
+    );
+    const data = await response.json();
+    return data as IInitialStateData;
   }
 
   /**
