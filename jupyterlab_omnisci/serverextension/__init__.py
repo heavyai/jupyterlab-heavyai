@@ -21,7 +21,6 @@ def load_jupyter_server_extension(nb_server_app):
     lab_path = url_path_join(base_url, lab_config.page_url)
 
     omnisci_session_endpoint = url_path_join(lab_path, "omnisci/session")
-    print(omnisci_session_endpoint)
     handlers = [
         (
             omnisci_session_endpoint,

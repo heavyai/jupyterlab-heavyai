@@ -7,10 +7,12 @@ from jupyterlab_server.server import APIHandler
 class OmniSciSessionHandler(APIHandler):
     @web.authenticated
     def get(self):
-        port = os.environ['OMNISCI_PORT']
-        host = os.environ['OMNISCI_HOST']
-        protocol = os.environ['OMNISCI_PROTOCOL']
-        with open('omnisci_session.txt') as f:
+        session_file = 'omnisci_session.txt'
+        port = os.environ.get('OMNISCI_PORT', '')
+        host = os.environ.get('OMNISCI_HOST', '')
+        protocol = os.environ.get('OMNISCI_PROTOCOL', '')
+        session = ''
+        with open(session_file) as f:
             session = f.read().strip()
         data = {
             'session': session,
