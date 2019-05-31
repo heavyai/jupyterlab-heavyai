@@ -373,9 +373,10 @@
     "@blueprintjs/select" "^3.3.0"
     react "~16.8.4"
 
-"@mapd/connector@omnisci/mapd-connector#master":
+"@mapd/connector@^4.6.1":
   version "4.6.1"
-  resolved "https://codeload.github.com/omnisci/mapd-connector/tar.gz/e633e8bb6fef08a63eb91f8cf97861f93270429c"
+  resolved "https://registry.yarnpkg.com/@mapd/connector/-/connector-4.6.1.tgz#39def34cbd373e14faf463d3159e2d386cd6c45a"
+  integrity sha512-j98si1bCdWuron4wAvvLPjaOtNJCl1FS+fkYmljk99ChOlIb5Gi6xBDvq9QKkCu7i6Gxm3wJrpMT6vpvHGaiXQ==
   dependencies:
     codecov "^2.2.0"
     eventemitter3 "^3.1.0"

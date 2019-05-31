@@ -43,7 +43,7 @@
     "@jupyterlab/mainmenu": "1.0.0-alpha.11",
     "@jupyterlab/notebook": "^1.0.0-alpha.12",
     "@jupyterlab/rendermime-interfaces": "^1.3.0-alpha.11",
-    "@mapd/connector": "omnisci/mapd-connector#master",
+    "@mapd/connector": "^4.6.1",
     "@phosphor/coreutils": "^1.3.0",
     "@phosphor/datagrid": "^0.1.8",
     "@phosphor/signaling": "^1.2.2",
