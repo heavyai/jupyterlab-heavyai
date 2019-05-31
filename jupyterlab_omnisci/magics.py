@@ -12,14 +12,13 @@ import pymapd
 
 __all__ = ["OmniSciVegaRenderer", "OmniSciSQLEditorRenderer"]
 
-import IPython
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
 
 # Allow this module to be imported outside of an IPython context
 # by making `register_cell_magic a no-op in that case.
 try:
-    get_ipython()
+    get_ipython()  # noqa
 except:
     register_cell_magic = lambda x: x
 

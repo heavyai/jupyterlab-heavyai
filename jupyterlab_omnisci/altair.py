@@ -112,16 +112,16 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
 
     if extract:
         global DISPLAY_HANDLE
-        
+
         if DISPLAY_HANDLE:
             # we are in vdom widget mode
             def callback(s):
                 global DISPLAY_HANDLE
                 # Don't display if s == {}
-                if '$schema' in s:
+                if "$schema" in s:
                     DISPLAY_HANDLE.update(to_display(s))
                     DISPLAY_HANDLE = None
-            
+
             # If DISPLAY_HANDLE is set but it's not a DisplayHandle yet
             if not isinstance(DISPLAY_HANDLE, DisplayHandle):
                 DISPLAY_HANDLE = display(display_type(display_data), display_id=True)
@@ -137,9 +137,9 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
             # we are in normal ipython mode
             display_id = display(display_type(display_data), display_id=True)
             extract_spec(spec, lambda s: display_id.update(to_display(s)))
-        
+
         return {"text/plain": ""}
-    
+
     return get_ipython().display_formatter.format(to_display(spec))[0]
 
 
@@ -181,6 +181,7 @@ def get_display(f, *args, display_handle=True, **kwargs):
     f(*args, **kwargs)._repr_mimebundle_(None, None)
     # return DISPLAY_HANDLE
     return copy(DISPLAY_HANDLE)
+
 
 ##
 # Custom display objects

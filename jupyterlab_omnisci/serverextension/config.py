@@ -6,8 +6,9 @@ from .session import BaseOmniSciSessionManager, OmniSciSessionManager
 
 class OmniSciConfig(Configurable):
     """
-    Allows configuration of access to OmniSci 
+    Allows configuration of access to OmniSci.
     """
+
     omnisci_session_manager = Instance(
         BaseOmniSciSessionManager,
         config=True,

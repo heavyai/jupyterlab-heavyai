@@ -8,6 +8,8 @@ class BaseOmniSciSessionManager(Configurable):
     """
     A class managing getting session data for a connection
     to an OmniSci backend.
+
+    The base implementation returns empty data.
     """
 
     def get_session(self):
@@ -21,9 +23,9 @@ class OmniSciSessionManager(BaseOmniSciSessionManager):
 
     The static file should be plain text with nothing but a valid session ID.
     """
+
     session_file = Unicode(
-        help="The path on disk to look for a session file",
-        config=True,
+        help="The path on disk to look for a session file", config=True
     )
     protocol = Unicode(
         default_value="OMNISCI_PROTOCOL",
@@ -42,23 +44,22 @@ class OmniSciSessionManager(BaseOmniSciSessionManager):
     )
 
     def get_session(self):
-        if not os.path.exists(self.session_file):
-            session = ''
-        else:
-            try:
-                with open(self.session_file) as f:
-                    session = f.read().strip()
-            except:
-                session = ''
-        port = os.environ.get('OMNISCI_PORT', '')
-        host = os.environ.get('OMNISCI_HOST', '')
-        protocol = os.environ.get('OMNISCI_PROTOCOL', '')
+        """
+        Get session data for an omnisci session.
+
+        This gets server location information from environment variables,
+        and a session ID from the configurable session_file.
+        """
+        try:
+            with open(self.session_file) as f:
+                session = f.read().strip()
+        except FileNotFoundError:
+            session = ""
+        port = os.environ.get("OMNISCI_PORT", "")
+        host = os.environ.get("OMNISCI_HOST", "")
+        protocol = os.environ.get("OMNISCI_PROTOCOL", "")
         data = {
-            'session': session,
-            'connection': {
-                'host': host,
-                'port': port,
-                'protocol': protocol,
-            }
+            "session": session,
+            "connection": {"host": host, "port": port, "protocol": protocol},
         }
         return data
