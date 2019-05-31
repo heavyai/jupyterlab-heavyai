@@ -530,8 +530,8 @@ function activateOmniSciNotebook(
     iconClass: 'omnisci-OmniSci-logo',
     execute: async args => {
       const connectionData: IOmniSciConnectionData =
-        (args['connection'] as IOmniSciConnectionData) || {};
-      const sessionId = (args['session'] as string) || '';
+        (args['connectionData'] as IOmniSciConnectionData) || {};
+      const sessionId = (args['sessionId'] as string) || '';
 
       // Create the notebook.
       const notebook = await app.commands.execute('notebook:create-new', {

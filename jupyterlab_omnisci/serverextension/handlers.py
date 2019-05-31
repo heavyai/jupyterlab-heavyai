@@ -18,12 +18,17 @@ class OmniSciWorkspaceHandler(LabHandler):
 class OmniSciSessionHandler(APIHandler):
     @web.authenticated
     def get(self):
+        port = os.environ['OMNISCI_PORT']
+        host = os.environ['OMNISCI_HOST']
+        protocol = os.environ['OMNISCI_PROTOCOL']
+        with open('omnisci_session.txt') as f:
+            session = f.read().strip()
         data = {
-            'session': 'abc123',
+            'session': session,
             'connection': {
-                'host': 'most',
-                'port': 3,
-                'protocol': 'ghost'
+                'host': host,
+                'port': port,
+                'protocol': protocol,
             }
         }
         self.set_status(200)
