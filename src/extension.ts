@@ -482,6 +482,7 @@ const omnisciNotebookPlugin: JupyterFrontEndPlugin<void> = {
   activate: activateOmniSciNotebook,
   id: NOTEBOOK_PLUGIN_ID,
   requires: [
+    JupyterFrontEnd.IPaths,
     ICommandPalette,
     IMainMenu,
     INotebookTracker,
@@ -493,6 +494,7 @@ const omnisciNotebookPlugin: JupyterFrontEndPlugin<void> = {
 
 function activateOmniSciNotebook(
   app: JupyterFrontEnd,
+  paths: JupyterFrontEnd.IPaths,
   palette: ICommandPalette,
   menu: IMainMenu,
   tracker: INotebookTracker,
@@ -590,16 +592,26 @@ function activateOmniSciNotebook(
     }
   });
 
+  // Add ibis connection injection to the palette and the edit menu.
   palette.addItem({
     command: CommandIDs.injectIbisConnection,
     category: 'OmniSci'
   });
   menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
 
+  // Add new notebook creation to the palette and file menu.
   menu.fileMenu.newMenu.addGroup([{ command: CommandIDs.createNotebook }], 11);
   palette.addItem({
     command: CommandIDs.createWorkspace,
     category: 'OmniSci'
+  });
+
+  // Add workspace creation to the router, so that external services
+  // may launch a new workspace via URL.
+  const workspacePattern = new RegExp(`^${paths.urls.page}/omnisci/workspace`);
+  router.register({
+    pattern: workspacePattern,
+    command: CommandIDs.createWorkspace
   });
 }
 
