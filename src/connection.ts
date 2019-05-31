@@ -6,8 +6,6 @@ import { DataConnector, ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
 
 import { JSONExt, JSONObject, Token } from '@phosphor/coreutils';
 
-import { ServerConnection } from '@jupyterlab/services';
-
 import { IDisposable } from '@phosphor/disposable';
 
 import { ISignal, Signal } from '@phosphor/signaling';
@@ -159,7 +157,6 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     this._settings = options.settings;
     this._settings.changed.connect(this._onSettingsChanged, this);
     this._onSettingsChanged(this._settings);
-    void this._fetchImmerseServers();
   }
 
   /**
@@ -253,7 +250,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * The overall list of connections known to the manager.
    */
   get connections(): ReadonlyArray<IOmniSciConnectionData> {
-    return [...this._labConnections, ...this._immerseConnections];
+    return this._labConnections.slice();
   }
 
   /**
@@ -313,30 +310,12 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       ((settings.get('servers').composite as unknown) as
         | IOmniSciConnectionData[]
         | undefined) || [];
-    // Combine the settings connection data with any immerse connection data.
+    // Normalize the connection data.
     this._labConnections = newServers.map(Private.normalizeConnectionData);
     const environment = settings.get('environment').composite as
       | IOmniSciConnectionData
       | undefined;
     this._environment = environment;
-    this._defaultConnection = Private.chooseDefault(this.connections);
-    this._changed.emit(void 0);
-  }
-
-  /**
-   * Fetch default servers from immerse, if it can be found.
-   */
-  private async _fetchImmerseServers(): Promise<void> {
-    const settings = ServerConnection.makeSettings();
-    const url = URLExt.join(settings.baseUrl, 'immerse', 'servers.json');
-    const response = await ServerConnection.makeRequest(url, {}, settings);
-    if (response.status !== 200) {
-      this._immerseConnections = [];
-      return;
-    }
-    this._immerseConnections = (await response.json()).map(
-      Private.normalizeConnectionData
-    );
     this._defaultConnection = Private.chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
@@ -347,7 +326,6 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   private _environment: IOmniSciConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
   private _labConnections: ReadonlyArray<IOmniSciConnectionData> = [];
-  private _immerseConnections: ReadonlyArray<IOmniSciConnectionData> = [];
 }
 
 /**
