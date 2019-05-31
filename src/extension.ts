@@ -607,9 +607,8 @@ function activateOmniSciNotebook(
 
   // Add workspace creation to the router, so that external services
   // may launch a new workspace via URL.
-  const workspacePattern = new RegExp(`^${paths.urls.page}/omnisci/workspace`);
   router.register({
-    pattern: workspacePattern,
+    pattern: /(\?omnisci|\&omnisci)($|&)/,
     command: CommandIDs.createWorkspace
   });
 }
