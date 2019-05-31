@@ -531,6 +531,8 @@ function activateOmniSciNotebook(
     execute: async args => {
       const connectionData: IOmniSciConnectionData =
         (args['connectionData'] as IOmniSciConnectionData) || {};
+      const environment: IOmniSciConnectionData =
+        (args['environment'] as IOmniSciConnectionData) || {};
       const sessionId = (args['sessionId'] as string) || '';
 
       // Create the notebook.
@@ -555,6 +557,7 @@ function activateOmniSciNotebook(
           Private.injectIbisConnection({
             notebook: notebook.content,
             connection: connectionData,
+            environment,
             sessionId
           });
         }
@@ -572,18 +575,23 @@ function activateOmniSciNotebook(
     label: 'Create OmniSci Workspace',
     execute: async () => {
       await app.restored;
-      const initialData = await Private.fetchInitialStateData();
-      const connectionData = initialData.connection;
-      const sessionId = initialData.session;
-      const initialQuery = initialData.initialQuery;
+      const workspace = await Private.fetchWorkspaceData();
+      const connectionData = workspace.connection;
+      const environment = workspace.environment;
+      const sessionId = workspace.session;
+      const initialQuery = workspace.initialQuery;
       // Create the SQL editor
       const grid = await app.commands.execute(CommandIDs.newGrid, ({
         initialQuery,
         connectionData,
         sessionId
       } as any) as ReadonlyJSONObject);
+      // Prefer the environment variables for the notebook creation.
       const notebook = await app.commands.execute(CommandIDs.createNotebook, ({
-        connectionData,
+        environment,
+        connectionData: Private.canUseSession(environment)
+          ? {}
+          : connectionData,
         sessionId
       } as any) as ReadonlyJSONObject);
       // Move the notebook to be side by side with the grid.
@@ -634,13 +642,28 @@ namespace Private {
   export let id = 0;
 
   /**
+   * A utility function that checks whether data is enough
+   * to connect via session id.
+   */
+  export function canUseSession(
+    data: IOmniSciConnectionData | undefined
+  ): boolean {
+    return !!data && !!data.host && !!data.port && !!data.protocol;
+  }
+
+  /**
    * An interface for the initial notebook statedb.
    */
-  export interface IInitialStateData {
+  export interface IWorkspaceData {
     /**
      * Connection data for the initial state.
      */
     connection?: IOmniSciConnectionData;
+
+    /**
+     * Connection data for the initial state.
+     */
+    environment?: IOmniSciConnectionData;
 
     /**
      * An initial query to use.
@@ -658,7 +681,7 @@ namespace Private {
    */
   const serverSettings = ServerConnection.makeSettings();
 
-  export async function fetchInitialStateData(): Promise<IInitialStateData> {
+  export async function fetchWorkspaceData(): Promise<IWorkspaceData> {
     const url = URLExt.join(
       serverSettings.baseUrl,
       serverSettings.pageUrl,
@@ -671,7 +694,7 @@ namespace Private {
       serverSettings
     );
     const data = await response.json();
-    return data as IInitialStateData;
+    return data as IWorkspaceData;
   }
 
   /**

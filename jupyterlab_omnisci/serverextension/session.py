@@ -55,11 +55,17 @@ class OmniSciSessionManager(BaseOmniSciSessionManager):
                 session = f.read().strip()
         except FileNotFoundError:
             session = ""
-        port = os.environ.get("OMNISCI_PORT", "")
-        host = os.environ.get("OMNISCI_HOST", "")
-        protocol = os.environ.get("OMNISCI_PROTOCOL", "")
         data = {
             "session": session,
-            "connection": {"host": host, "port": port, "protocol": protocol},
+            "connection": {
+                "protocol": os.environ.get(self.protocol, ""),
+                "host": os.environ.get(self.host, ""),
+                "port": os.environ.get(self.port, ""),
+            },
+            "environment": {
+                "protocol": self.protocol,
+                "host": self.host,
+                "port": self.port,
+            },
         }
         return data
