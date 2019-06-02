@@ -1,3 +1,4 @@
+import json
 import os
 
 from traitlets.config import Configurable
@@ -52,11 +53,11 @@ class OmniSciSessionManager(BaseOmniSciSessionManager):
         """
         try:
             with open(self.session_file) as f:
-                session = f.read().strip()
+                data = json.loads(f.read())
         except FileNotFoundError:
-            session = ""
-        data = {
-            "session": session,
+            data = {}
+        out = {
+            "session": data.get("session", ""),
             "connection": {
                 "protocol": os.environ.get(self.protocol, ""),
                 "host": os.environ.get(self.host, ""),
@@ -67,5 +68,6 @@ class OmniSciSessionManager(BaseOmniSciSessionManager):
                 "host": self.host,
                 "port": self.port,
             },
+            "query": data.get("query", ""),
         }
-        return data
+        return out

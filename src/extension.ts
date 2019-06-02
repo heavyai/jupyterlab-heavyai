@@ -534,6 +534,7 @@ function activateOmniSciNotebook(
       const environment: IOmniSciConnectionData =
         (args['environment'] as IOmniSciConnectionData) || {};
       const sessionId = (args['sessionId'] as string) || '';
+      const initialQuery = (args['initialQuery'] as string) || '';
 
       // Create the notebook.
       const notebook = await app.commands.execute('notebook:create-new', {
@@ -558,7 +559,8 @@ function activateOmniSciNotebook(
             notebook: notebook.content,
             connection: connectionData,
             environment,
-            sessionId
+            sessionId,
+            initialQuery
           });
         }
       };
@@ -579,7 +581,7 @@ function activateOmniSciNotebook(
       const connectionData = workspace.connection;
       const environment = workspace.environment;
       const sessionId = workspace.session;
-      const initialQuery = workspace.initialQuery;
+      const initialQuery = workspace.query;
       // Create the SQL editor
       const grid = await app.commands.execute(CommandIDs.newGrid, ({
         initialQuery,
@@ -592,7 +594,8 @@ function activateOmniSciNotebook(
         connectionData: Private.canUseSession(environment)
           ? {}
           : connectionData,
-        sessionId
+        sessionId,
+        initialQuery
       } as any) as ReadonlyJSONObject);
       // Move the notebook to be side by side with the grid.
       app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
@@ -668,7 +671,7 @@ namespace Private {
     /**
      * An initial query to use.
      */
-    initialQuery?: string;
+    query?: string;
 
     /**
      * An ID for a pre-authenticated session.
@@ -744,9 +747,7 @@ namespace Private {
 con = ibis.mapd.connect(
     host={{host}}, user={{user}}, password={{password}},
     port={{port}}, database={{database}}, protocol={{protocol}}
-)
-
-con.list_tables()`.trim();
+)`.trim();
 
   /**
    * A template for an Ibis mapd client when a session ID is available.
@@ -756,15 +757,28 @@ con.list_tables()`.trim();
 
 con = ibis.mapd.connect(
     host={{host}}, port={{port}}, protocol={{protocol}}, session_id={{session}}
-)
+)`.trim();
 
-con.list_tables()`.trim();
+  /**
+   * String to list tables.
+   */
+  const LIST_TABLES = '\n\ncon.list_tables()';
 
+  /**
+   * Template for an initial query.
+   */
+  const INITIAL_QUERY = '\n\nexpr = con.sql("{{query}}")';
+
+  /**
+   * Construct an ibis connection code snippet and insert it
+   * into a notebook cell.
+   */
   export function injectIbisConnection(options: {
     notebook: Notebook;
     connection?: IOmniSciConnectionData;
     environment?: IOmniSciConnectionData;
     sessionId?: string;
+    initialQuery?: string;
   }) {
     const notebook = options.notebook;
     const env = options.environment || {};
@@ -806,6 +820,14 @@ con.list_tables()`.trim();
       value = value.replace('{{user}}', con.username || '""');
       value = value.replace('{{port}}', `${con.port || '""'}`);
     }
+
+    // Handle an initial query if given. If not, list tables.
+    if (options.initialQuery) {
+      value = value + INITIAL_QUERY.replace('{{query}}', options.initialQuery);
+    } else {
+      value = value + LIST_TABLES;
+    }
+
     NotebookActions.insertAbove(options.notebook);
     const model =
       (notebook.activeCell && notebook.activeCell.model) ||
