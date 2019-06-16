@@ -685,12 +685,7 @@ namespace Private {
   const serverSettings = ServerConnection.makeSettings();
 
   export async function fetchWorkspaceData(): Promise<IWorkspaceData> {
-    const url = URLExt.join(
-      serverSettings.baseUrl,
-      serverSettings.pageUrl,
-      'omnisci',
-      'session'
-    );
+    const url = URLExt.join(serverSettings.baseUrl, 'omnisci', 'session');
     const response = await ServerConnection.makeRequest(
       url,
       {},
