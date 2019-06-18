@@ -42,7 +42,7 @@ ACTIVE_OUTPUT: typing.Optional[ipywidgets.Output] = None
 DISPLAY_HANDLE: typing.Optional[display] = None
 
 
-def ibis_renderer(spec, type="vl", extract=True, compile=True):
+def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
     """
     Altair renderer for Ibis expressions.
 
@@ -59,9 +59,13 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
                  updated spec.
         compile: Whether to take the list of transformations on the spec and compile them to Ibis.
     """
+    # If options for vega-embed have been provided, pass those to the renderer.
+    embed_options = options.get("embed_options", None)
     assert type in ("vl", "vl-omnisci", "json", "sql")
     if type == "vl":
-        display_type = VegaLite
+        display_type = lambda spec: VegaLite(
+            spec, metadata={"embed_options": embed_options}
+        )
         display_data = EMPTY_SPEC
     elif type == "vl-omnisci":
         display_type = VegaLiteOmniSci
@@ -112,16 +116,16 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
 
     if extract:
         global DISPLAY_HANDLE
-        
+
         if DISPLAY_HANDLE:
             # we are in vdom widget mode
             def callback(s):
                 global DISPLAY_HANDLE
                 # Don't display if s == {}
-                if '$schema' in s:
+                if "$schema" in s:
                     DISPLAY_HANDLE.update(to_display(s))
                     DISPLAY_HANDLE = None
-            
+
             # If DISPLAY_HANDLE is set but it's not a DisplayHandle yet
             if not isinstance(DISPLAY_HANDLE, DisplayHandle):
                 DISPLAY_HANDLE = display(display_type(display_data), display_id=True)
@@ -137,9 +141,9 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
             # we are in normal ipython mode
             display_id = display(display_type(display_data), display_id=True)
             extract_spec(spec, lambda s: display_id.update(to_display(s)))
-        
+
         return {"text/plain": ""}
-    
+
     return get_ipython().display_formatter.format(to_display(spec))[0]
 
 
@@ -182,6 +186,7 @@ def get_display(f, *args, display_handle=True, **kwargs):
     # return DISPLAY_HANDLE
     return copy(DISPLAY_HANDLE)
 
+
 ##
 # Custom display objects
 ##
@@ -205,7 +210,7 @@ class VegaLiteOmniSci(DisplayObject):
 
 class VegaLite(DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
-        return default_renderer(self.data)
+        return default_renderer(self.data, **self.metadata)
 
 
 class CompatJSON(JSON):
