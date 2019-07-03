@@ -16,7 +16,12 @@ from IPython import get_ipython
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
 
-ip = get_ipython()
+# Allow this module to be imported outside of an IPython context
+# by making `register_cell_magic a no-op in that case.
+try:
+    get_ipython()  # noqa
+except:
+    register_cell_magic = lambda x: x
 
 class OmniSciVegaRenderer:
     """
@@ -101,6 +106,51 @@ class OmniSciSQLEditorRenderer:
         data = {"connection": self.connection, "query": self.query}
         return {"application/vnd.omnisci.sqleditor+json": data}
 
+
+@register_cell_magic
+def omnisci_vega(line, cell):
+    """
+    Cell magic for rendering vega produced by the omnisci backend.
+
+    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    where `connection_data` is the dictionary containing the connection
+    data for the OmniSci server. The rest of the cell should be yaml-specified
+    vega data.
+    """
+    connection_data = ast.literal_eval(line)
+    vega = yaml.load(cell)
+    display(OmniSciVegaRenderer(connection_data, vega))
+
+
+@register_cell_magic
+def omnisci_vegalite(line, cell):
+    """
+    Cell magic for rendering vega lite produced by the omnisci backend.
+
+    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    where `connection_data` is the dictionary containing the connection
+    data for the OmniSci server. The rest of the cell should be yaml-specified
+    vega lite data.
+    """
+    connection_data = ast.literal_eval(line)
+    vl = yaml.load(cell)
+    display(OmniSciVegaRenderer(connection_data, vl_data=vl))
+
+
+@register_cell_magic
+def omnisci_sqleditor(line, cell):
+    """
+    Cell magic for rendering a SQL editor. 
+
+    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    where `connection_data` is the dictionary containing the connection
+    data for the OmniSci server. The rest of the cell should be 
+    a SQL query for the initial value of the editor.
+    """
+    connection_data = ast.literal_eval(line)
+    display(OmniSciSQLEditorRenderer(connection_data, cell))
+
+
 def _make_connection(connection):
     """
     Given a connection client, return a dictionary with connection
@@ -128,49 +178,3 @@ def _make_connection(connection):
         )
     else:
         return connection
-
-
-if ip is not None:
-
-    @register_cell_magic
-    def omnisci_vega(line, cell):
-        """
-        Cell magic for rendering vega produced by the omnisci backend.
-
-        Usage: Initiate it with the line `%% omnisci $connection_data`,
-        where `connection_data` is the dictionary containing the connection
-        data for the OmniSci server. The rest of the cell should be yaml-specified
-        vega data.
-        """
-        connection_data = ast.literal_eval(line)
-        vega = yaml.load(cell)
-        display(OmniSciVegaRenderer(connection_data, vega))
-
-
-    @register_cell_magic
-    def omnisci_vegalite(line, cell):
-        """
-        Cell magic for rendering vega lite produced by the omnisci backend.
-
-        Usage: Initiate it with the line `%% omnisci $connection_data`,
-        where `connection_data` is the dictionary containing the connection
-        data for the OmniSci server. The rest of the cell should be yaml-specified
-        vega lite data.
-        """
-        connection_data = ast.literal_eval(line)
-        vl = yaml.load(cell)
-        display(OmniSciVegaRenderer(connection_data, vl_data=vl))
-
-
-    @register_cell_magic
-    def omnisci_sqleditor(line, cell):
-        """
-        Cell magic for rendering a SQL editor. 
-
-        Usage: Initiate it with the line `%% omnisci $connection_data`,
-        where `connection_data` is the dictionary containing the connection
-        data for the OmniSci server. The rest of the cell should be 
-        a SQL query for the initial value of the editor.
-        """
-        connection_data = ast.literal_eval(line)
-        display(OmniSciSQLEditorRenderer(connection_data, cell))
