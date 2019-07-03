@@ -69,14 +69,15 @@ export class RenderedOmniSciVega extends Widget
     const data = (model.data[
       VEGA_MIME_TYPE
     ] as unknown) as IOmniSciVegaMimeBundle;
-    const { connection, vega, vegalite } = data;
+    const { connection, sessionId, vega, vegaLite } = data;
 
     // Create a new OmniSciVega
-    const vegaWidget = new OmniSciVega(
-      vega || compileToVega(vegalite),
+    const vegaWidget = new OmniSciVega({
+      sessionId,
       connection,
-      vegalite
-    );
+      vega: vega || compileToVega(vegaLite),
+      vegaLite
+    });
     layout.widget = vegaWidget;
     return vegaWidget.renderedImage
       .then(data => {
@@ -107,13 +108,19 @@ interface IOmniSciVegaMimeBundle {
   connection: IOmniSciConnectionData;
 
   /**
+   * A session ID for a pre-authenticated session.
+   */
+  sessionId?: string;
+
+  /**
    * The vega JSON object to render, including the SQL query.
    */
   vega?: JSONObject;
+
   /**
    * The vega lite JSON object to render, including the SQL query.
    */
-  vegalite?: JSONObject;
+  vegaLite?: JSONObject;
 }
 
 /**
@@ -142,9 +149,9 @@ export class RenderedOmniSciSQLEditor extends Widget
   }
 
   /**
-   * Render OmniSci image into this widget's node.
+   * Render the SQL editor into this widget's node.
    */
-  renderModel(model: IRenderMime.IMimeModel): Promise<void> {
+  async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     // Get the data from the mimebundle
     const data = (model.data[
       SQL_EDITOR_MIME_TYPE
@@ -152,7 +159,10 @@ export class RenderedOmniSciSQLEditor extends Widget
     if (!data) {
       return Promise.resolve(void 0);
     }
-    this._widget.content.connectionData = data.connection;
+    await this._widget.content.setConnectionData(
+      data.connection,
+      data.sessionId
+    );
     this._widget.content.query = data.query || '';
     return Promise.resolve(void 0);
   }
@@ -169,6 +179,11 @@ interface IOmniSciSQLEditorMimeBundle {
    * we need to make the connection.
    */
   connection: IOmniSciConnectionData;
+
+  /**
+   * A session ID for a pre-authenticated session.
+   */
+  sessionId?: string;
 
   /**
    * The initial SQL query.

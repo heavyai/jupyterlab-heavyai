@@ -21,7 +21,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "jupyterlab>=1.0.0rc0",
-        "ibis-framework>=1.0.0",
+        "ibis-framework>=1.1.0",
         "altair>=3.0.1",
         "ipywidgets",
         "vdom",

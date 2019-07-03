@@ -78,6 +78,10 @@
   background-size: 100%;
 }
 
+.p-Menu-itemIcon.omnisci-OmniSci-logo {
+  background-size: 75%;
+}
+
 #setting-editor .omnisci-OmniSci-logo {
   background-repeat: no-repeat;
   background-position: center;
