@@ -165,6 +165,7 @@ def _make_connection(connection):
     Given a connection client, return JSON-serializable dictionary
     with connection data for the client, as well as a session id if available.
     If it is already a dictionary, return that.
+    Works for Ibis clients, pymapd connections, and dictionaries.
 
     Parameters
     ----------
