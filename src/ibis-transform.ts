@@ -70,7 +70,7 @@ class QueryIbis extends dataflow.Transform implements Transform {
     comm.open(parameters);
     const result: JSONObject[] = await new Promise(resolve => {
       comm.onMsg = msg => {
-        resolve(msg.content.data as JSONObject[]);
+        resolve((msg.content.data as any) as JSONObject[]);
       };
     });
     await comm.close().done;

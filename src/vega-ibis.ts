@@ -27,13 +27,13 @@ const MIMETYPE = 'application/vnd.vega.ibis.v5+json';
 const TRANSFORM = 'queryibis';
 
 function activate(_: JupyterFrontEnd, notebooks: INotebookTracker) {
-  notebooks.widgetAdded.connect((_, { context, rendermime }) => {
-    rendermime.addFactory(
+  notebooks.widgetAdded.connect((_, { context, content }) => {
+    content.rendermime.addFactory(
       {
         safe: true,
         defaultRank: 50,
         mimeTypes: [MIMETYPE],
-        createRenderer: options => new VegaIbisRenderer(context)
+        createRenderer: () => new VegaIbisRenderer(context)
       },
       0
     );
