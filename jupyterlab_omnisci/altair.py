@@ -42,7 +42,7 @@ ACTIVE_OUTPUT: typing.Optional[ipywidgets.Output] = None
 DISPLAY_HANDLE: typing.Optional[display] = None
 
 
-def ibis_renderer(spec, type="vl", extract=True, compile=True):
+def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
     """
     Altair renderer for Ibis expressions.
 
@@ -59,9 +59,13 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True):
                  updated spec.
         compile: Whether to take the list of transformations on the spec and compile them to Ibis.
     """
+    # If options for vega-embed have been provided, pass those to the renderer.
+    embed_options = options.get("embed_options", None)
     assert type in ("vl", "vl-omnisci", "json", "sql")
     if type == "vl":
-        display_type = VegaLite
+        display_type = lambda spec: VegaLite(
+            spec, metadata={"embed_options": embed_options}
+        )
         display_data = EMPTY_SPEC
     elif type == "vl-omnisci":
         display_type = VegaLiteOmniSci
@@ -206,7 +210,7 @@ class VegaLiteOmniSci(DisplayObject):
 
 class VegaLite(DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
-        return default_renderer(self.data)
+        return default_renderer(self.data, **self.metadata)
 
 
 class CompatJSON(JSON):

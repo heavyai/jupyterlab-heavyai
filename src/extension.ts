@@ -1,5 +1,6 @@
 import {
   ILayoutRestorer,
+  IRouter,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
@@ -14,7 +15,7 @@ import { IEditorServices } from '@jupyterlab/codeeditor';
 
 import { ICompletionManager } from '@jupyterlab/completer';
 
-import { ISettingRegistry, IStateDB } from '@jupyterlab/coreutils';
+import { ISettingRegistry, IStateDB, URLExt } from '@jupyterlab/coreutils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
@@ -27,6 +28,10 @@ import {
   Notebook,
   NotebookActions
 } from '@jupyterlab/notebook';
+
+import { ServerConnection } from '@jupyterlab/services';
+
+import { ReadonlyJSONObject } from '@phosphor/coreutils';
 
 import { DataGrid, TextRenderer } from '@phosphor/datagrid';
 
@@ -70,6 +75,10 @@ namespace CommandIDs {
   export const setEnvironment = 'omnisci:set-environment';
 
   export const injectIbisConnection = 'omnisci:inject-ibis-connection';
+
+  export const createNotebook = 'omnisci:create-notebook';
+
+  export const createWorkspace = 'omnisci:create-workspace';
 }
 
 /**
@@ -95,7 +104,7 @@ const VEGA_PLUGIN_ID = 'jupyterlab-omnisci:vega';
 
 const SQL_EDITOR_PLUGIN_ID = 'jupyterlab-omnisci:sql-editor';
 
-const INITIAL_NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:initial_notebook';
+const NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:notebook';
 
 /**
  * The Omnisci connection handler extension.
@@ -270,23 +279,40 @@ function activateOmniSciGridViewer(
   // Handle state restoration.
   restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
-    args: widget => ({ initialQuery: widget.content.query }),
+    args: widget => {
+      const con = widget.content.connectionData;
+      const connection = {
+        host: con.host,
+        protocol: con.protocol,
+        port: con.port
+      };
+      const sessionId = widget.content.sessionId;
+      return {
+        initialQuery: widget.content.query,
+        connectionData: connection,
+        sessionId: sessionId || null
+      };
+    },
     name: widget => widget.id
   });
 
   // Create a completion handler for each grid that is created.
   gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.input.editor;
-    const connector = new OmniSciCompletionConnector(
-      explorer.content.connectionData
-    );
+    const sessionId = explorer.content.sessionId;
+    const connector = new OmniSciCompletionConnector({
+      connection: explorer.content.connectionData,
+      sessionId
+    });
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
     explorer.content.onModelChanged.connect(() => {
-      handle.connector = new OmniSciCompletionConnector(
-        explorer.content.connectionData
-      );
+      const sessionId = explorer.content.sessionId;
+      handle.connector = new OmniSciCompletionConnector({
+        connection: explorer.content.connectionData,
+        sessionId
+      });
     });
     // Set the theme for the new widget.
     explorer.content.style = style;
@@ -331,17 +357,22 @@ function activateOmniSciGridViewer(
   // When a new grid widget is added, hook up the machinery for
   // completions and theming.
   mimeGridTracker.widgetAdded.connect((sender, mime) => {
-    const editor = mime.widget.input.editor;
-    const connector = new OmniSciCompletionConnector(
-      mime.widget.content.connectionData
-    );
+    const grid = mime.widget;
+    const sessionId = grid.content.sessionId;
+    const editor = grid.input.editor;
+    const connector = new OmniSciCompletionConnector({
+      connection: grid.content.connectionData,
+      sessionId
+    });
     const parent = mime;
     const handle = completionManager.register({ connector, editor, parent });
 
-    mime.widget.content.onModelChanged.connect(() => {
-      handle.connector = new OmniSciCompletionConnector(
-        mime.widget.content.connectionData
-      );
+    grid.content.onModelChanged.connect(() => {
+      const sessionId = grid.content.sessionId;
+      handle.connector = new OmniSciCompletionConnector({
+        connection: grid.content.connectionData,
+        sessionId
+      });
     });
     mime.widget.content.style = style;
     mime.widget.content.renderer = renderer;
@@ -404,12 +435,18 @@ function activateOmniSciGridViewer(
     iconClass: 'omnisci-OmniSci-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
+      const connectionData =
+        (args['connectionData'] as IOmniSciConnectionData) || undefined;
+      const sessionId = (args['sessionId'] as string) || undefined;
       const grid = new OmniSciSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
-        manager
+        manager,
+        connectionData,
+        sessionId,
+        initialQuery: query
       });
-      grid.content.query = query;
-      grid.id = `omnisci-grid-widget-${++Private.id}`;
+      Private.id++;
+      grid.id = `omnisci-grid-widget-${Private.id}`;
       grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
@@ -436,7 +473,7 @@ function activateOmniSciGridViewer(
     const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
-        grid.content.connectionData = defaultConnectionData;
+        grid.content.setConnectionData(defaultConnectionData);
       }
     });
   });
@@ -445,26 +482,28 @@ function activateOmniSciGridViewer(
 /**
  * The Omnisci inital notebook extension.
  */
-const omnisciInitialNotebookPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateOmniSciInitialNotebook,
-  id: INITIAL_NOTEBOOK_PLUGIN_ID,
+const omnisciNotebookPlugin: JupyterFrontEndPlugin<void> = {
+  activate: activateOmniSciNotebook,
+  id: NOTEBOOK_PLUGIN_ID,
   requires: [
+    JupyterFrontEnd.IPaths,
     ICommandPalette,
     IMainMenu,
     INotebookTracker,
     IOmniSciConnectionManager,
-    IStateDB
+    IRouter
   ],
   autoStart: true
 };
 
-function activateOmniSciInitialNotebook(
+function activateOmniSciNotebook(
   app: JupyterFrontEnd,
+  paths: JupyterFrontEnd.IPaths,
   palette: ICommandPalette,
   menu: IMainMenu,
   tracker: INotebookTracker,
   manager: IOmniSciConnectionManager,
-  state: IStateDB
+  router: IRouter
 ): void {
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
@@ -478,41 +517,34 @@ function activateOmniSciInitialNotebook(
         'Choose Ibis Connection',
         manager.defaultConnection
       );
-      Private.injectIbisConnection(
-        current.content,
+      Private.injectIbisConnection({
+        notebook: current.content,
         connection,
-        manager.environment
-      );
+        environment: manager.environment
+      });
     },
     isEnabled: () => !!tracker.currentWidget
   });
 
-  palette.addItem({
-    command: CommandIDs.injectIbisConnection,
-    category: 'OmniSci'
-  });
-  menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
+  // Add a command to create a new notebook with an ibis connection.
+  app.commands.addCommand(CommandIDs.createNotebook, {
+    label: 'Notebook with OmniSci Connection',
+    iconClass: 'omnisci-OmniSci-logo',
+    execute: async args => {
+      const connectionData: IOmniSciConnectionData =
+        (args['connectionData'] as IOmniSciConnectionData) || {};
+      const environment: IOmniSciConnectionData =
+        (args['environment'] as IOmniSciConnectionData) || {};
+      const sessionId = (args['sessionId'] as string) || '';
+      const initialQuery = (args['initialQuery'] as string) || '';
 
-  // Fetch the state, which is used to determine whether to create
-  // an initial populated notebook.
-  state.fetch(INITIAL_NOTEBOOK_PLUGIN_ID).then(async result => {
-    // Determine whether to launch an initial notebook, then immediately
-    // set that value to false. This state setting is intended to be set
-    // by outside actors, rather than as true state restoration.
-    let initial = false;
-    if (result) {
-      initial = !!(result as { initialNotebook: boolean }).initialNotebook;
-    }
-    state.save(INITIAL_NOTEBOOK_PLUGIN_ID, { initialNotebook: false });
-
-    if (initial) {
       // Create the notebook.
       const notebook = await app.commands.execute('notebook:create-new', {
         kernelName: 'python3'
       });
       // Move the notebook so it is in a split pane with the primary tab.
       // It has already been added, so this just has the effect of moving it.
-      app.shell.add(notebook, 'main', { mode: 'split-left' });
+      app.shell.add(notebook, 'main');
 
       await notebook.context.ready;
 
@@ -524,19 +556,73 @@ function activateOmniSciInitialNotebook(
       // is exactly one cell, then inject our code, then disconnect.
       const inject = () => {
         if (notebook.content.model.cells.length === 1) {
-          if (!Private.connectionPopulated(manager.defaultConnection)) {
-            return;
-          }
-          Private.injectIbisConnection(
-            notebook.content,
-            manager.defaultConnection,
-            manager.environment
-          );
           notebook.content.model.contentChanged.disconnect(inject);
+          Private.injectIbisConnection({
+            notebook: notebook.content,
+            connection: connectionData,
+            environment,
+            sessionId,
+            initialQuery
+          });
         }
       };
       notebook.content.model.contentChanged.connect(inject);
+
+      return notebook;
     }
+  });
+
+  // Add a command to set up a new workspace with a notebook and SQL editor.
+  // This specifically does not ask for user input, as we want it to
+  // be triggerable via routing.
+  app.commands.addCommand(CommandIDs.createWorkspace, {
+    label: 'Create OmniSci Workspace',
+    execute: async () => {
+      await app.restored;
+      const workspace = await Private.fetchWorkspaceData();
+      const connectionData = workspace.connection;
+      const environment = workspace.environment;
+      const sessionId = workspace.session;
+      const initialQuery = workspace.query;
+      // Create the SQL editor
+      const grid = await app.commands.execute(CommandIDs.newGrid, ({
+        initialQuery,
+        connectionData,
+        sessionId
+      } as any) as ReadonlyJSONObject);
+      // Prefer the environment variables for the notebook creation.
+      const notebook = await app.commands.execute(CommandIDs.createNotebook, ({
+        environment,
+        connectionData: Private.canUseSession(environment)
+          ? {}
+          : connectionData,
+        sessionId,
+        initialQuery
+      } as any) as ReadonlyJSONObject);
+      // Move the notebook to be side by side with the grid.
+      app.shell.add(notebook, 'main', { ref: grid.id, mode: 'split-left' });
+    }
+  });
+
+  // Add ibis connection injection to the palette and the edit menu.
+  palette.addItem({
+    command: CommandIDs.injectIbisConnection,
+    category: 'OmniSci'
+  });
+  menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
+
+  // Add new notebook creation to the palette and file menu.
+  menu.fileMenu.newMenu.addGroup([{ command: CommandIDs.createNotebook }], 11);
+  palette.addItem({
+    command: CommandIDs.createWorkspace,
+    category: 'OmniSci'
+  });
+
+  // Add workspace creation to the router, so that external services
+  // may launch a new workspace via URL.
+  router.register({
+    pattern: /(\?omnisci|\&omnisci)($|&)/,
+    command: CommandIDs.createWorkspace
   });
 }
 
@@ -547,7 +633,7 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciConnectionPlugin,
   omnisciVegaPlugin,
   omnisciGridPlugin,
-  omnisciInitialNotebookPlugin,
+  omnisciNotebookPlugin
   vegaIbisPlugin
 ];
 export default plugins;
@@ -560,6 +646,57 @@ namespace Private {
    * A counter for widget ids.
    */
   export let id = 0;
+
+  /**
+   * A utility function that checks whether data is enough
+   * to connect via session id.
+   */
+  export function canUseSession(
+    data: IOmniSciConnectionData | undefined
+  ): boolean {
+    return !!data && !!data.host && !!data.port && !!data.protocol;
+  }
+
+  /**
+   * An interface for the initial notebook statedb.
+   */
+  export interface IWorkspaceData {
+    /**
+     * Connection data for the initial state.
+     */
+    connection?: IOmniSciConnectionData;
+
+    /**
+     * Connection data for the initial state.
+     */
+    environment?: IOmniSciConnectionData;
+
+    /**
+     * An initial query to use.
+     */
+    query?: string;
+
+    /**
+     * An ID for a pre-authenticated session.
+     */
+    session?: string;
+  }
+
+  /**
+   * Settings for a connection to the server.
+   */
+  const serverSettings = ServerConnection.makeSettings();
+
+  export async function fetchWorkspaceData(): Promise<IWorkspaceData> {
+    const url = URLExt.join(serverSettings.baseUrl, 'omnisci', 'session');
+    const response = await ServerConnection.makeRequest(
+      url,
+      {},
+      serverSettings
+    );
+    const data = await response.json();
+    return data as IWorkspaceData;
+  }
 
   /**
    * The light theme for the data grid.
@@ -608,16 +745,41 @@ namespace Private {
 con = ibis.mapd.connect(
     host={{host}}, user={{user}}, password={{password}},
     port={{port}}, database={{database}}, protocol={{protocol}}
-)
+)`.trim();
 
-con.list_tables()`.trim();
+  /**
+   * A template for an Ibis mapd client when a session ID is available.
+   */
+  const SESSION_IBIS_TEMPLATE = `
+{{os}}import ibis
 
-  export function injectIbisConnection(
-    notebook: Notebook,
-    connection?: IOmniSciConnectionData,
-    environment?: IOmniSciConnectionData
-  ) {
-    const env = environment || {};
+con = ibis.mapd.connect(
+    host={{host}}, port={{port}}, protocol={{protocol}}, session_id={{session}}
+)`.trim();
+
+  /**
+   * String to list tables.
+   */
+  const LIST_TABLES = '\n\ncon.list_tables()';
+
+  /**
+   * Template for an initial query.
+   */
+  const INITIAL_QUERY = '\n\nexpr = con.sql("{{query}}")';
+
+  /**
+   * Construct an ibis connection code snippet and insert it
+   * into a notebook cell.
+   */
+  export function injectIbisConnection(options: {
+    notebook: Notebook;
+    connection?: IOmniSciConnectionData;
+    environment?: IOmniSciConnectionData;
+    sessionId?: string;
+    initialQuery?: string;
+  }) {
+    const notebook = options.notebook;
+    const env = options.environment || {};
     const con: IOmniSciConnectionData = {};
     let os = Object.keys(env).length === 0 ? '' : 'import os\n';
     // Merge the connection with any environment variables
@@ -631,14 +793,23 @@ con.list_tables()`.trim();
       'database'
     ];
     keys.forEach(key => {
-      if (connection && connection[key]) {
-        con[key] = `"${connection[key]}"`;
+      if (options.connection && options.connection[key]) {
+        con[key] = `"${options.connection[key]}"`;
       } else if (env[key]) {
         con[key] = `os.environ['${env[key]}']`;
       }
     });
 
-    let value = IBIS_TEMPLATE;
+    let value = '';
+    if (options.sessionId) {
+      value = SESSION_IBIS_TEMPLATE;
+      value = value.replace('{{os}}', os);
+      value = value.replace('{{host}}', con.host || '""');
+      value = value.replace('{{protocol}}', con.protocol || '""');
+      value = value.replace('{{session}}', `"${options.sessionId}"`);
+      value = value.replace('{{port}}', `${con.port || '""'}`);
+    } else {
+      value = IBIS_TEMPLATE;
     value = value.replace('{{os}}', os);
     value = value.replace('{{host}}', con.host || '""');
     value = value.replace('{{protocol}}', con.protocol || '""');
@@ -646,24 +817,20 @@ con.list_tables()`.trim();
     value = value.replace('{{database}}', con.database || '""');
     value = value.replace('{{user}}', con.username || '""');
     value = value.replace('{{port}}', `${con.port || '""'}`);
-    NotebookActions.insertAbove(notebook);
-    notebook.activeCell!.model.value.text = value;
+    }
+
+    // Handle an initial query if given. If not, list tables.
+    if (options.initialQuery) {
+      value = value + INITIAL_QUERY.replace('{{query}}', options.initialQuery);
+    } else {
+      value = value + LIST_TABLES;
   }
 
-  /**
-   * Test whether a partial connection is complete enough to be successful.
-   */
-  export function connectionPopulated(
-    con: IOmniSciConnectionData | undefined
-  ): boolean {
-    return !!(
-      con &&
-      con.host &&
-      con.protocol &&
-      con.password &&
-      con.database &&
-      con.username &&
-      con.port
-    );
+    NotebookActions.insertAbove(options.notebook);
+    const model =
+      (notebook.activeCell && notebook.activeCell.model) ||
+      notebook.model.cells.get(0);
+    // Assert exists because we have verified by creating.
+    model!.value.text = value;
   }
 }

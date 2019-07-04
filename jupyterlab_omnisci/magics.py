@@ -5,6 +5,7 @@ Vega Lite and Vega in the MapD server and for rendering a SQL editor given a que
 
 import ast
 import yaml
+import urllib.parse
 
 import ibis
 import pymapd
@@ -13,6 +14,13 @@ __all__ = ["OmniSciVegaRenderer", "OmniSciSQLEditorRenderer"]
 
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
+
+# Allow this module to be imported outside of an IPython context
+# by making `register_cell_magic a no-op in that case.
+try:
+    get_ipython()  # noqa
+except:
+    register_cell_magic = lambda x: x
 
 
 class OmniSciVegaRenderer:
@@ -43,7 +51,9 @@ class OmniSciVegaRenderer:
         """
         if (not (data or vl_data)) or (data and vl_data):
             raise RuntimeError("Either vega or vega lite data must be specified")
-        self.connection = _make_connection(connection)
+        connection, session = _make_connection(connection)
+        self.connection = connection
+        self.session = session
         self.data = data
         self.vl_data = vl_data
 
@@ -53,11 +63,11 @@ class OmniSciVegaRenderer:
         data, which is a custom mimetype for rendering omnisci vega
         in Jupyter notebooks.
         """
-        bundle = {"connection": self.connection}
+        bundle = {"connection": self.connection, "sessionId": self.session}
         if self.data:
             bundle["vega"] = self.data
         else:
-            bundle["vegalite"] = self.vl_data
+            bundle["vegaLite"] = self.vl_data
         return {"application/vnd.omnisci.vega+json": bundle}
 
 
@@ -83,7 +93,10 @@ class OmniSciSQLEditorRenderer:
         query: string or ibis expression.
             An initial query for the SQL editor.
         """
-        self.connection = _make_connection(connection)
+        connection, session = _make_connection(connection)
+        self.connection = connection
+        self.session = session
+
         if isinstance(query, str):
             self.query = query
         elif hasattr(query, "compile") and hasattr(query.compile, "__call__"):
@@ -95,7 +108,11 @@ class OmniSciSQLEditorRenderer:
         data, which is a custom mimetype for rendering omnisci vega
         in Jupyter notebooks.
         """
-        data = {"connection": self.connection, "query": self.query}
+        data = {
+            "connection": self.connection,
+            "sessionId": self.session,
+            "query": self.query,
+        }
         return {"application/vnd.omnisci.sqleditor+json": data}
 
 
@@ -110,7 +127,7 @@ def omnisci_vega(line, cell):
     vega data.
     """
     connection_data = ast.literal_eval(line)
-    vega = yaml.load(cell)
+    vega = yaml.safe_load(cell)
     display(OmniSciVegaRenderer(connection_data, vega))
 
 
@@ -125,7 +142,7 @@ def omnisci_vegalite(line, cell):
     vega lite data.
     """
     connection_data = ast.literal_eval(line)
-    vl = yaml.load(cell)
+    vl = yaml.safe_load(cell)
     display(OmniSciVegaRenderer(connection_data, vl_data=vl))
 
 
@@ -145,13 +162,25 @@ def omnisci_sqleditor(line, cell):
 
 def _make_connection(connection):
     """
-    Given a connection client, return a dictionary with connection
-    data for the client. If it is already a dictionary, return that.
-
+    Given a connection client, return JSON-serializable dictionary
+    with connection data for the client, as well as a session id if available.
+    If it is already a dictionary, return that.
     Works for Ibis clients, pymapd connections, and dictionaries.
+
+    Parameters
+    ----------
+    connection: ibis.mapd.MapDClient or pymapd.Connection or dict
+        A connection object.
+
+    Returns
+    -------
+    connection, session: (dict, str)
+        A tuple containing the serializable connection data and session id,
+        if available. If the session id is not available (for instance, if
+        a dict is provided), then returns None for the second item.
     """
     if isinstance(connection, ibis.mapd.MapDClient):
-        return dict(
+        con = dict(
             host=connection.host,
             port=connection.port,
             database=connection.db_name,
@@ -159,14 +188,25 @@ def _make_connection(connection):
             protocol=connection.protocol,
             username=connection.user,
         )
+        session = connection.con._session
     elif isinstance(connection, pymapd.Connection):
-        return dict(
-            host=connection._host,
+        parsed = urllib.parse.urlparse(connection._host)
+        con = dict(
+            host=parsed.hostname,
             port=connection._port,
             database=connection._dbname,
             password=connection._password,
             protocol=connection._protocol,
             username=connection._user,
         )
+        session = connection._session
     else:
-        return connection
+        con = connection
+        session = None
+    # If we have a live session id, we can safely delete authentication
+    # material before sending it over the wire.
+    if session:
+        con.pop("password", "")
+        con.pop("username", "")
+        con.pop("database", "")
+    return con, session

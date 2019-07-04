@@ -6,8 +6,6 @@ import { DataConnector, ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
 
 import { JSONExt, JSONObject, Token } from '@phosphor/coreutils';
 
-import { ServerConnection } from '@jupyterlab/services';
-
 import { IDisposable } from '@phosphor/disposable';
 
 import { ISignal, Signal } from '@phosphor/signaling';
@@ -37,6 +35,11 @@ export type OmniSciConnection = any;
 
 /**
  * Connection data for the omnisci browser client.
+ *
+ * #### Notes
+ * This interface is intended to be API compatible with the servers.json
+ * server specification that is used by OmniSci Immerse. As such,
+ * it includes a number of fields that we do not use in this package.
  */
 export interface IOmniSciConnectionData {
   /**
@@ -154,7 +157,6 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     this._settings = options.settings;
     this._settings.changed.connect(this._onSettingsChanged, this);
     this._onSettingsChanged(this._settings);
-    void this._fetchImmerseServers();
   }
 
   /**
@@ -248,7 +250,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * The overall list of connections known to the manager.
    */
   get connections(): ReadonlyArray<IOmniSciConnectionData> {
-    return [...this._labConnections, ...this._immerseConnections];
+    return this._labConnections.slice();
   }
 
   /**
@@ -308,30 +310,12 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       ((settings.get('servers').composite as unknown) as
         | IOmniSciConnectionData[]
         | undefined) || [];
-    // Combine the settings connection data with any immerse connection data.
+    // Normalize the connection data.
     this._labConnections = newServers.map(Private.normalizeConnectionData);
     const environment = settings.get('environment').composite as
       | IOmniSciConnectionData
       | undefined;
     this._environment = environment;
-    this._defaultConnection = Private.chooseDefault(this.connections);
-    this._changed.emit(void 0);
-  }
-
-  /**
-   * Fetch default servers from immerse, if it can be found.
-   */
-  private async _fetchImmerseServers(): Promise<void> {
-    const settings = ServerConnection.makeSettings();
-    const url = URLExt.join(settings.baseUrl, 'immerse', 'servers.json');
-    const response = await ServerConnection.makeRequest(url, {}, settings);
-    if (response.status !== 200) {
-      this._immerseConnections = [];
-      return;
-    }
-    this._immerseConnections = (await response.json()).map(
-      Private.normalizeConnectionData
-    );
     this._defaultConnection = Private.chooseDefault(this.connections);
     this._changed.emit(void 0);
   }
@@ -342,7 +326,6 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   private _environment: IOmniSciConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
   private _labConnections: ReadonlyArray<IOmniSciConnectionData> = [];
-  private _immerseConnections: ReadonlyArray<IOmniSciConnectionData> = [];
 }
 
 /**
@@ -361,27 +344,43 @@ export namespace OmniSciConnectionManager {
 }
 
 /**
- * Make a connection to the Omnisci backend.
+ * Make a connection to the OmniSci backend.
+ *
+ * @param data: connection data for the OmniSci database.
+ *   Must include at least protocol, host, and port. If a session ID
+ *   is not given, it must also incldue database, usernamem and password.
+ *
+ * @param sessionId: an optional session ID for an already-authenticated
+ *   database session.
+ *
+ * @returns a promise that resolves with the connection object.
  */
-export function makeConnection(
-  data: IOmniSciConnectionData
+export async function makeConnection(
+  data: IOmniSciConnectionData,
+  sessionId?: string
 ): Promise<OmniSciConnection> {
-  return new Promise<OmniSciConnection>((resolve, reject) => {
-    new MapdCon()
-      .protocol(data.protocol)
-      .host(data.host)
-      .port(data.port)
+  // Whether or not we have a session id, we need protocol,
+  // host, and port to be defined.
+  let con = new MapdCon()
+    .protocol(data.protocol)
+    .host(data.host)
+    .port(data.port);
+  if (sessionId) {
+    // Set fake dbname and user arrays if we are provided a session ID.
+    // These are not necessary to make the connection, but the initClients
+    // function checks for them anyways.
+    // Once the clients have been initialized, set the session id,
+    // but do *not* call connect, as that requires username, db and password.
+    con = con.dbName(['']).user(['']);
+    return con.initClients().sessionId([sessionId]);
+  } else {
+    // If we don't have a session id, provide user authentication.
+    con = con
       .dbName(data.database)
       .user(data.username)
-      .password(data.password)
-      .connect((error: any, con: any) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(con);
-        }
-      });
-  });
+      .password(data.password);
+  }
+  return await con.connectAsync();
 }
 
 /**
@@ -601,10 +600,13 @@ export class OmniSciCompletionConnector extends DataConnector<
   /**
    * Construct a new completion connector.
    */
-  constructor(data: IOmniSciConnectionData | undefined) {
+  constructor(options: OmniSciCompletionConnector.IOptions = {}) {
     super();
-    if (data) {
-      this._connection = makeConnection(data);
+    // Note: unlike other places, this expects an authenticated
+    // session ID to work.
+    // TODO: remove this restriction.
+    if (options.connection && options.sessionId) {
+      this._connection = makeConnection(options.connection, options.sessionId);
     }
   }
 
@@ -660,6 +662,26 @@ export class OmniSciCompletionConnector extends DataConnector<
     );
   }
   private _connection: Promise<OmniSciConnection> | undefined = undefined;
+}
+
+/**
+ * A namespace for OmniSciCompletionConnector statics.
+ */
+export namespace OmniSciCompletionConnector {
+  /**
+   * Options used to create the completion connector.
+   */
+  export interface IOptions {
+    /**
+     * Connection data for the backend.
+     */
+    connection?: IOmniSciConnectionData;
+
+    /**
+     * A session ID for an already authenticated session.
+     */
+    sessionId?: string;
+  }
 }
 
 /**
