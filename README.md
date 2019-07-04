@@ -19,10 +19,10 @@ conda install -c conda-forge pymapd nodejs
 pip install jupyterlab-omnisci
 ```
 
-Then install the `jupyterlab-omnisci` JupyterLab extension.
+Then install the `jupyterlab-omnisci` JupyterLab extension:
 
 ```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
 jupyter labextension install jupyterlab-omnisci
 ```
 
