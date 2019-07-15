@@ -7,7 +7,7 @@ import {
 
 import {
   ICommandPalette,
-  InstanceTracker,
+  WidgetTracker,
   IThemeManager
 } from '@jupyterlab/apputils';
 
@@ -200,7 +200,7 @@ function activateOmniSciVegaViewer(
     readOnly: true,
     manager
   });
-  const viewerTracker = new InstanceTracker<OmniSciVegaViewer>({
+  const viewerTracker = new WidgetTracker<OmniSciVegaViewer>({
     namespace: viewerNamespace
   });
 
@@ -270,7 +270,7 @@ function activateOmniSciGridViewer(
   const gridNamespace = 'omnisci-grid-widget';
   const mimeGridNamespace = 'omnisci-mime-grid-widget';
 
-  const gridTracker = new InstanceTracker<OmniSciSQLEditor>({
+  const gridTracker = new WidgetTracker<OmniSciSQLEditor>({
     namespace: gridNamespace
   });
 
@@ -344,7 +344,7 @@ function activateOmniSciGridViewer(
   // editor mime renderer, but that requires some full-extension machinery.
   // So we extend the renderer factory with a "created" signal, and when that
   // fires, do some extra work in the real extension.
-  const mimeGridTracker = new InstanceTracker<RenderedOmniSciSQLEditor>({
+  const mimeGridTracker = new WidgetTracker<RenderedOmniSciSQLEditor>({
     namespace: mimeGridNamespace
   });
   // Add the new renderer to an instance tracker when it is created.
