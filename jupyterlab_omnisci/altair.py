@@ -195,7 +195,7 @@ class VegaLiteOmniSci(DisplayObject):
         spec, conn = self.data
         return {
             "application/vnd.omnisci.vega+json": {
-                "vegalite": spec,
+                "vegaLite": spec,
                 "connection": {
                     "host": conn.host,
                     "protocol": conn.protocol,

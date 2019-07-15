@@ -280,11 +280,11 @@ function activateOmniSciGridViewer(
   restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
     args: widget => {
-      const con = widget.content.connectionData!;
+      const con = widget.content.connectionData || {};
       const connection = {
-        host: con.host!,
-        protocol: con.protocol!,
-        port: con.port!
+        host: con.host || '',
+        protocol: con.protocol || '',
+        port: con.port || ''
       };
       const sessionId = widget.content.sessionId;
       return {
