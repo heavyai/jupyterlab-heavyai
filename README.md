@@ -161,8 +161,8 @@ jlpm install
 jlpm run build
 
 jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
-
 jupyter labextension install .
+jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
 ```
 
 ## Releasing
