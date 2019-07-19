@@ -23,6 +23,23 @@ _expr_map: typing.Dict[str, ibis.Expr] = {}
 # New Vega Lite renderer mimetype which can process ibis expressions in names
 MIMETYPE = "application/vnd.vega.ibis.v5+json"
 
+# An empty vega spec to send when we get invalid data.
+EMPTY_VEGA = {
+  "$schema": "https://vega.github.io/schema/vega/v5.json",
+  "description": "An empty vega v5 spec",
+  "width": 500,
+  "height": 200,
+  "padding": 5,
+  "autosize": "pad",
+  "signals": [],
+  "data": [],
+  "scales": [],
+  "projections": [],
+  "axes": [],
+  "legends": [],
+  "marks": []
+}
+
 
 def empty(expr: ibis.Expr) -> pandas.DataFrame:
     """
@@ -87,7 +104,10 @@ def _is_ibis(name: str) -> bool:
 def _retrieve_expr_key(name: str) -> typing.Optional[str]:
     if not name.startswith(DATA_NAME_PREFIX):
         return None
-    return name[len(DATA_NAME_PREFIX) :]
+    key = name[len(DATA_NAME_PREFIX) :]
+    if key not in _expr_map:
+        raise ValueError(f"Unrecognized ibis data name {name}")
+    return key
 
 
 def altair_renderer(spec):
@@ -105,9 +125,12 @@ _outgoing_specs = []
 def compiler_target_function(comm, msg):
     spec = msg["content"]["data"]
     _incoming_specs.append(spec)
-    updated_spec = _transform(spec)
-    _outgoing_specs.append(updated_spec)
-    comm.send(updated_spec)
+    try:
+        updated_spec = _transform(spec)
+        _outgoing_specs.append(updated_spec)
+        comm.send(updated_spec)
+    except ValueError:
+        comm.send(EMPTY_VEGA)
 
 
 def query_target_func(comm, msg):
@@ -117,6 +140,8 @@ def query_target_func(comm, msg):
     name: str = parameters.pop("name")
     transforms: typing.Optional[str] = parameters.pop("transform", None)
 
+    if name not in _expr_map:
+        raise ValueError(f"{name} is not an expression known to us!")
     expr = _expr_map[name]
     if transforms:
         # Replace all string instances of data references with value in schema
