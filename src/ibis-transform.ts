@@ -1,6 +1,6 @@
 import { Kernel } from '@jupyterlab/services';
 
-import { JSONObject } from '@phosphor/coreutils';
+import { JSONObject, PromiseDelegate } from '@phosphor/coreutils';
 
 import * as dataflow from 'vega-dataflow';
 
@@ -63,19 +63,19 @@ class QueryIbis extends dataflow.Transform implements Transform {
       console.error('Not connected to kernel');
       return;
     }
+
+    // Fetch the query results from the kernel.
     const comm = kernel.connectToComm('queryibis');
-    const resultPromise: Promise<JSONObject[]> = new Promise(resolve => {
-      comm.onMsg = msg => {
-        resolve((msg.content.data as any) as JSONObject[]);
-      };
-    });
+    const resultPromise = new PromiseDelegate<JSONObject[]>();
+    comm.onMsg = msg =>
+      resultPromise.resolve((msg.content.data as any) as JSONObject[]);
 
     console.log('Fetching data', parameters, pulse);
-    await comm.open(parameters);
-    const result: JSONObject[] = await resultPromise;
-    await comm.close().done;
+    await comm.open(parameters).done;
+    const result: JSONObject[] = await resultPromise.promise;
     console.log('Recieved data', result);
 
+    // Ingest the data and push it into the dataflow graph.
     result.forEach(dataflow.ingest);
 
     /* tslint:disable-next-line */

@@ -1,25 +1,26 @@
-import { Kernel, KernelMessage } from '@jupyterlab/services';
+import { Kernel } from '@jupyterlab/services';
+
+import { PromiseDelegate } from '@phosphor/coreutils';
 
 import { compile } from 'vega-lite/build/src/compile/compile';
 
 const PLUGIN_ID = 'jupyterlab-omnisci:vega-compiler';
 
 /**
- * Takes in a Vega Lite spec and returns a compiled vega spec.
+ * Takes in a Vega Lite spec and returns a compiled vega spec,
+ * with the vega transforms swapped out for ibis transforms.
  */
 export async function compileSpec(
   kernel: Kernel.IKernelConnection,
   vlSpec: any
 ): Promise<object> {
+  // Compile vega-lite to vega
   const vSpec = compile(vlSpec).spec;
+
+  // Change vega transforms to ibis transforms on the server side.
+  const transformedSpecPromise = new PromiseDelegate<any>();
   const comm = kernel.connectToComm(PLUGIN_ID);
-  const msgPromise: Promise<KernelMessage.ICommMsgMsg> = new Promise(
-    resolve => {
-      comm.onMsg = resolve;
-    }
-  );
-  await comm.open(vSpec as any);
-  const returnMsg = await msgPromise;
-  await comm.close().done;
-  return returnMsg.content.data as any;
+  comm.onMsg = msg => transformedSpecPromise.resolve(msg.content.data);
+  await comm.open(vSpec as any).done;
+  return transformedSpecPromise.promise;
 }
