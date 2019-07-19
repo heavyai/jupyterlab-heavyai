@@ -26,6 +26,7 @@ setup(
         "ipywidgets",
         "vdom",
         "pyyaml",
+        "altair-transform",
         "vega_datasets",
     ],
 )
