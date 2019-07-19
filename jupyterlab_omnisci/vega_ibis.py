@@ -1,11 +1,11 @@
 """
 Functionality for server-side ibis transforms of vega charts.
 """
-
 import copy
 import json
 import re
 import typing
+import warnings
 
 import altair
 import altair.vegalite.v3.display
@@ -41,7 +41,7 @@ EMPTY_VEGA = {
 }
 
 
-def empty(expr: ibis.Expr) -> pandas.DataFrame:
+def empty_dataframe(expr: ibis.Expr) -> pandas.DataFrame:
     """
     Creates an empty DF for a ibis expression, based on the schema
 
@@ -64,10 +64,13 @@ def monkeypatch_altair():
         """
         if data is not None and isinstance(data, ibis.Expr):
             expr = data
-            data = empty(expr)
+            data = empty_dataframe(expr)
             data.ibis = expr
 
-        return original_chart_init(self, data=data, *args, **kwargs)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            chart = original_chart_init(self, data=data, *args, **kwargs)
+        return chart
 
     altair.Chart.__init__ = updated_chart_init
 
@@ -98,6 +101,9 @@ def altair_data_transformer(data):
 
 
 def _is_ibis(name: str) -> bool:
+    """
+    Test whether a vega data name refers to one of the ibis expressions.
+    """
     return name.startswith(DATA_NAME_PREFIX)
 
 
@@ -111,6 +117,9 @@ def _retrieve_expr_key(name: str) -> typing.Optional[str]:
 
 
 def altair_renderer(spec):
+    """
+    An altair renderer that serves our custom mimetype with ibis support.
+    """
     if FALLBACK:
         return altair.vegalite.v3.display.default_renderer(spec)
     return {MIMETYPE: spec}
@@ -123,6 +132,11 @@ _outgoing_specs = []
 
 
 def compiler_target_function(comm, msg):
+    """
+    A function that takes a vega spec and converts its vega-transforms
+    to ibis transforms, which will later be able to lazily evaluate
+    upon user interactions.
+    """
     spec = msg["content"]["data"]
     _incoming_specs.append(spec)
     try:
@@ -130,10 +144,17 @@ def compiler_target_function(comm, msg):
         _outgoing_specs.append(updated_spec)
         comm.send(updated_spec)
     except ValueError:
+        # If there was an error transforming the spec, which can happen
+        # if we don't support all the required transforms, or if
+        # the spec references an old, unavailable ibis expression,
+        # then send an empty vega spec.
         comm.send(EMPTY_VEGA)
 
 
 def query_target_func(comm, msg):
+    """
+    Target function for actually evaluating the `queryibis` transform.
+    """
     # These are the paramaters passed to the vega transform
     parameters: dict = msg["content"]["data"]
 
@@ -196,7 +217,11 @@ assert _extract_used_data(
 ) == {"Filter_store"}
 
 
-def _transform(spec: typing.Dict[str, typing.Any]):
+def _transform(spec: typing.Dict[str, typing.Any]) -> typing.Dict[str, typing.Any]:
+    """
+    Transform a vega spec into one that uses the `queryibis` transform
+    in the place of vega transforms.
+    """
     new = copy.deepcopy(spec)  # make a copy of the spec
     _transforms = {}  # Store references to ibis query transforms
     _root_expressions = {}  # Keep track of the sources backed in ibis expressions
@@ -262,9 +287,9 @@ def _transform(spec: typing.Dict[str, typing.Any]):
 
 def _cleanup_spec(spec):
     """
-    Goes through the spec and removes data sources that are not referenced anywhere else in the spec.
-
-    Does this by turning the spec into a string and seeing if the name of the data is in the string
+    Goes through the spec and removes data sources that are not referenced
+    anywhere else in the spec. Does this by turning the spec into a string
+    and seeing if the name of the data is in the string.
     """
 
     nonreferenced_data = []
