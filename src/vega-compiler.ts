@@ -12,12 +12,14 @@ export async function compileSpec(
   vlSpec: any
 ): Promise<object> {
   const vSpec = compile(vlSpec).spec;
-
   const comm = kernel.connectToComm(PLUGIN_ID);
-  await comm.open(vSpec as any).done;
-  const returnMsg: KernelMessage.ICommMsgMsg = await new Promise(resolve => {
-    comm.onMsg = resolve;
-  });
+  const msgPromise: Promise<KernelMessage.ICommMsgMsg> = new Promise(
+    resolve => {
+      comm.onMsg = resolve;
+    }
+  );
+  await comm.open(vSpec as any);
+  const returnMsg = await msgPromise;
   await comm.close().done;
   return returnMsg.content.data as any;
 }

@@ -64,17 +64,16 @@ class QueryIbis extends dataflow.Transform implements Transform {
       return;
     }
     const comm = kernel.connectToComm('queryibis');
-
-    console.log('Fetching data', parameters, pulse);
-
-    await comm.open(parameters).done;
-    const result: JSONObject[] = await new Promise(resolve => {
+    const resultPromise: Promise<JSONObject[]> = new Promise(resolve => {
       comm.onMsg = msg => {
         resolve((msg.content.data as any) as JSONObject[]);
       };
     });
-    await comm.close().done;
 
+    console.log('Fetching data', parameters, pulse);
+    await comm.open(parameters);
+    const result: JSONObject[] = await resultPromise;
+    await comm.close().done;
     console.log('Recieved data', result);
 
     result.forEach(dataflow.ingest);
