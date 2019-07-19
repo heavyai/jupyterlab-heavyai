@@ -36,7 +36,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
       new ToolbarButton({
         iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
-          this._render();
+          void this._render();
         },
         tooltip: 'Render'
       })
@@ -47,7 +47,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
         iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
         onClick: () => {
           const name = PathExt.basename(this.context.path);
-          options.manager
+          void options.manager
             .chooseConnection(
               `Set Connection for ${name}`,
               this._connectionData

@@ -13,8 +13,8 @@ export async function compileSpec(
 ): Promise<object> {
   const vSpec = compile(vlSpec).spec;
 
-  const comm = await kernel.connectToComm(PLUGIN_ID);
-  comm.open(vSpec as any);
+  const comm = kernel.connectToComm(PLUGIN_ID);
+  await comm.open(vSpec as any).done;
   const returnMsg: KernelMessage.ICommMsgMsg = await new Promise(resolve => {
     comm.onMsg = resolve;
   });

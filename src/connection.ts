@@ -217,7 +217,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
       labServers = [value, ...labServers];
     }
 
-    this._settings.set('servers', (labServers as unknown) as JSONObject);
+    void this._settings.set('servers', (labServers as unknown) as JSONObject);
   }
 
   /**
@@ -240,10 +240,10 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     ) {
       return;
     } else if (!value) {
-      this._settings.remove('environment');
+      void this._settings.remove('environment');
       return;
     }
-    this._settings.set('environment', value as JSONObject);
+    void this._settings.set('environment', value as JSONObject);
   }
 
   /**

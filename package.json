@@ -30,6 +30,7 @@
     "precommit": "lint-staged",
     "prettier": "prettier --write '**/*{.ts,.tsx,.css,.json,.md}'",
     "prepublishOnly": "npm run build",
+    "tslint": "tslint -c tslint.json --project tsconfig.json '**/*{.ts,.tsx}'",
     "watch": "tsc -w"
   },
   "dependencies": {

@@ -52,11 +52,31 @@ class VegaIbisRenderer extends Widget implements IRenderMime.IRenderer {
     if (kernel === null) {
       return;
     }
+    if (this._view) {
+      this._view.finalize();
+      this._view = null;
+    }
+
     ibisTransform.kernel = kernel;
     const vSpec = await compileSpec(kernel, vlSpec);
-    const view = new vega.View(vega.parse(vSpec)).initialize(this.node);
-    view.runAsync();
+    this._view = new vega.View(vega.parse(vSpec)).initialize(this.node);
+    await this._view.runAsync();
   }
+
+  get isDisposed(): boolean {
+    return this._isDisposed;
+  }
+
+  dispose(): void {
+    this._isDisposed = true;
+    if (this._view) {
+      this._view.finalize();
+      this._view = null;
+    }
+  }
+
+  private _isDisposed = false;
+  private _view: vega.View | null = null;
 }
 
 (vega as any).transforms[TRANSFORM] = ibisTransform;

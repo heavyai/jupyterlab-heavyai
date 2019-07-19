@@ -193,7 +193,7 @@ export class OmniSciGrid extends Panel {
     this._content.hide(); // Initially hide the grid until we set the query.
 
     // Initialize the data model.
-    this._updateModel(
+    void this._updateModel(
       options.connectionData,
       options.initialQuery || '',
       options.sessionId
@@ -240,7 +240,11 @@ export class OmniSciGrid extends Panel {
     return this._model.query;
   }
   set query(value: string) {
-    this._updateModel(this._model.connectionData, value, this._model.sessionId);
+    void this._updateModel(
+      this._model.connectionData,
+      value,
+      this._model.sessionId
+    );
   }
 
   /**
@@ -425,7 +429,7 @@ export class OmniSciTableModel extends DataModel {
         localRow / BLOCK_SIZE > 0.9 &&
         !this._dataBlocks[blockIndex + 1]
       ) {
-        this._fetchBlock(blockIndex + 1);
+        void this._fetchBlock(blockIndex + 1);
       }
 
       // Check if we should fetch the previous block.
@@ -434,14 +438,14 @@ export class OmniSciTableModel extends DataModel {
         localRow / BLOCK_SIZE < 0.1 &&
         !this._dataBlocks[blockIndex - 1]
       ) {
-        this._fetchBlock(blockIndex - 1);
+        void this._fetchBlock(blockIndex - 1);
       }
 
       // If the current block has not been loaded, then load it and
       // return null. The grid will be notified when it is loaded.
       // If the current block has been loaded, then return the data from it.
       if (!this._dataBlocks[blockIndex]) {
-        this._fetchBlock(blockIndex);
+        void this._fetchBlock(blockIndex);
         return null;
       } else {
         const block = this._dataBlocks[blockIndex];
@@ -704,13 +708,13 @@ namespace Private {
         new ToolbarButton({
           iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
           onClick: () => {
-            manager
+            void manager
               .chooseConnection(
                 'Set SQL Editor Connection',
                 widget.connectionData
               )
               .then(connectionData => {
-                widget.setConnectionData(connectionData);
+                return widget.setConnectionData(connectionData);
               });
           },
           tooltip: 'Enter OmniSci Connection Data'

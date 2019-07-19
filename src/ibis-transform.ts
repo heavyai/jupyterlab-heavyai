@@ -63,11 +63,11 @@ class QueryIbis extends dataflow.Transform implements Transform {
       console.error('Not connected to kernel');
       return;
     }
-    const comm = await kernel.connectToComm('queryibis');
+    const comm = kernel.connectToComm('queryibis');
 
     console.log('Fetching data', parameters, pulse);
 
-    comm.open(parameters);
+    await comm.open(parameters).done;
     const result: JSONObject[] = await new Promise(resolve => {
       comm.onMsg = msg => {
         resolve((msg.content.data as any) as JSONObject[]);

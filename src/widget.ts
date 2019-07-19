@@ -37,7 +37,7 @@ export class OmniSciVega extends Widget {
 
     // _vegaLite is just for debugging, in case we get an error, we can show it.
     this._vegaLite = options.vegaLite;
-    this._renderData();
+    void this._renderData();
   }
 
   get renderedImage(): Promise<string> {
