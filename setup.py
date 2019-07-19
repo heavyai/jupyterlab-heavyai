@@ -22,6 +22,7 @@ setup(
     install_requires=[
         "altair>=3.0.1",
         "ibis-framework>=1.1.0",
+        "ibis-vega-transform==0.1.0",
         "ipywidgets",
         "jupyterlab>=1.0.0",
         "pymapd>=0.12.0",
