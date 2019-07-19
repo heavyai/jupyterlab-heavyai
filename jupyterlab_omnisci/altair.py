@@ -13,7 +13,6 @@ import ibis.client
 import ipywidgets
 
 import altair
-import vdom
 import pandas
 from altair.vegalite.v3.display import default_renderer
 
@@ -144,7 +143,7 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
 
         return {"text/plain": ""}
 
-    return get_ipython().display_formatter.format(to_display(spec))[0]
+    return get_ipython().display_formatter.format(to_display(spec))[0]  # noqa: F821
 
 
 def interactive_chart(f, controls):

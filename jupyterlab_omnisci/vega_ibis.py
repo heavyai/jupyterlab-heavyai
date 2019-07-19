@@ -25,19 +25,19 @@ MIMETYPE = "application/vnd.vega.ibis.v5+json"
 
 # An empty vega spec to send when we get invalid data.
 EMPTY_VEGA = {
-  "$schema": "https://vega.github.io/schema/vega/v5.json",
-  "description": "An empty vega v5 spec",
-  "width": 500,
-  "height": 200,
-  "padding": 5,
-  "autosize": "pad",
-  "signals": [],
-  "data": [],
-  "scales": [],
-  "projections": [],
-  "axes": [],
-  "legends": [],
-  "marks": []
+    "$schema": "https://vega.github.io/schema/vega/v5.json",
+    "description": "An empty vega v5 spec",
+    "width": 500,
+    "height": 200,
+    "padding": 5,
+    "autosize": "pad",
+    "signals": [],
+    "data": [],
+    "scales": [],
+    "projections": [],
+    "axes": [],
+    "legends": [],
+    "marks": [],
 }
 
 
