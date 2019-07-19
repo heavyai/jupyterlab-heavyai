@@ -56,6 +56,7 @@ def monkeypatch_altair():
     handle ibis inputs
     """
     original_chart_init = altair.Chart.__init__
+    original_chart_to_dict = altair.Chart.to_dict
 
     def updated_chart_init(self, data=None, *args, **kwargs):
         """
@@ -67,12 +68,16 @@ def monkeypatch_altair():
             data = empty_dataframe(expr)
             data.ibis = expr
 
+        return original_chart_init(self, data=data, *args, **kwargs)
+
+    def updated_chart_to_dict(self, *args, **kwargs):
         with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            chart = original_chart_init(self, data=data, *args, **kwargs)
-        return chart
+            warnings.simplefilter("ignore", UserWarning)
+            spec = original_chart_to_dict(self, *args, **kwargs)
+        return spec
 
     altair.Chart.__init__ = updated_chart_init
+    altair.Chart.to_dict = updated_chart_to_dict
 
 
 DATA_NAME_PREFIX = "ibis:"
