@@ -5,3 +5,4 @@ dependencies:
   - pymapd
   - nodejs
   - python>=3.7
+  - jupyterlab
