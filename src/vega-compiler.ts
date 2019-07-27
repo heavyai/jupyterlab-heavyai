@@ -1,3 +1,5 @@
+import { TopLevelSpec } from 'vega-lite/src/spec';
+
 import { Kernel } from '@jupyterlab/services';
 
 import { PromiseDelegate } from '@phosphor/coreutils';
@@ -12,7 +14,7 @@ const PLUGIN_ID = 'jupyterlab-omnisci:vega-compiler';
  */
 export async function compileSpec(
   kernel: Kernel.IKernelConnection,
-  vlSpec: any
+  vlSpec: TopLevelSpec
 ): Promise<object> {
   // Compile vega-lite to vega
   const vSpec = compile(vlSpec).spec;
