@@ -4,7 +4,7 @@ import { Kernel } from '@jupyterlab/services';
 
 import { PromiseDelegate } from '@phosphor/coreutils';
 
-import { compile } from 'vega-lite/build/src/compile/compile';
+import { compile } from 'vega-lite';
 
 const PLUGIN_ID = 'jupyterlab-omnisci:vega-compiler';
 

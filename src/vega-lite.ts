@@ -1,4 +1,4 @@
-import { compile } from 'vega-lite/build/src/compile/compile';
+import { compile } from 'vega-lite';
 
 /**
  * Compiles a Mapd vega lite spec to a Mapd vega spec.
