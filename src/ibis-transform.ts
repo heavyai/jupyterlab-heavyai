@@ -73,7 +73,7 @@ class QueryIbis extends dataflow.Transform implements Transform {
     console.log('Fetching data', parameters, pulse);
     await comm.open(parameters).done;
     const result: JSONObject[] = await resultPromise.promise;
-    console.log('Recieved data', result);
+    console.log('Received data', result);
 
     // Ingest the data and push it into the dataflow graph.
     result.forEach(dataflow.ingest);
