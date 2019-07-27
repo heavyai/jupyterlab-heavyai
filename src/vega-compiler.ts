@@ -1,4 +1,4 @@
-import { TopLevelSpec } from 'vega-lite/src/spec';
+import { TopLevelSpec } from 'vega-lite';
 
 import { Kernel } from '@jupyterlab/services';
 
