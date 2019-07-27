@@ -192,7 +192,7 @@ create a tarball, and install it as a JupyterLab extension:
 ```bash
 yarn run build
 yarn pack --filename out.tgz
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
 jupyter labextension install out.tgz
 ```
 
@@ -207,6 +207,14 @@ twine upload dist/*
 
 And publish the node package:
 
-```
+```bash
 npm publish out.tgz
+```
+
+And add a git tag for the release and push:
+
+```bash
+git tag <new version>
+git push
+git push --tags
 ```
