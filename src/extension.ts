@@ -53,6 +53,8 @@ import {
   sqlEditorRendererFactory
 } from './mimeextensions';
 
+import vegaIbisPlugin from './vega-ibis';
+
 /**
  * The name of the factory that creates pdf widgets.
  */
@@ -205,7 +207,7 @@ function activateOmniSciVegaViewer(
   });
 
   // Handle state restoration.
-  restorer.restore(viewerTracker, {
+  void restorer.restore(viewerTracker, {
     command: 'docmanager:open',
     args: widget => ({ path: widget.context.path, factory: FACTORY }),
     name: widget => widget.context.path
@@ -215,7 +217,7 @@ function activateOmniSciVegaViewer(
   app.docRegistry.addWidgetFactory(factory);
 
   factory.widgetCreated.connect((sender, widget) => {
-    viewerTracker.add(widget);
+    void viewerTracker.add(widget);
 
     const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
@@ -275,7 +277,7 @@ function activateOmniSciGridViewer(
   });
 
   // Handle state restoration.
-  restorer.restore(gridTracker, {
+  void restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
     args: widget => {
       const con = widget.content.connectionData || {};
@@ -332,7 +334,7 @@ function activateOmniSciGridViewer(
       grid.content.style = style;
       grid.content.renderer = renderer;
     });
-    mimeGridTracker.forEach(mimeGrid => {
+    mimeGridTracker.forEach((mimeGrid: any) => {
       mimeGrid.widget.content.style = style;
       mimeGrid.widget.content.renderer = renderer;
     });
@@ -350,7 +352,7 @@ function activateOmniSciGridViewer(
   // Add the new renderer to an instance tracker when it is created.
   // This will track whether that instance has focus or not.
   sqlEditorRendererFactory.rendererCreated.connect((sender, mime) => {
-    mimeGridTracker.add(mime);
+    void mimeGridTracker.add(mime);
   });
   // When a new grid widget is added, hook up the machinery for
   // completions and theming.
@@ -448,11 +450,11 @@ function activateOmniSciGridViewer(
       grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
-      gridTracker.add(grid);
+      void gridTracker.add(grid);
       app.shell.add(grid, 'main');
       app.shell.activateById(grid.id);
       grid.content.onModelChanged.connect(() => {
-        gridTracker.save(grid);
+        void gridTracker.save(grid);
       });
       return grid;
     }
@@ -471,7 +473,7 @@ function activateOmniSciGridViewer(
     const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
       if (!grid.content.connectionData) {
-        grid.content.setConnectionData(defaultConnectionData);
+        void grid.content.setConnectionData(defaultConnectionData);
       }
     });
   });
@@ -631,7 +633,8 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciConnectionPlugin,
   omnisciVegaPlugin,
   omnisciGridPlugin,
-  omnisciNotebookPlugin
+  omnisciNotebookPlugin,
+  vegaIbisPlugin
 ];
 export default plugins;
 

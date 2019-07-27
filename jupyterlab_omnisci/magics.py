@@ -19,7 +19,7 @@ from IPython.display import display
 # by making `register_cell_magic a no-op in that case.
 try:
     get_ipython()  # noqa
-except:
+except Exception:
     register_cell_magic = lambda x: x
 
 
@@ -45,7 +45,7 @@ class OmniSciVegaRenderer:
 
         data: dict
             Vega data to render.
-        
+
         vl_data: dict
             Vega lite data to render.
         """
@@ -149,11 +149,11 @@ def omnisci_vegalite(line, cell):
 @register_cell_magic
 def omnisci_sqleditor(line, cell):
     """
-    Cell magic for rendering a SQL editor. 
+    Cell magic for rendering a SQL editor.
 
     Usage: Initiate it with the line `%% omnisci $connection_data`,
     where `connection_data` is the dictionary containing the connection
-    data for the OmniSci server. The rest of the cell should be 
+    data for the OmniSci server. The rest of the cell should be
     a SQL query for the initial value of the editor.
     """
     connection_data = ast.literal_eval(line)

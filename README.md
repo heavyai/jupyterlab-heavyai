@@ -19,10 +19,10 @@ conda install -c conda-forge pymapd nodejs
 pip install jupyterlab-omnisci
 ```
 
-Then install the `jupyterlab-omnisci` JupyterLab extension.
+Then install the `jupyterlab-omnisci` JupyterLab extension:
 
 ```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
 jupyter labextension install jupyterlab-omnisci
 ```
 
@@ -148,17 +148,18 @@ c.OmniSciConfig.session_manager = "your_new_module.YourImplementation"
 To install from source, run the following in a terminal:
 
 ```bash
-git clone https://github.com/Quansight/jupyterlab-omnisci
+git clone git@github.com:Quansight/jupyterlab-omnisci.git
+
 cd jupyterlab-omnisci
 conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
+
 jlpm install
 jlpm run build
 
-jupyter labextension install @jupyter-widgets/jupyterlab-manager@0.40.x --no-build
-
+jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
 jupyter labextension install .
-pip install -e .
+jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
 ```
 
 ## Releasing

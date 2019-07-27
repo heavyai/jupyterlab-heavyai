@@ -4,3 +4,5 @@ channels:
 dependencies:
   - pymapd
   - nodejs
+  - python>=3.7
+  - jupyterlab>=1.0
