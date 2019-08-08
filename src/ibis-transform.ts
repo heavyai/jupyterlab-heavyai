@@ -7,6 +7,20 @@ import * as dataflow from 'vega-dataflow';
 import { Transform } from 'vega';
 
 /**
+ * Tries parsing all values as dates.  Any that cannot be parsed are left alone
+ *
+ * https://github.com/Quansight/jupyterlab-omnisci/pull/85#issuecomment-519656950
+ */
+function parseDates(o: { [key: string]: any }): { [key: string]: any } {
+  const n: { [key: string]: any } = {};
+  for (const key in o) {
+    const parsed = Date.parse(o[key] as any);
+    n[key] = isNaN(parsed) ? o[key] : parsed;
+  }
+  return n;
+}
+
+/**
  * Generates a function to query data from an OmniSci Core database.
  * @constructor
  * @param {object} params - The parameters for this operator.
@@ -74,14 +88,16 @@ class QueryIbis extends dataflow.Transform implements Transform {
     await comm.open(parameters).done;
     const result: JSONObject[] = await resultPromise.promise;
     console.log('Received data', result);
+    const parsedResult = result.map(parseDates);
+    console.log('Parsed data', parsedResult);
 
     // Ingest the data and push it into the dataflow graph.
-    result.forEach(dataflow.ingest);
+    parsedResult.forEach(dataflow.ingest);
 
     /* tslint:disable-next-line */
     const out = pulse.fork(pulse.NO_FIELDS & pulse.NO_SOURCE);
     out.rem = this._value;
-    this._value = out.add = out.source = result;
+    this._value = out.add = out.source = parsedResult;
 
     return out;
   }
