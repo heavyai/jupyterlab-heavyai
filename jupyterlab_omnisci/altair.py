@@ -4,7 +4,6 @@ This file enables using Ibis expressions inside Altair charts.
 To use it, import it and enable the `ibis` renderer and `ibis` data transformer,
 then pass an Ibis expression directly to `altair.Chart`.
 """
-import typing
 import pprint
 
 import ibis
@@ -163,7 +162,7 @@ def extract_spec(spec, callback):
         callback(msg["content"]["data"])
 
 
-def empty(expr: ibis.Expr) -> pandas.DataFrame:
+def empty(expr):
     """
     Creates an empty DF for a ibis expression, based on the schema
 
@@ -172,7 +171,7 @@ def empty(expr: ibis.Expr) -> pandas.DataFrame:
     return expr.schema().apply_to(pandas.DataFrame(columns=expr.columns))
 
 
-def get_client(expr: ibis.Expr) -> ibis.client.Client:
+def get_client(expr):
     return expr.op().table.op().source
 
 
@@ -200,10 +199,10 @@ def monkeypatch_altair():
 
 _i = 0
 # Mapping from data name to ibis expression
-_name_to_ibis: typing.Dict[str, ibis.Expr] = {}
+_name_to_ibis = {}
 
 
-def spec_views(spec: dict):
+def spec_views(spec):
     """
     Given a vega lite spec, returns all the (possible) specifications in side of it:
     https://vega.github.io/vega-lite/docs/spec.html#documentation-overview
@@ -235,11 +234,11 @@ def ibis_transformation(data):
     return {"name": name}
 
 
-def translate_op(op: str) -> str:
+def translate_op(op):
     return {"mean": "mean", "average": "mean"}.get(op, op)
 
 
-def vl_aggregate_to_grouping_expr(expr: ibis.Expr, a: dict) -> ibis.Expr:
+def vl_aggregate_to_grouping_expr(expr, a):
     if "field" in a:
         expr = expr[a["field"]]
     op = translate_op(a["op"])
@@ -247,7 +246,7 @@ def vl_aggregate_to_grouping_expr(expr: ibis.Expr, a: dict) -> ibis.Expr:
     return expr.name(a["as"])
 
 
-def update_spec(expr: ibis.Expr, spec: dict):
+def update_spec(expr, spec):
     """
     Takes in an ibis expression and a spec, updating the spec and returning a new ibis expr
     """
@@ -310,7 +309,7 @@ altair.data_transformers.register("ibis", ibis_transformation)
 monkeypatch_altair()
 
 
-def display_chart(chart: altair.Chart, backend_render=False) -> None:
+def display_chart(chart, backend_render=False):
     """
     Given an Altair chart created around an Ibis expression, this displays the different
     stages of rendering of that chart.
