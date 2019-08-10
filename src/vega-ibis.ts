@@ -60,7 +60,7 @@ class VegaIbisRenderer extends Widget implements IRenderMime.IRenderer {
 
     ibisTransform.kernel = kernel;
     const vSpec = await compileSpec(kernel, vlSpec);
-    vegaEmbed(this.node, vSpec, {
+    await vegaEmbed(this.node, vSpec, {
       actions: true,
       defaultStyle: true,
       mode: 'vega'
