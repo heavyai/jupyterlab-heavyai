@@ -7,15 +7,24 @@ import * as dataflow from 'vega-dataflow';
 import { Transform } from 'vega';
 
 /**
- * Tries parsing all values as dates.  Any that cannot be parsed are left alone
+ * Tries parsing all string values as dates.  Any that cannot be parsed are left alone
  *
  * https://github.com/Quansight/jupyterlab-omnisci/pull/85#issuecomment-519656950
  */
 function parseDates(o: { [key: string]: any }): { [key: string]: any } {
   const n: { [key: string]: any } = {};
   for (const key in o) {
-    const parsed = Date.parse(o[key] as any);
-    n[key] = isNaN(parsed) ? o[key] : parsed;
+    const value = o[key];
+    let parsed;
+    if (typeof value === 'string') {
+      parsed = Date.parse(o[key] as any);
+      if (isNaN(parsed)) {
+        parsed = value;
+      }
+    } else {
+      parsed = value;
+    }
+    n[key] = parsed;
   }
   return n;
 }
@@ -84,7 +93,7 @@ class QueryIbis extends dataflow.Transform implements Transform {
     comm.onMsg = msg =>
       resultPromise.resolve((msg.content.data as any) as JSONObject[]);
 
-    console.log('Fetching data', parameters, pulse);
+    console.log('Fetching data', parameters);
     await comm.open(parameters).done;
     const result: JSONObject[] = await resultPromise.promise;
     console.log('Received data', result);
