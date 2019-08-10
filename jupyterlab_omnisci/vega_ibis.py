@@ -192,7 +192,10 @@ def query_target_func(comm, msg):
 
     _executed_expressions.append(expr)
 
-    data = expr.execute()
+    try:
+        data = expr.execute()
+    except ibis.common.UnsupportedOperationError:
+        raise NotImplementedError(f"Could not compile \n{expr}\n\ncreated from transforms:\n{transforms}")
     comm.send(altair.to_values(data)["values"])
 
 
