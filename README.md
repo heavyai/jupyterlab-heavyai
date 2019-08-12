@@ -154,6 +154,8 @@ cd jupyterlab-omnisci
 conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
 
+pip install -e . 
+
 jlpm install
 jlpm run build
 
