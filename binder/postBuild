@@ -2,7 +2,7 @@
 set -o errexit
 set -o xtrace
 
-pip install -e . git+https://github.com/saulshanabrook/vega-ibis-transform.git#datetime
+pip install -e . git+https://github.com/saulshanabrook/vega-ibis-transform.git@datetime
 jlpm install
 jlpm run build
 jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
