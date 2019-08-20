@@ -6,6 +6,7 @@ then pass an Ibis expression directly to `altair.Chart`.
 """
 import pprint
 from copy import copy
+import typing
 
 import ibis
 import ibis.client

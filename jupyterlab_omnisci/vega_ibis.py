@@ -6,6 +6,7 @@ import json
 import re
 import typing
 import warnings
+import IPython
 
 import altair
 import altair.vegalite.v3.display
@@ -131,10 +132,21 @@ def altair_renderer(spec):
 
 
 # For debugging
-_executed_expressions = []
+_executed_expressions: typing.List[str] = []
 _incoming_specs = []
 _outgoing_specs = []
 
+
+d = None
+
+def display_queries():
+    global d
+    d = IPython.display.display(IPython.display.Code(''), display_id=True)
+    _update_display()
+
+def _update_display():
+    if d:
+        d.update(IPython.display.Code('\n\n'.join(reversed(_executed_expressions))))
 
 def compiler_target_function(comm, msg):
     """
@@ -189,8 +201,11 @@ def query_target_func(comm, msg):
             raise ValueError(
                 f"Failed to convert {transforms} with error message message '{e}'"
             )
-
-    _executed_expressions.append(expr)
+    try:
+        _executed_expressions.append(expr.compile())
+    except ibis.common.UnsupportedOperationError:
+        raise NotImplementedError(f"Could not compile \n{expr}\n\ncreated from transforms:\n{transforms}")
+    _update_display()
 
     data = expr.execute()
     comm.send(altair.to_values(data)["values"])

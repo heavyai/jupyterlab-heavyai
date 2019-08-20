@@ -24,7 +24,7 @@ setup(
         "ibis-framework>=1.1.0",
         "ibis-vega-transform==0.1.0",
         "ipywidgets",
-        "jupyterlab>=1.0.0",
+        "jupyterlab==1.1.0-alpha.1",
         "pymapd>=0.12.0",
         "pyyaml",
         "vdom",

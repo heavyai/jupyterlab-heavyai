@@ -8,6 +8,7 @@ import { IRenderMime } from '@jupyterlab/rendermime';
 import { Widget } from '@phosphor/widgets';
 
 import * as vega from 'vega';
+import vegaEmbed from 'vega-embed';
 
 import ibisTransform from './ibis-transform';
 import { compileSpec } from './vega-compiler';
@@ -59,8 +60,12 @@ class VegaIbisRenderer extends Widget implements IRenderMime.IRenderer {
 
     ibisTransform.kernel = kernel;
     const vSpec = await compileSpec(kernel, vlSpec);
-    this._view = new vega.View(vega.parse(vSpec)).initialize(this.node);
-    await this._view.runAsync();
+    const res = await vegaEmbed(this.node, vSpec, {
+      actions: true,
+      defaultStyle: true,
+      mode: 'vega'
+    });
+    this._view = res.view;
   }
 
   get isDisposed(): boolean {
