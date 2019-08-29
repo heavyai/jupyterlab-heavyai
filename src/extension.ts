@@ -53,8 +53,6 @@ import {
   sqlEditorRendererFactory
 } from './mimeextensions';
 
-import vegaIbisPlugin from './vega-ibis';
-
 /**
  * The name of the factory that creates pdf widgets.
  */
@@ -633,8 +631,7 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   omnisciConnectionPlugin,
   omnisciVegaPlugin,
   omnisciGridPlugin,
-  omnisciNotebookPlugin,
-  vegaIbisPlugin
+  omnisciNotebookPlugin
 ];
 export default plugins;
 
