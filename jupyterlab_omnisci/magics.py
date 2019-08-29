@@ -169,7 +169,7 @@ def _make_connection(connection):
 
     Parameters
     ----------
-    connection: ibis.mapd.MapDClient or pymapd.Connection or dict
+    connection: ibis.omniscidb.OmniSciDBClient or pymapd.Connection or dict
         A connection object.
 
     Returns
@@ -179,7 +179,7 @@ def _make_connection(connection):
         if available. If the session id is not available (for instance, if
         a dict is provided), then returns None for the second item.
     """
-    if isinstance(connection, ibis.mapd.MapDClient):
+    if isinstance(connection, ibis.omniscidb.OmniSciDBClient):
         con = dict(
             host=connection.host,
             port=connection.port,
