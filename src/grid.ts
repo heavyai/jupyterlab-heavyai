@@ -6,6 +6,7 @@ import { Message } from '@phosphor/messaging';
 
 import {
   Panel,
+  PanelLayout,
   SplitLayout,
   SplitPanel,
   StackedPanel,
@@ -14,7 +15,7 @@ import {
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
-import { MainAreaWidget, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
+import { MainAreaWidget, ToolbarButton } from '@jupyterlab/apputils';
 
 import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
@@ -57,7 +58,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
     (content.layout as SplitLayout).addWidget(toolbar);
     (content.layout as SplitLayout).addWidget(grid);
     super({ content });
-    content.setRelativeSizes([0.15, 0.85]);
+    content.setRelativeSizes([0.1, 0.9]);
     this._grid = grid;
     this._tool = toolbar;
     this.addClass('omnisci-OmniSciSQLEditor');
@@ -134,7 +135,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
   }
 
   private _grid: OmniSciGrid;
-  private _tool: Toolbar;
+  private _tool: Panel;
 }
 
 /**
@@ -699,8 +700,8 @@ namespace Private {
     widget: OmniSciGrid,
     editorFactory: CodeEditor.Factory,
     manager?: IOmniSciConnectionManager
-  ): Toolbar {
-    const toolbar = new Toolbar();
+  ): Panel {
+    const toolbar = new Panel();
     toolbar.addClass('omnisci-OmniSci-toolbar');
 
     // Create the query editor.
@@ -713,9 +714,8 @@ namespace Private {
     queryEditor.editor.model.mimeType = 'text/x-sql';
 
     // Create the toolbar.
-    toolbar.addItem('QueryInput', queryEditor);
-    toolbar.addItem(
-      'Query',
+    (toolbar.layout as PanelLayout).addWidget(queryEditor);
+    (toolbar.layout as PanelLayout).addWidget(
       new ToolbarButton({
         iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
@@ -725,8 +725,7 @@ namespace Private {
       })
     );
     if (manager) {
-      toolbar.addItem(
-        'Connect',
+      (toolbar.layout as PanelLayout).addWidget(
         new ToolbarButton({
           iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
           onClick: () => {

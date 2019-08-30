@@ -1,5 +1,6 @@
 :root {
   --omnisci-vega-toolbar-height: calc(36px + var(--jp-border-width));
+  --omnisci-sqleditor-toolbar-min-height: 52px;
 }
 
 .omnisci-ErrorMessage {
@@ -27,21 +28,28 @@
   min-height: 512px;
 }
 
-.jp-Toolbar.omnisci-OmniSci-toolbar {
+.omnisci-OmniSci-toolbar {
   justify-content: right;
   align-items: center;
   padding: 12px;
+  display: flex;
+  flex-direction: row;
+  color: var(--jp-ui-font-color1);
+  border-bottom: var(--jp-border-width) solid var(--jp-toolbar-border-color);
+  box-shadow: var(--jp-toolbar-box-shadow);
+  background: var(--jp-toolbar-background);
+  min-height: var(--omnisci-sqleditor-toolbar-min-height);
 }
 
 .omnisci-OmniSciVegaViewer .jp-Toolbar.omnisci-OmniSci-toolbar {
   height: var(--omnisci-vega-toolbar-height) !important;
 }
 
-.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Toolbar-item {
+.omnisci-OmniSci-toolbar .jp-Toolbar-item {
   height: auto;
 }
 
-.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor {
+.omnisci-OmniSci-toolbar .jp-Editor {
   flex: 1 1 auto;
   font-size: 1em;
   font-family: monospace;
@@ -50,13 +58,13 @@
   height: 100%;
 }
 
-.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {
+.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {
   border: var(--jp-border-width) solid var(--jp-cell-editor-active-border-color);
   box-shadow: var(--jp-input-box-shadow);
   background-color: var(--jp-cell-editor-active-background);
 }
 
-.jp-Toolbar.omnisci-OmniSci-toolbar .jp-Editor .CodeMirror {
+.omnisci-OmniSci-toolbar .jp-Editor .CodeMirror {
   width: 100%;
 }
 
