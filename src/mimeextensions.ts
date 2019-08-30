@@ -159,11 +159,8 @@ export class RenderedOmniSciSQLEditor extends Widget
     if (!data) {
       return Promise.resolve(void 0);
     }
-    await this._widget.content.setConnectionData(
-      data.connection,
-      data.sessionId
-    );
-    this._widget.content.query = data.query || '';
+    await this._widget.grid.setConnectionData(data.connection, data.sessionId);
+    this._widget.grid.query = data.query || '';
     return Promise.resolve(void 0);
   }
 

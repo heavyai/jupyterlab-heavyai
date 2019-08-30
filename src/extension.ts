@@ -278,15 +278,15 @@ function activateOmniSciGridViewer(
   void restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
     args: widget => {
-      const con = widget.content.connectionData || {};
+      const con = widget.grid.connectionData || {};
       const connection = {
         host: con.host || '',
         protocol: con.protocol || '',
         port: con.port || ''
       };
-      const sessionId = widget.content.sessionId;
+      const sessionId = widget.grid.sessionId;
       return {
-        initialQuery: widget.content.query,
+        initialQuery: widget.grid.query,
         connectionData: connection,
         sessionId: sessionId || null
       };
@@ -297,24 +297,24 @@ function activateOmniSciGridViewer(
   // Create a completion handler for each grid that is created.
   gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.input.editor;
-    const sessionId = explorer.content.sessionId;
+    const sessionId = explorer.grid.sessionId;
     const connector = new OmniSciCompletionConnector({
-      connection: explorer.content.connectionData,
+      connection: explorer.grid.connectionData,
       sessionId
     });
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
-    explorer.content.onModelChanged.connect(() => {
-      const sessionId = explorer.content.sessionId;
+    explorer.grid.onModelChanged.connect(() => {
+      const sessionId = explorer.grid.sessionId;
       handle.connector = new OmniSciCompletionConnector({
-        connection: explorer.content.connectionData,
+        connection: explorer.grid.connectionData,
         sessionId
       });
     });
     // Set the theme for the new widget.
-    explorer.content.style = style;
-    explorer.content.renderer = renderer;
+    explorer.grid.style = style;
+    explorer.grid.renderer = renderer;
   });
 
   // The current styles for the data grids.
@@ -329,8 +329,8 @@ function activateOmniSciGridViewer(
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
     renderer = isLight ? Private.LIGHT_RENDERER : Private.DARK_RENDERER;
     gridTracker.forEach(grid => {
-      grid.content.style = style;
-      grid.content.renderer = renderer;
+      grid.grid.style = style;
+      grid.grid.renderer = renderer;
     });
     mimeGridTracker.forEach((mimeGrid: any) => {
       mimeGrid.widget.content.style = style;
@@ -356,24 +356,24 @@ function activateOmniSciGridViewer(
   // completions and theming.
   mimeGridTracker.widgetAdded.connect((sender, mime) => {
     const grid = mime.widget;
-    const sessionId = grid.content.sessionId;
+    const sessionId = grid.grid.sessionId;
     const editor = grid.input.editor;
     const connector = new OmniSciCompletionConnector({
-      connection: grid.content.connectionData,
+      connection: grid.grid.connectionData,
       sessionId
     });
     const parent = mime;
     const handle = completionManager.register({ connector, editor, parent });
 
-    grid.content.onModelChanged.connect(() => {
-      const sessionId = grid.content.sessionId;
+    grid.grid.onModelChanged.connect(() => {
+      const sessionId = grid.grid.sessionId;
       handle.connector = new OmniSciCompletionConnector({
-        connection: grid.content.connectionData,
+        connection: grid.grid.connectionData,
         sessionId
       });
     });
-    mime.widget.content.style = style;
-    mime.widget.content.renderer = renderer;
+    mime.widget.grid.style = style;
+    mime.widget.grid.renderer = renderer;
   });
 
   // Add grid completer command.
@@ -451,7 +451,7 @@ function activateOmniSciGridViewer(
       void gridTracker.add(grid);
       app.shell.add(grid, 'main');
       app.shell.activateById(grid.id);
-      grid.content.onModelChanged.connect(() => {
+      grid.grid.onModelChanged.connect(() => {
         void gridTracker.save(grid);
       });
       return grid;
@@ -470,8 +470,8 @@ function activateOmniSciGridViewer(
   manager.changed.connect(() => {
     const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
-      if (!grid.content.connectionData) {
-        void grid.content.setConnectionData(defaultConnectionData);
+      if (!grid.grid.connectionData) {
+        void grid.grid.setConnectionData(defaultConnectionData);
       }
     });
   });

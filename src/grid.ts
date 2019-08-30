@@ -4,7 +4,13 @@ import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
 
 import { Message } from '@phosphor/messaging';
 
-import { Panel, StackedPanel, Widget } from '@phosphor/widgets';
+import {
+  Panel,
+  SplitLayout,
+  SplitPanel,
+  StackedPanel,
+  Widget
+} from '@phosphor/widgets';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
@@ -29,7 +35,7 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
+export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
   /**
    * Construct a new OmniSciSQLEditor widget.
    */
@@ -37,17 +43,23 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
     const connection =
       options.connectionData ||
       (options.manager && options.manager.defaultConnection);
-    const content = new OmniSciGrid({
+    const content = new SplitPanel({ orientation: 'vertical', spacing: 0 });
+    const grid = new OmniSciGrid({
       connectionData: connection,
       sessionId: options.sessionId,
       initialQuery: options.initialQuery || ''
     });
     const toolbar = Private.createToolbar(
-      content,
+      grid,
       options.editorFactory,
       options.manager
     );
-    super({ content, toolbar });
+    (content.layout as SplitLayout).addWidget(toolbar);
+    (content.layout as SplitLayout).addWidget(grid);
+    super({ content });
+    content.setRelativeSizes([0.15, 0.85]);
+    this._grid = grid;
+    this._tool = toolbar;
     this.addClass('omnisci-OmniSciSQLEditor');
   }
 
@@ -55,7 +67,14 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    * Get a reference to the input editor.
    */
   get input(): CodeEditorWrapper {
-    return this.toolbar.children().next() as CodeEditorWrapper;
+    return this._tool.children().next() as CodeEditorWrapper;
+  }
+
+  /**
+   * Get a reference to the grid widget.
+   */
+  get grid(): OmniSciGrid {
+    return this._grid;
   }
 
   /**
@@ -75,7 +94,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
           case 13: // Enter
             event.stopPropagation();
             event.preventDefault();
-            this.content.query = this.input.editor.model.value.text;
+            this._grid.query = this.input.editor.model.value.text;
             break;
           default:
             break;
@@ -113,6 +132,9 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
   private _focusInput(): void {
     this.input.activate();
   }
+
+  private _grid: OmniSciGrid;
+  private _tool: Toolbar;
 }
 
 /**
