@@ -24,8 +24,20 @@
   height: 100%;
 }
 
-.jp-Notebook .jp-Cell .jp-OutputArea .omnisci-OmniSciGrid {
-  min-height: 512px;
+.omnisci-RenderedOmniSciSQLEditor .omnisci-OmniSciSQLEditor {
+  height: 100%;
+}
+
+.jp-Cell .jp-OutputArea-output.omnisci-RenderedOmniSciSQLEditor {
+  min-height: calc(384px + var(--omnisci-sqleditor-toolbar-min-height));
+}
+
+.omnisci-OmniSciSQLEditor .p-SplitPanel {
+  height: 100%;
+}
+
+.omnisci-OmniSciGrid {
+  min-height: 128px;
 }
 
 .omnisci-OmniSci-toolbar {

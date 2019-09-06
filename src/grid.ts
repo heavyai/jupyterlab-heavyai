@@ -7,7 +7,6 @@ import { Message } from '@phosphor/messaging';
 import {
   Panel,
   PanelLayout,
-  SplitLayout,
   SplitPanel,
   StackedPanel,
   Widget
@@ -15,7 +14,7 @@ import {
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
-import { MainAreaWidget, ToolbarButton } from '@jupyterlab/apputils';
+import { ToolbarButton } from '@jupyterlab/apputils';
 
 import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
@@ -36,15 +35,17 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
+export class OmniSciSQLEditor extends Panel {
   /**
    * Construct a new OmniSciSQLEditor widget.
    */
   constructor(options: OmniSciSQLEditor.IOptions) {
+    super();
+    const content = new SplitPanel({ orientation: 'vertical', spacing: 2 });
+    this.addWidget(content);
     const connection =
       options.connectionData ||
       (options.manager && options.manager.defaultConnection);
-    const content = new SplitPanel({ orientation: 'vertical', spacing: 0 });
     const grid = new OmniSciGrid({
       connectionData: connection,
       sessionId: options.sessionId,
@@ -55,10 +56,9 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
       options.editorFactory,
       options.manager
     );
-    (content.layout as SplitLayout).addWidget(toolbar);
-    (content.layout as SplitLayout).addWidget(grid);
-    super({ content });
-    content.setRelativeSizes([0.1, 0.9]);
+    content.addWidget(toolbar);
+    content.addWidget(grid);
+    this._content = content;
     this._grid = grid;
     this._tool = toolbar;
     this.addClass('omnisci-OmniSciSQLEditor');
@@ -111,6 +111,10 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
    */
   protected onAfterAttach(msg: Message): void {
     this.input.node.addEventListener('keydown', this, true);
+    requestAnimationFrame(() => {
+      this._content.setRelativeSizes([1, 6]);
+    });
+    super.onAfterAttach(msg);
   }
 
   /**
@@ -118,6 +122,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
    */
   protected onBeforeDetach(msg: Message): void {
     this.input.node.removeEventListener('keydown', this, true);
+    super.onBeforeDetach(msg);
   }
 
   /**
@@ -125,6 +130,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
    */
   protected onActivateRequest(msg: Message): void {
     this._focusInput();
+    super.onActivateRequest(msg);
   }
 
   /**
@@ -134,6 +140,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<Widget> {
     this.input.activate();
   }
 
+  private _content: SplitPanel;
   private _grid: OmniSciGrid;
   private _tool: Panel;
 }

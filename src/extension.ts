@@ -7,8 +7,9 @@ import {
 
 import {
   ICommandPalette,
-  WidgetTracker,
-  IThemeManager
+  IThemeManager,
+  MainAreaWidget,
+  WidgetTracker
 } from '@jupyterlab/apputils';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
@@ -270,7 +271,7 @@ function activateOmniSciGridViewer(
   const gridNamespace = 'omnisci-grid-widget';
   const mimeGridNamespace = 'omnisci-mime-grid-widget';
 
-  const gridTracker = new WidgetTracker<OmniSciSQLEditor>({
+  const gridTracker = new WidgetTracker<MainAreaWidget<OmniSciSQLEditor>>({
     namespace: gridNamespace
   });
 
@@ -278,15 +279,15 @@ function activateOmniSciGridViewer(
   void restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
     args: widget => {
-      const con = widget.grid.connectionData || {};
+      const con = widget.content.grid.connectionData || {};
       const connection = {
         host: con.host || '',
         protocol: con.protocol || '',
         port: con.port || ''
       };
-      const sessionId = widget.grid.sessionId;
+      const sessionId = widget.content.grid.sessionId;
       return {
-        initialQuery: widget.grid.query,
+        initialQuery: widget.content.grid.query,
         connectionData: connection,
         sessionId: sessionId || null
       };
@@ -296,25 +297,25 @@ function activateOmniSciGridViewer(
 
   // Create a completion handler for each grid that is created.
   gridTracker.widgetAdded.connect((sender, explorer) => {
-    const editor = explorer.input.editor;
-    const sessionId = explorer.grid.sessionId;
+    const editor = explorer.content.input.editor;
+    const sessionId = explorer.content.grid.sessionId;
     const connector = new OmniSciCompletionConnector({
-      connection: explorer.grid.connectionData,
+      connection: explorer.content.grid.connectionData,
       sessionId
     });
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
-    explorer.grid.onModelChanged.connect(() => {
-      const sessionId = explorer.grid.sessionId;
+    explorer.content.grid.onModelChanged.connect(() => {
+      const sessionId = explorer.content.grid.sessionId;
       handle.connector = new OmniSciCompletionConnector({
-        connection: explorer.grid.connectionData,
+        connection: explorer.content.grid.connectionData,
         sessionId
       });
     });
     // Set the theme for the new widget.
-    explorer.grid.style = style;
-    explorer.grid.renderer = renderer;
+    explorer.content.grid.style = style;
+    explorer.content.grid.renderer = renderer;
   });
 
   // The current styles for the data grids.
@@ -329,8 +330,8 @@ function activateOmniSciGridViewer(
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
     renderer = isLight ? Private.LIGHT_RENDERER : Private.DARK_RENDERER;
     gridTracker.forEach(grid => {
-      grid.grid.style = style;
-      grid.grid.renderer = renderer;
+      grid.content.grid.style = style;
+      grid.content.grid.renderer = renderer;
     });
     mimeGridTracker.forEach((mimeGrid: any) => {
       mimeGrid.widget.content.style = style;
@@ -448,13 +449,14 @@ function activateOmniSciGridViewer(
       grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
-      void gridTracker.add(grid);
-      app.shell.add(grid, 'main');
-      app.shell.activateById(grid.id);
+      const main = new MainAreaWidget({ content: grid });
+      void gridTracker.add(main);
+      app.shell.add(main, 'main');
+      app.shell.activateById(main.id);
       grid.grid.onModelChanged.connect(() => {
-        void gridTracker.save(grid);
+        void gridTracker.save(main);
       });
-      return grid;
+      return main;
     }
   });
   mainMenu.fileMenu.newMenu.addGroup([{ command: CommandIDs.newGrid }], 50);
@@ -470,8 +472,8 @@ function activateOmniSciGridViewer(
   manager.changed.connect(() => {
     const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
-      if (!grid.grid.connectionData) {
-        void grid.grid.setConnectionData(defaultConnectionData);
+      if (!grid.content.grid.connectionData) {
+        void grid.content.grid.setConnectionData(defaultConnectionData);
       }
     });
   });
