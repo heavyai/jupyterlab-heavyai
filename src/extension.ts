@@ -16,7 +16,7 @@ import { IEditorServices } from '@jupyterlab/codeeditor';
 
 import { ICompletionManager } from '@jupyterlab/completer';
 
-import { ISettingRegistry, IStateDB, URLExt } from '@jupyterlab/coreutils';
+import { ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
@@ -251,7 +251,6 @@ const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
     ILayoutRestorer,
     IMainMenu,
     IOmniSciConnectionManager,
-    IStateDB,
     IThemeManager
   ],
   autoStart: true
@@ -265,7 +264,6 @@ function activateOmniSciGridViewer(
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
   manager: IOmniSciConnectionManager,
-  state: IStateDB,
   themeManager: IThemeManager
 ): void {
   const gridNamespace = 'omnisci-grid-widget';
@@ -450,6 +448,7 @@ function activateOmniSciGridViewer(
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
       const main = new MainAreaWidget({ content: grid });
+      main.id = grid.id;
       void gridTracker.add(main);
       app.shell.add(main, 'main');
       app.shell.activateById(main.id);
