@@ -93,9 +93,11 @@ export class OmniSciSQLEditor extends Panel {
       case 'keydown':
         switch (event.keyCode) {
           case 13: // Enter
-            event.stopPropagation();
-            event.preventDefault();
-            this._grid.query = this.input.editor.model.value.text;
+            if (event.shiftKey) {
+              event.stopPropagation();
+              event.preventDefault();
+              this._grid.query = this.input.editor.model.value.text;
+            }
             break;
           default:
             break;
