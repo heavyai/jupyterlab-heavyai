@@ -1,6 +1,13 @@
 import { JSONExt, JSONObject } from '@phosphor/coreutils';
 
-import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
+import {
+  BasicKeyHandler,
+  BasicMouseHandler,
+  BasicSelectionModel,
+  DataGrid,
+  DataModel,
+  TextRenderer
+} from '@phosphor/datagrid';
 
 import { Message } from '@phosphor/messaging';
 
@@ -208,19 +215,26 @@ export class OmniSciGrid extends Panel {
       textColor: '#111111',
       horizontalAlignment: 'right'
     });
-    const gridStyle: DataGrid.IStyle = {
+    const gridStyle: DataGrid.Style = {
       ...DataGrid.defaultStyle,
       rowBackgroundColor: i => (i % 2 === 0 ? 'rgba(34, 167, 240, 0.2)' : '')
     };
     this._grid = new DataGrid({
       style: gridStyle,
-      baseRowSize: 24,
-      baseColumnSize: 144,
-      baseColumnHeaderSize: 36,
-      baseRowHeaderSize: 64
+      defaultSizes: {
+        rowHeight: 24,
+        columnWidth: 144,
+        rowHeaderWidth: 64,
+        columnHeaderHeight: 36
+      }
     });
     this._grid.defaultRenderer = renderer;
-    this._grid.model = this._model;
+    this._grid.dataModel = this._model;
+    this._grid.mouseHandler = new BasicMouseHandler();
+    this._grid.keyHandler = new BasicKeyHandler();
+    this._grid.selectionModel = new BasicSelectionModel({
+      dataModel: this._model
+    });
     this._content.addWidget(this._grid);
     this._content.hide(); // Initially hide the grid until we set the query.
 
@@ -248,10 +262,10 @@ export class OmniSciGrid extends Panel {
   /**
    * The current style used by the grid viewer.
    */
-  get style(): DataGrid.IStyle {
+  get style(): DataGrid.Style {
     return this._grid.style;
   }
-  set style(value: DataGrid.IStyle) {
+  set style(value: DataGrid.Style) {
     this._grid.style = value;
   }
 
@@ -608,8 +622,8 @@ export class OmniSciTableModel extends DataModel {
       this.emitChanged({
         type: 'cells-changed',
         region: 'body',
-        rowIndex: offset,
-        columnIndex: 0,
+        row: offset,
+        column: 0,
         rowSpan: res.results.length,
         columnSpan: this._fieldNames.length
       });
@@ -643,8 +657,8 @@ export class OmniSciTableModel extends DataModel {
     this.emitChanged({
       type: 'cells-changed',
       region: 'body',
-      rowIndex: offset,
-      columnIndex: 0,
+      row: offset,
+      column: 0,
       rowSpan: length,
       columnSpan: this._fieldNames.length
     });
@@ -671,8 +685,8 @@ export class OmniSciTableModel extends DataModel {
       this.emitChanged({
         type: 'cells-changed',
         region: 'body',
-        rowIndex: 0,
-        columnIndex: 0,
+        row: 0,
+        column: 0,
         rowSpan: res.results.length,
         columnSpan: this._fieldNames.length
       });

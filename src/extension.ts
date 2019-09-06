@@ -317,7 +317,7 @@ function activateOmniSciGridViewer(
   });
 
   // The current styles for the data grids.
-  let style: DataGrid.IStyle = Private.LIGHT_STYLE;
+  let style: DataGrid.Style = Private.LIGHT_STYLE;
   let renderer: TextRenderer = Private.LIGHT_RENDERER;
 
   // Keep the themes up-to-date.
@@ -699,25 +699,45 @@ namespace Private {
   /**
    * The light theme for the data grid.
    */
-  export const LIGHT_STYLE: DataGrid.IStyle = {
+  export const LIGHT_STYLE: DataGrid.Style = {
     ...DataGrid.defaultStyle,
     voidColor: '#F3F3F3',
     backgroundColor: 'white',
     headerBackgroundColor: '#EEEEEE',
     gridLineColor: 'rgba(20, 20, 20, 0.15)',
     headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
+    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white'),
+    selectionFillColor: 'rgba(49, 119, 229, 0.2)',
+    selectionBorderColor: 'rgba(0, 107, 247, 1.0)',
+    cursorBorderColor: 'rgba(0, 107, 247, 1.0)',
+    headerSelectionFillColor: 'rgba(20, 20, 20, 0.1)',
+    scrollShadow: {
+      size: 10,
+      color1: 'rgba(0, 0, 0, 0.20)',
+      color2: 'rgba(0, 0, 0, 0.05)',
+      color3: 'rgba(0, 0, 0, 0.00)'
+    }
   };
   /**
    * The dark theme for the data grid.
    */
-  export const DARK_STYLE: DataGrid.IStyle = {
+  export const DARK_STYLE: DataGrid.Style = {
     voidColor: 'black',
     backgroundColor: '#111111',
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
     headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111'),
+    selectionFillColor: 'rgba(49, 119, 229, 0.2)',
+    selectionBorderColor: 'rgba(0, 107, 247, 1.0)',
+    cursorBorderColor: 'rgba(0, 107, 247, 1.0)',
+    headerSelectionFillColor: 'rgba(20, 20, 20, 0.2)',
+    scrollShadow: {
+      size: 10,
+      color1: 'rgba(0, 0, 0, 0.20)',
+      color2: 'rgba(0, 0, 0, 0.05)',
+      color3: 'rgba(0, 0, 0, 0.00)'
+    }
   };
   /**
    * The light renderer for the data grid.
