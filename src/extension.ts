@@ -7,15 +7,16 @@ import {
 
 import {
   ICommandPalette,
-  WidgetTracker,
-  IThemeManager
+  IThemeManager,
+  MainAreaWidget,
+  WidgetTracker
 } from '@jupyterlab/apputils';
 
 import { IEditorServices } from '@jupyterlab/codeeditor';
 
 import { ICompletionManager } from '@jupyterlab/completer';
 
-import { ISettingRegistry, IStateDB, URLExt } from '@jupyterlab/coreutils';
+import { ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
@@ -250,7 +251,6 @@ const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
     ILayoutRestorer,
     IMainMenu,
     IOmniSciConnectionManager,
-    IStateDB,
     IThemeManager
   ],
   autoStart: true
@@ -264,13 +264,12 @@ function activateOmniSciGridViewer(
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
   manager: IOmniSciConnectionManager,
-  state: IStateDB,
   themeManager: IThemeManager
 ): void {
   const gridNamespace = 'omnisci-grid-widget';
   const mimeGridNamespace = 'omnisci-mime-grid-widget';
 
-  const gridTracker = new WidgetTracker<OmniSciSQLEditor>({
+  const gridTracker = new WidgetTracker<MainAreaWidget<OmniSciSQLEditor>>({
     namespace: gridNamespace
   });
 
@@ -278,15 +277,15 @@ function activateOmniSciGridViewer(
   void restorer.restore(gridTracker, {
     command: CommandIDs.newGrid,
     args: widget => {
-      const con = widget.content.connectionData || {};
+      const con = widget.content.grid.connectionData || {};
       const connection = {
         host: con.host || '',
         protocol: con.protocol || '',
         port: con.port || ''
       };
-      const sessionId = widget.content.sessionId;
+      const sessionId = widget.content.grid.sessionId;
       return {
-        initialQuery: widget.content.query,
+        initialQuery: widget.content.grid.query,
         connectionData: connection,
         sessionId: sessionId || null
       };
@@ -296,29 +295,29 @@ function activateOmniSciGridViewer(
 
   // Create a completion handler for each grid that is created.
   gridTracker.widgetAdded.connect((sender, explorer) => {
-    const editor = explorer.input.editor;
-    const sessionId = explorer.content.sessionId;
+    const editor = explorer.content.input.editor;
+    const sessionId = explorer.content.grid.sessionId;
     const connector = new OmniSciCompletionConnector({
-      connection: explorer.content.connectionData,
+      connection: explorer.content.grid.connectionData,
       sessionId
     });
     const parent = explorer;
     const handle = completionManager.register({ connector, editor, parent });
 
-    explorer.content.onModelChanged.connect(() => {
-      const sessionId = explorer.content.sessionId;
+    explorer.content.grid.onModelChanged.connect(() => {
+      const sessionId = explorer.content.grid.sessionId;
       handle.connector = new OmniSciCompletionConnector({
-        connection: explorer.content.connectionData,
+        connection: explorer.content.grid.connectionData,
         sessionId
       });
     });
     // Set the theme for the new widget.
-    explorer.content.style = style;
-    explorer.content.renderer = renderer;
+    explorer.content.grid.style = style;
+    explorer.content.grid.renderer = renderer;
   });
 
   // The current styles for the data grids.
-  let style: DataGrid.IStyle = Private.LIGHT_STYLE;
+  let style: DataGrid.Style = Private.LIGHT_STYLE;
   let renderer: TextRenderer = Private.LIGHT_RENDERER;
 
   // Keep the themes up-to-date.
@@ -329,8 +328,8 @@ function activateOmniSciGridViewer(
     style = isLight ? Private.LIGHT_STYLE : Private.DARK_STYLE;
     renderer = isLight ? Private.LIGHT_RENDERER : Private.DARK_RENDERER;
     gridTracker.forEach(grid => {
-      grid.content.style = style;
-      grid.content.renderer = renderer;
+      grid.content.grid.style = style;
+      grid.content.grid.renderer = renderer;
     });
     mimeGridTracker.forEach((mimeGrid: any) => {
       mimeGrid.widget.content.style = style;
@@ -356,24 +355,24 @@ function activateOmniSciGridViewer(
   // completions and theming.
   mimeGridTracker.widgetAdded.connect((sender, mime) => {
     const grid = mime.widget;
-    const sessionId = grid.content.sessionId;
+    const sessionId = grid.grid.sessionId;
     const editor = grid.input.editor;
     const connector = new OmniSciCompletionConnector({
-      connection: grid.content.connectionData,
+      connection: grid.grid.connectionData,
       sessionId
     });
     const parent = mime;
     const handle = completionManager.register({ connector, editor, parent });
 
-    grid.content.onModelChanged.connect(() => {
-      const sessionId = grid.content.sessionId;
+    grid.grid.onModelChanged.connect(() => {
+      const sessionId = grid.grid.sessionId;
       handle.connector = new OmniSciCompletionConnector({
-        connection: grid.content.connectionData,
+        connection: grid.grid.connectionData,
         sessionId
       });
     });
-    mime.widget.content.style = style;
-    mime.widget.content.renderer = renderer;
+    mime.widget.grid.style = style;
+    mime.widget.grid.renderer = renderer;
   });
 
   // Add grid completer command.
@@ -448,13 +447,15 @@ function activateOmniSciGridViewer(
       grid.title.label = `OmniSci SQL Editor ${Private.id}`;
       grid.title.closable = true;
       grid.title.iconClass = 'omnisci-OmniSci-logo';
-      void gridTracker.add(grid);
-      app.shell.add(grid, 'main');
-      app.shell.activateById(grid.id);
-      grid.content.onModelChanged.connect(() => {
-        void gridTracker.save(grid);
+      const main = new MainAreaWidget({ content: grid });
+      main.id = grid.id;
+      void gridTracker.add(main);
+      app.shell.add(main, 'main');
+      app.shell.activateById(main.id);
+      grid.grid.onModelChanged.connect(() => {
+        void gridTracker.save(main);
       });
-      return grid;
+      return main;
     }
   });
   mainMenu.fileMenu.newMenu.addGroup([{ command: CommandIDs.newGrid }], 50);
@@ -470,8 +471,8 @@ function activateOmniSciGridViewer(
   manager.changed.connect(() => {
     const defaultConnectionData = manager.defaultConnection;
     gridTracker.forEach(grid => {
-      if (!grid.content.connectionData) {
-        void grid.content.setConnectionData(defaultConnectionData);
+      if (!grid.content.grid.connectionData) {
+        void grid.content.grid.setConnectionData(defaultConnectionData);
       }
     });
   });
@@ -698,25 +699,45 @@ namespace Private {
   /**
    * The light theme for the data grid.
    */
-  export const LIGHT_STYLE: DataGrid.IStyle = {
+  export const LIGHT_STYLE: DataGrid.Style = {
     ...DataGrid.defaultStyle,
     voidColor: '#F3F3F3',
     backgroundColor: 'white',
     headerBackgroundColor: '#EEEEEE',
     gridLineColor: 'rgba(20, 20, 20, 0.15)',
     headerGridLineColor: 'rgba(20, 20, 20, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white')
+    rowBackgroundColor: i => (i % 2 === 0 ? '#F5F5F5' : 'white'),
+    selectionFillColor: 'rgba(49, 119, 229, 0.2)',
+    selectionBorderColor: 'rgba(0, 107, 247, 1.0)',
+    cursorBorderColor: 'rgba(0, 107, 247, 1.0)',
+    headerSelectionFillColor: 'rgba(20, 20, 20, 0.1)',
+    scrollShadow: {
+      size: 10,
+      color1: 'rgba(0, 0, 0, 0.20)',
+      color2: 'rgba(0, 0, 0, 0.05)',
+      color3: 'rgba(0, 0, 0, 0.00)'
+    }
   };
   /**
    * The dark theme for the data grid.
    */
-  export const DARK_STYLE: DataGrid.IStyle = {
+  export const DARK_STYLE: DataGrid.Style = {
     voidColor: 'black',
     backgroundColor: '#111111',
     headerBackgroundColor: '#424242',
     gridLineColor: 'rgba(235, 235, 235, 0.15)',
     headerGridLineColor: 'rgba(235, 235, 235, 0.25)',
-    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111')
+    rowBackgroundColor: i => (i % 2 === 0 ? '#212121' : '#111111'),
+    selectionFillColor: 'rgba(49, 119, 229, 0.2)',
+    selectionBorderColor: 'rgba(0, 107, 247, 1.0)',
+    cursorBorderColor: 'rgba(0, 107, 247, 1.0)',
+    headerSelectionFillColor: 'rgba(20, 20, 20, 0.2)',
+    scrollShadow: {
+      size: 10,
+      color1: 'rgba(0, 0, 0, 0.20)',
+      color2: 'rgba(0, 0, 0, 0.05)',
+      color3: 'rgba(0, 0, 0, 0.00)'
+    }
   };
   /**
    * The light renderer for the data grid.

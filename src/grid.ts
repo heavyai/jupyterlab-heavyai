@@ -1,14 +1,27 @@
 import { JSONExt, JSONObject } from '@phosphor/coreutils';
 
-import { DataGrid, DataModel, TextRenderer } from '@phosphor/datagrid';
+import {
+  BasicKeyHandler,
+  BasicMouseHandler,
+  BasicSelectionModel,
+  DataGrid,
+  DataModel,
+  TextRenderer
+} from '@phosphor/datagrid';
 
 import { Message } from '@phosphor/messaging';
 
-import { Panel, StackedPanel, Widget } from '@phosphor/widgets';
+import {
+  Panel,
+  PanelLayout,
+  SplitPanel,
+  StackedPanel,
+  Widget
+} from '@phosphor/widgets';
 
 import { ISignal, Signal } from '@phosphor/signaling';
 
-import { MainAreaWidget, Toolbar, ToolbarButton } from '@jupyterlab/apputils';
+import { ToolbarButton } from '@jupyterlab/apputils';
 
 import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
@@ -29,25 +42,32 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
+export class OmniSciSQLEditor extends Panel {
   /**
    * Construct a new OmniSciSQLEditor widget.
    */
   constructor(options: OmniSciSQLEditor.IOptions) {
+    super();
+    const content = new SplitPanel({ orientation: 'vertical', spacing: 2 });
+    this.addWidget(content);
     const connection =
       options.connectionData ||
       (options.manager && options.manager.defaultConnection);
-    const content = new OmniSciGrid({
+    const grid = new OmniSciGrid({
       connectionData: connection,
       sessionId: options.sessionId,
       initialQuery: options.initialQuery || ''
     });
     const toolbar = Private.createToolbar(
-      content,
+      grid,
       options.editorFactory,
       options.manager
     );
-    super({ content, toolbar });
+    content.addWidget(toolbar);
+    content.addWidget(grid);
+    this._content = content;
+    this._grid = grid;
+    this._tool = toolbar;
     this.addClass('omnisci-OmniSciSQLEditor');
   }
 
@@ -55,7 +75,14 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    * Get a reference to the input editor.
    */
   get input(): CodeEditorWrapper {
-    return this.toolbar.children().next() as CodeEditorWrapper;
+    return this._tool.children().next() as CodeEditorWrapper;
+  }
+
+  /**
+   * Get a reference to the grid widget.
+   */
+  get grid(): OmniSciGrid {
+    return this._grid;
   }
 
   /**
@@ -73,9 +100,11 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
       case 'keydown':
         switch (event.keyCode) {
           case 13: // Enter
-            event.stopPropagation();
-            event.preventDefault();
-            this.content.query = this.input.editor.model.value.text;
+            if (event.shiftKey) {
+              event.stopPropagation();
+              event.preventDefault();
+              this._grid.query = this.input.editor.model.value.text;
+            }
             break;
           default:
             break;
@@ -91,6 +120,10 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    */
   protected onAfterAttach(msg: Message): void {
     this.input.node.addEventListener('keydown', this, true);
+    requestAnimationFrame(() => {
+      this._content.setRelativeSizes([1, 6]);
+    });
+    super.onAfterAttach(msg);
   }
 
   /**
@@ -98,6 +131,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    */
   protected onBeforeDetach(msg: Message): void {
     this.input.node.removeEventListener('keydown', this, true);
+    super.onBeforeDetach(msg);
   }
 
   /**
@@ -105,6 +139,7 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
    */
   protected onActivateRequest(msg: Message): void {
     this._focusInput();
+    super.onActivateRequest(msg);
   }
 
   /**
@@ -113,6 +148,10 @@ export class OmniSciSQLEditor extends MainAreaWidget<OmniSciGrid> {
   private _focusInput(): void {
     this.input.activate();
   }
+
+  private _content: SplitPanel;
+  private _grid: OmniSciGrid;
+  private _tool: Panel;
 }
 
 /**
@@ -176,19 +215,26 @@ export class OmniSciGrid extends Panel {
       textColor: '#111111',
       horizontalAlignment: 'right'
     });
-    const gridStyle: DataGrid.IStyle = {
+    const gridStyle: DataGrid.Style = {
       ...DataGrid.defaultStyle,
       rowBackgroundColor: i => (i % 2 === 0 ? 'rgba(34, 167, 240, 0.2)' : '')
     };
     this._grid = new DataGrid({
       style: gridStyle,
-      baseRowSize: 24,
-      baseColumnSize: 144,
-      baseColumnHeaderSize: 36,
-      baseRowHeaderSize: 64
+      defaultSizes: {
+        rowHeight: 24,
+        columnWidth: 144,
+        rowHeaderWidth: 64,
+        columnHeaderHeight: 36
+      }
     });
     this._grid.defaultRenderer = renderer;
-    this._grid.model = this._model;
+    this._grid.dataModel = this._model;
+    this._grid.mouseHandler = new BasicMouseHandler();
+    this._grid.keyHandler = new BasicKeyHandler();
+    this._grid.selectionModel = new BasicSelectionModel({
+      dataModel: this._model
+    });
     this._content.addWidget(this._grid);
     this._content.hide(); // Initially hide the grid until we set the query.
 
@@ -216,10 +262,10 @@ export class OmniSciGrid extends Panel {
   /**
    * The current style used by the grid viewer.
    */
-  get style(): DataGrid.IStyle {
+  get style(): DataGrid.Style {
     return this._grid.style;
   }
-  set style(value: DataGrid.IStyle) {
+  set style(value: DataGrid.Style) {
     this._grid.style = value;
   }
 
@@ -576,8 +622,8 @@ export class OmniSciTableModel extends DataModel {
       this.emitChanged({
         type: 'cells-changed',
         region: 'body',
-        rowIndex: offset,
-        columnIndex: 0,
+        row: offset,
+        column: 0,
         rowSpan: res.results.length,
         columnSpan: this._fieldNames.length
       });
@@ -611,8 +657,8 @@ export class OmniSciTableModel extends DataModel {
     this.emitChanged({
       type: 'cells-changed',
       region: 'body',
-      rowIndex: offset,
-      columnIndex: 0,
+      row: offset,
+      column: 0,
       rowSpan: length,
       columnSpan: this._fieldNames.length
     });
@@ -639,8 +685,8 @@ export class OmniSciTableModel extends DataModel {
       this.emitChanged({
         type: 'cells-changed',
         region: 'body',
-        rowIndex: 0,
-        columnIndex: 0,
+        row: 0,
+        column: 0,
         rowSpan: res.results.length,
         columnSpan: this._fieldNames.length
       });
@@ -677,8 +723,8 @@ namespace Private {
     widget: OmniSciGrid,
     editorFactory: CodeEditor.Factory,
     manager?: IOmniSciConnectionManager
-  ): Toolbar {
-    const toolbar = new Toolbar();
+  ): Panel {
+    const toolbar = new Panel();
     toolbar.addClass('omnisci-OmniSci-toolbar');
 
     // Create the query editor.
@@ -691,9 +737,8 @@ namespace Private {
     queryEditor.editor.model.mimeType = 'text/x-sql';
 
     // Create the toolbar.
-    toolbar.addItem('QueryInput', queryEditor);
-    toolbar.addItem(
-      'Query',
+    (toolbar.layout as PanelLayout).addWidget(queryEditor);
+    (toolbar.layout as PanelLayout).addWidget(
       new ToolbarButton({
         iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
@@ -703,8 +748,7 @@ namespace Private {
       })
     );
     if (manager) {
-      toolbar.addItem(
-        'Connect',
+      (toolbar.layout as PanelLayout).addWidget(
         new ToolbarButton({
           iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
           onClick: () => {
