@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-omnisci",
-  "version": "0.12.0",
+  "version": "1.0.1",
   "description": "JupyterLab - Omnisci integration",
   "homepage": "https://github.com/Quansight/jupyterlab-omnisci",
   "bugs": {
@@ -67,9 +67,6 @@
       "prettier --write",
       "git add"
     ]
-  },
-  "resolutions": {
-    "@phosphor/widgets": "1.9.1"
   },
   "jupyterlab": {
     "extension": "lib/plugins",

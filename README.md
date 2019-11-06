@@ -1,11 +1,7 @@
 # jupyterlab-omnisci <br /> [![binder logo](https://beta.mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/3bd4c64?urlpath=lab/tree/notebooks/Ibis%20+%20Altair%20+%20Extraction.ipynb) [![](https://img.shields.io/pypi/v/jupyterlab-omnisci.svg?style=flat-square)](https://pypi.python.org/pypi/jupyterlab-omnisci) [![](https://img.shields.io/npm/v/jupyterlab-omnisci.svg?style=flat-square)](https://www.npmjs.com/package/jupyterlab-omnisci)
 
-
 Connect to OmniSci, query their databases, and render the OmniSci-flavored Vega specification,
 all within JupyterLab.
-
-
-
 
 ![example](./screenshot.png)
 
@@ -16,20 +12,35 @@ First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python p
 ```bash
 conda install -c conda-forge pymapd nodejs
 
-pip install jupyterlab-omnisci
+pip install jupyterlab-omnisci "tornado<6" "notebook<6"
 ```
 
 Then install the `jupyterlab-omnisci` JupyterLab extension:
 
 ```bash
-jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
-jupyter labextension install jupyterlab-omnisci
+jupyter labextension install \
+    @jupyter-widgets/jupyterlab-manager \
+    ibis-vega-transform \
+    # optional, if you want to see icon in JL to launch tracing GUI
+    jupyterlab-server-proxy-saulshanabrook  \
+    jupyterlab-omnisci
+
+# Optionally install `jaeger-all-in-one` binary and add to path to see tracing
+# https://www.jaegertracing.io/download/jupyter
 ```
 
 Then launch JupyterLab:
 
 ```bash
 jupyter lab
+```
+
+You can also createt dashboards with Phoila:
+
+```bash
+pip install git+https://github.com/Quansight/phoila.git@comm_open
+phoila install ibis-vega-transform
+phoila "examples/Charting Example.ipynb"
 ```
 
 ## Executing SQL Queries
@@ -53,6 +64,9 @@ Once you have set a default connection, you can run the **Inject Ibis OmniSci Co
 ![](./inject-ibis-con.gif)
 
 ## Creating Visualizations
+
+You can create interactive visualizations using Ibis and Altair, using the [`ibis-vega-transform`](https://github.com/quansight/ibis-vega-transform)
+package.
 
 Check out the [introduction notebook](./notebooks/Introduction.ipynb) to see how to use OmniSci within your notebooks [![](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/Quansight/jupyterlab-omnisci/master?urlpath=lab/tree/notebooks/Introduction.ipynb).
 
@@ -154,12 +168,12 @@ cd jupyterlab-omnisci
 conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
 
-pip install -e . 
+pip install -e .
 
 jlpm install
 jlpm run build
 
-jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
 jupyter labextension install .
 jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
 ```
@@ -169,14 +183,13 @@ jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
 First create a test environment:
 
 ```bash
-conda create -n tmp -c conda-forge pymapd nodejs
+conda create -n tmp -c conda-forge pymapd nodejs setuptools wheel twine
 conda activate tmp
 ```
 
 Then bump the Python version in `setup.py` and upload a test version:
 
 ```bash
-pip install --upgrade setuptools wheel twine
 rm -rf dist/
 python setup.py sdist bdist_wheel
 twine upload --repository-url https://test.pypi.org/legacy/ dist/*
@@ -192,9 +205,10 @@ Now bump the version for the Javascript package in `package.json`. The run a bui
 create a tarball, and install it as a JupyterLab extension:
 
 ```bash
-yarn run build
-yarn pack --filename out.tgz
-jupyter labextension install @jupyter-widgets/jupyterlab-manager --no-build
+jlpm
+jlpm run build
+jlpm pack --filename out.tgz
+jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
 jupyter labextension install out.tgz
 ```
 
