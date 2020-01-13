@@ -10,7 +10,7 @@ all within JupyterLab.
 First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package:
 
 ```bash
-conda install -c conda-forge pymapd nodejs
+conda install -c conda-forge pymapd nodejs jaeger
 
 pip install jupyterlab-omnisci "tornado<6" "notebook<6"
 ```
@@ -24,9 +24,6 @@ jupyter labextension install \
     # optional, if you want to see icon in JL to launch tracing GUI
     jupyterlab-server-proxy-saulshanabrook  \
     jupyterlab-omnisci
-
-# Optionally install `jaeger-all-in-one` binary and add to path to see tracing
-# https://www.jaegertracing.io/download/jupyter
 ```
 
 Then launch JupyterLab:
