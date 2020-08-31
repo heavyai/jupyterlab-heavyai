@@ -2,9 +2,7 @@
 set -o errexit
 set -o xtrace
 
-pip install -e . "tornado<6" "notebook<6"
+pip install -e .[dev]
 jlpm install
 jlpm run build
-jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
-jupyter labextension install . --no-build
-jupyter lab build
+jupyter labextension install @jupyter-widgets/jupyterlab-manager .
