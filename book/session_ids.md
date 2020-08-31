@@ -73,7 +73,7 @@ other than environment variables and local files, you can replace it with your
 own implementation.
 
 To do this, you need to write a new session manager that implements the interface
-given in [this](./jupyterlab_omnisci/serverextension/session.py) file,
+given in [this](../jupyterlab_omnisci/serverextension/session.py) file,
 and configure the notebook server to use that in the `jupyter_notebook_config.py`:
 
 ```python

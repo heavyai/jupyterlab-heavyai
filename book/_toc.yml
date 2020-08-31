@@ -3,6 +3,7 @@
 - file: usage
   sections:
     - file: sql
+    - file: sql_notebook
     - file: visualization
     - file: session_ids
 - file: contributing
