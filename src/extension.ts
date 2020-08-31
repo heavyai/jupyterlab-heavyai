@@ -753,23 +753,23 @@ namespace Private {
   });
 
   /**
-   * A template for an Ibis mapd client.
+   * A template for an Ibis OmniSci client.
    */
   const IBIS_TEMPLATE = `
 {{os}}import ibis
 
-con = ibis.mapd.connect(
+con = ibis.omniscidb.connect(
     host={{host}}, user={{user}}, password={{password}},
     port={{port}}, database={{database}}, protocol={{protocol}}
 )`.trim();
 
   /**
-   * A template for an Ibis mapd client when a session ID is available.
+   * A template for an Ibis OmniSci client when a session ID is available.
    */
   const SESSION_IBIS_TEMPLATE = `
 {{os}}import ibis
 
-con = ibis.mapd.connect(
+con = ibis.omniscidb.connect(
     host={{host}}, port={{port}}, protocol={{protocol}}, session_id={{session}}
 )`.trim();
 
