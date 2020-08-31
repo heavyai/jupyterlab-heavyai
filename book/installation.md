@@ -18,6 +18,8 @@ jupyter labextension install \
 
 ## Conda
 
+*(pending new conda release, not working yet)*
+
 This will install both the Python package as well as the JupyterLab extension.
 
 ```bash
