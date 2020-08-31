@@ -14,3 +14,4 @@ dependencies:
   - wheel
   - twine
   - altair
+  - ibis-framework

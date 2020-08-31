@@ -27,6 +27,7 @@ setup(
         "vdom",
         "tornado",
         "altair",
+        "ibis-framework",
     ],
     extras_require={"dev": ["jupyter-book", "black", "wheel", "twine"]},
 )
