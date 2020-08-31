@@ -39,7 +39,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Contributing" href="contributing.html" />
-    <link rel="prev" title="Creating Visualizations" href="visualization.html" />
+    <link rel="prev" title="Notebook Visualization" href="visualization.html" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="docsearch:language" content="en">
@@ -100,7 +100,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="visualization.html">
-     Creating Visualizations
+     Notebook Visualization
     </a>
    </li>
    <li class="toctree-l2 current active">
@@ -279,7 +279,7 @@ For instance, if you want to get connection data from another location
 other than environment variables and local files, you can replace it with your
 own implementation.</p>
 <p>To do this, you need to write a new session manager that implements the interface
-given in <span class="xref myst">this</span> file,
+given in <a class="reference external" href="https://github.com/omnisci/jupyterlab-omnisci/blob/master/jupyterlab_omnisci/serverextension/session.py">this</a> file,
 and configure the notebook server to use that in the <code class="docutils literal notranslate"><span class="pre">jupyter_notebook_config.py</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="o">.</span><span class="n">OmniSciConfig</span><span class="o">.</span><span class="n">session_manager</span> <span class="o">=</span> <span class="s2">&quot;your_new_module.YourImplementation&quot;</span>
 </pre></div>
@@ -315,7 +315,7 @@ and configure the notebook server to use that in the <code class="docutils liter
     
     <div class='prev-next-bottom'>
         
-    <a class='left-prev' id="prev-link" href="visualization.html" title="previous page">Creating Visualizations</a>
+    <a class='left-prev' id="prev-link" href="visualization.html" title="previous page">Notebook Visualization</a>
     <a class='right-next' id="next-link" href="contributing.html" title="next page">Contributing</a>
 
     </div>

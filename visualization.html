@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Creating Visualizations &#8212; Jupyterlab OmniSci</title>
+    <title>Notebook Visualization &#8212; Jupyterlab OmniSci</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
     <link href="_static/css/index.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
@@ -100,7 +100,7 @@
    </li>
    <li class="toctree-l2 current active">
     <a class="current reference internal" href="#">
-     Creating Visualizations
+     Notebook Visualization
     </a>
    </li>
    <li class="toctree-l2">
@@ -157,9 +157,9 @@
         <!-- ipynb file if we had a myst markdown file -->
         
         <!-- Download raw file -->
-        <a class="dropdown-buttons" href="_sources/visualization.md"><button type="button"
+        <a class="dropdown-buttons" href="_sources/visualization.ipynb"><button type="button"
                 class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
-                data-placement="left">.md</button></a>
+                data-placement="left">.ipynb</button></a>
         <!-- Download PDF via print -->
         <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
             onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
@@ -184,7 +184,29 @@
             <i class="fas fa-list"></i> Contents
         </div>
         <nav id="bd-toc-nav">
-            
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#establishing-a-connection">
+   Establishing a connection
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#generate-vega-in-python-request-in-the-browser-render-in-notebook">
+   Generate vega in Python, request in the browser, render in notebook
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#write-vega-directly-request-in-the-browser-render-in-notebook">
+   Write vega directly, request in the browser, render in notebook
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#requesting-in-python">
+   Requesting in Python
+  </a>
+ </li>
+</ul>
+
         </nav>
     </div>
 </div>
@@ -193,9 +215,239 @@
         
               <div>
                 
-  <div class="section" id="creating-visualizations">
-<h1>Creating Visualizations<a class="headerlink" href="#creating-visualizations" title="Permalink to this headline">¶</a></h1>
-<p>Note, if you are looking to create visualizations with Altair backed by Omnisci, install the <a class="reference external" href="https://github.com/quansight/ibis-vega-transform"><code class="docutils literal notranslate"><span class="pre">ibis-vega-transform</span></code></a> package instead of, or alongside, this one.</p>
+  <div class="section" id="notebook-visualization">
+<h1>Notebook Visualization<a class="headerlink" href="#notebook-visualization" title="Permalink to this headline">¶</a></h1>
+<p>This notebook demonstrates a number of ways to visualize OmniSci data in a notebook.</p>
+<p>However <strong>if you are looking to create interactive visualizations, please use the <a class="reference external" href="https://github.com/quansight/ibis-vega-transform"><code class="docutils literal notranslate"><span class="pre">ibis-vega-transform</span></code></a> package instead of these approaches</strong>.</p>
+<div class="section" id="establishing-a-connection">
+<h2>Establishing a connection<a class="headerlink" href="#establishing-a-connection" title="Permalink to this headline">¶</a></h2>
+<p>pymapd allows us to connect to a OmniSci server using the following code:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pymapd</span>
+<span class="kn">import</span> <span class="nn">jupyterlab_omnisci</span>
+<span class="n">connection_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">user</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;HyperInteractive&#39;</span><span class="p">,</span>
+    <span class="n">host</span><span class="o">=</span><span class="s1">&#39;metis.mapd.com&#39;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="s1">&#39;443&#39;</span><span class="p">,</span>
+    <span class="n">dbname</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span>
+    <span class="n">protocol</span><span class="o">=</span><span class="s1">&#39;https&#39;</span>
+<span class="p">)</span>
+<span class="n">con</span> <span class="o">=</span> <span class="n">pymapd</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="o">**</span><span class="n">connection_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Once we have a connection, we can try to send vega data to the backend and render it.
+Both the Jupyter notebook client (typically a browser), and the kernel (in this case
+a python process) have the ability to make this request. There are a number of different
+ways we can try to proceed in the notebook.</p>
+</div>
+<div class="section" id="generate-vega-in-python-request-in-the-browser-render-in-notebook">
+<h2>Generate vega in Python, request in the browser, render in notebook<a class="headerlink" href="#generate-vega-in-python-request-in-the-browser-render-in-notebook" title="Permalink to this headline">¶</a></h2>
+<p>The following cell magic parses yaml data into JSON. This JSON is then sent <em>to the browser</em>,
+along with the relevant connection data. The browser then makes the request using
+the OmniSci browser client, and renders the resulting image in the notebook:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">connection_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">username</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;HyperInteractive&#39;</span><span class="p">,</span>
+    <span class="n">host</span><span class="o">=</span><span class="s1">&#39;metis.mapd.com&#39;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="s1">&#39;443&#39;</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span>
+    <span class="n">protocol</span><span class="o">=</span><span class="s1">&#39;https&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>%%omnisci_vega $connection_data
+
+width: 384
+height: 564
+config:
+    ticks: false
+data:
+  - name: &#39;tweets&#39;
+    sql: &#39;SELECT goog_x as x, goog_y as y, tweets_nov_feb.rowid FROM tweets_nov_feb&#39; 
+
+scales:
+  - name: &#39;x&#39;
+    type: &#39;linear&#39;
+    domain:
+      - -3650484.1235206556
+      -  7413325.514451755
+    range: &#39;width&#39;
+  - name: &#39;y&#39;
+    type: &#39;linear&#39;
+    domain:
+      - -5778161.9183506705
+      -  10471808.487466192
+    range: &#39;height&#39;
+marks:
+  - type: &#39;points&#39;
+    from:
+      data: &#39;tweets&#39;
+    properties:
+      x:
+        scale: &#39;x&#39;
+        field: &#39;x&#39;
+      y:
+        scale: &#39;y&#39;
+        field: &#39;y&#39;
+      fillColor: &#39;green&#39;
+      size:
+        value: 1      
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;jupyterlab_omnisci.magics.OmniSciVegaRenderer at 0x7f10db57e3d0&gt;
+</pre></div>
+</div>
+</div>
+</div>
+<p>You can also do the same but for vega lite, which will get translated to vega in the browser before being executed with the omnisci browser client</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>%%omnisci_vegalite $connection_data
+
+width: 384
+height: 564
+data:
+    sql: &#39;SELECT goog_x as x, goog_y as y, tweets_nov_feb.rowid FROM tweets_nov_feb&#39;
+mark:
+    type: circle
+    color: green
+    size: 1
+encoding:
+    x:
+        field: x
+        type: quantitative
+        scale:
+            range: width
+            domain:
+              - -3650484.1235206556
+              -  7413325.514451755
+    y:
+        field: y
+        type: quantitative
+        scale:
+            range: height
+            domain:
+              - -5778161.9183506705
+              -  10471808.487466192
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;jupyterlab_omnisci.magics.OmniSciVegaRenderer at 0x7f11084d6cd0&gt;
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="write-vega-directly-request-in-the-browser-render-in-notebook">
+<h2>Write vega directly, request in the browser, render in notebook<a class="headerlink" href="#write-vega-directly-request-in-the-browser-render-in-notebook" title="Permalink to this headline">¶</a></h2>
+<p>We don’t necessarily need to use yaml as the input format. The following takes a JSON
+string and sends it to the browser, along with the connection data:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">json</span>
+
+<span class="c1"># TODO: Fix connection information and enalbe this</span>
+
+<span class="n">connection_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">user</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s1">&#39;HyperInteractive&#39;</span><span class="p">,</span>
+    <span class="n">host</span><span class="o">=</span><span class="s1">&#39;vega-demo.omnisci.com&#39;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="s1">&#39;9092&#39;</span><span class="p">,</span>
+    <span class="n">dbname</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span>
+    <span class="n">protocol</span><span class="o">=</span><span class="s1">&#39;http&#39;</span>
+<span class="p">)</span>
+<span class="c1"># con = pymapd.connect(**connection_data)</span>
+
+<span class="c1"># vega1 = &quot;&quot;&quot; {</span>
+<span class="c1">#   &quot;width&quot;: 733,</span>
+<span class="c1">#   &quot;height&quot;: 530,</span>
+<span class="c1">#   &quot;data&quot;: [</span>
+<span class="c1">#     {</span>
+<span class="c1">#       &quot;name&quot;: &quot;heatmap_query&quot;,</span>
+<span class="c1">#       &quot;sql&quot;: &quot;SELECT rect_pixel_bin(conv_4326_900913_x(lon), -13847031.457875465, -7451726.712679257, 733, 733) as x,</span>
+<span class="c1">#                      rect_pixel_bin(conv_4326_900913_y(lat), 2346114.147993467, 6970277.197053557, 530, 530) as y,</span>
+<span class="c1">#                      SUM(amount) as cnt</span>
+<span class="c1">#                      FROM fec_contributions_oct</span>
+<span class="c1">#                      WHERE (lon &gt;= -124.39000000000038 AND lon &lt;= -66.93999999999943) AND</span>
+<span class="c1">#                            (lat &gt;= 20.61570573311549 AND lat &lt;= 52.93117449504004) AND</span>
+<span class="c1">#                            amount &gt; 0 AND</span>
+<span class="c1">#                            recipient_party = &#39;R&#39;</span>
+<span class="c1">#                            GROUP BY x, y&quot;</span>
+<span class="c1">#     }</span>
+<span class="c1">#   ],</span>
+<span class="c1">#   &quot;scales&quot;: [</span>
+<span class="c1">#     {</span>
+<span class="c1">#       &quot;name&quot;: &quot;heat_color&quot;,</span>
+<span class="c1">#       &quot;type&quot;: &quot;quantize&quot;,</span>
+<span class="c1">#       &quot;domain&quot;: [</span>
+<span class="c1">#         10000.0,</span>
+<span class="c1">#         1000000.0</span>
+<span class="c1">#       ],</span>
+<span class="c1">#       &quot;range&quot;: [ &quot;#0d0887&quot;, &quot;#2a0593&quot;, &quot;#41049d&quot;, &quot;#5601a4&quot;, &quot;#6a00a8&quot;,</span>
+<span class="c1">#                  &quot;#7e03a8&quot;, &quot;#8f0da4&quot;, &quot;#a11b9b&quot;, &quot;#b12a90&quot;, &quot;#bf3984&quot;,</span>
+<span class="c1">#                  &quot;#cb4679&quot;, &quot;#d6556d&quot;, &quot;#e16462&quot;, &quot;#ea7457&quot;, &quot;#f2844b&quot;,</span>
+<span class="c1">#                  &quot;#f89540&quot;, &quot;#fca636&quot;, &quot;#feba2c&quot;, &quot;#fcce25&quot;, &quot;#f7e425&quot;, &quot;#f0f921&quot;</span>
+<span class="c1">#       ],</span>
+<span class="c1">#       &quot;default&quot;: &quot;#0d0887&quot;,</span>
+<span class="c1">#       &quot;nullValue&quot;: &quot;#0d0887&quot;</span>
+<span class="c1">#     }</span>
+<span class="c1">#   ],</span>
+<span class="c1">#   &quot;marks&quot;: [</span>
+<span class="c1">#     {</span>
+<span class="c1">#       &quot;type&quot;: &quot;symbol&quot;,</span>
+<span class="c1">#       &quot;from&quot;: {</span>
+<span class="c1">#         &quot;data&quot;: &quot;heatmap_query&quot;</span>
+<span class="c1">#       },</span>
+<span class="c1">#       &quot;properties&quot;: {</span>
+<span class="c1">#         &quot;shape&quot;: &quot;square&quot;,</span>
+<span class="c1">#         &quot;x&quot;: {</span>
+<span class="c1">#           &quot;field&quot;: &quot;x&quot;</span>
+<span class="c1">#         },</span>
+<span class="c1">#         &quot;y&quot;: {</span>
+<span class="c1">#           &quot;field&quot;: &quot;y&quot;</span>
+<span class="c1">#         },</span>
+<span class="c1">#         &quot;width&quot;: 1,</span>
+<span class="c1">#         &quot;height&quot;: 1,</span>
+<span class="c1">#         &quot;fillColor&quot;: {</span>
+<span class="c1">#           &quot;scale&quot;: &quot;heat_color&quot;,</span>
+<span class="c1">#           &quot;field&quot;: &quot;cnt&quot;</span>
+<span class="c1">#         }</span>
+<span class="c1">#       }</span>
+<span class="c1">#     }</span>
+<span class="c1">#   ]</span>
+<span class="c1"># }&quot;&quot;&quot;.replace(&#39;\n&#39;, &#39;&#39;)</span>
+<span class="c1"># im = jupyterlab_omnisci.OmniSciVegaRenderer(con, json.loads(vega1))</span>
+<span class="c1"># display(im)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="requesting-in-python">
+<h2>Requesting in Python<a class="headerlink" href="#requesting-in-python" title="Permalink to this headline">¶</a></h2>
+<p>Making the omnisci request in the browser has a major drawback, in that the image data is not
+easily available to the python kernel. Instead, we can make the request on the Python side:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># con.render_vega(vega1)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
 </div>
 
     <script type="text/x-thebe-config">

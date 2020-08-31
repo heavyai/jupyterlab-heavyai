@@ -235,12 +235,14 @@ create a tarball, and install it as a JupyterLab extension:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jlpm
 jlpm run build
 jlpm pack --filename out.tgz
-jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
 jupyter labextension install out.tgz
 </pre></div>
 </div>
-<p>Now open JupyterLab and run through all the notebooks in <code class="docutils literal notranslate"><span class="pre">notebooks</span></code> to make sure
-they still render correctly.</p>
+<p>Now open JupyterLab and run through all the notebooks in <code class="docutils literal notranslate"><span class="pre">book</span></code> to make sure
+they still render correctly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter lab
+</pre></div>
+</div>
 <p>Now you can publish the Python package:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>twine upload dist/*
 </pre></div>
