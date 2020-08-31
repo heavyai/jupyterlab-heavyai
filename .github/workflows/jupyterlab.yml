@@ -24,6 +24,9 @@ jobs:
       - name: Install JS deps
         shell: bash -l {0}
         run: jlpm install
+      - name: Build JS
+        shell: bash -l {0}
+        run: jlpm run build
       - name: Install jupyterlab extensions
         shell: bash -l {0}
         run: jupyter labextension install .
