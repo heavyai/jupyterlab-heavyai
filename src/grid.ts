@@ -221,6 +221,7 @@ export class OmniSciGrid extends Panel {
     };
     this._grid = new DataGrid({
       style: gridStyle,
+      defaultRenderer: renderer,
       defaultSizes: {
         rowHeight: 24,
         columnWidth: 144,
@@ -228,7 +229,7 @@ export class OmniSciGrid extends Panel {
         columnHeaderHeight: 36
       }
     });
-    (this._grid as any).defaultRenderer = renderer;
+    this._grid.cellRenderers.update(undefined, renderer);
     this._grid.dataModel = this._model;
     this._grid.mouseHandler = new BasicMouseHandler();
     this._grid.keyHandler = new BasicKeyHandler();
@@ -273,10 +274,11 @@ export class OmniSciGrid extends Panel {
    * The text renderer for the viewer.
    */
   get renderer(): TextRenderer {
-    return (this._grid as any).defaultRenderer as TextRenderer;
+    // Pass in dummy cell position to get back fallback renderer
+    return this._grid.cellRenderers.get({} as any) as TextRenderer;
   }
   set renderer(value: TextRenderer) {
-    (this._grid as any).defaultRenderer = value;
+    this._grid.cellRenderers.update(undefined, value);
   }
 
   /**
@@ -575,7 +577,7 @@ export class OmniSciTableModel extends DataModel {
       return;
     }
     try {
-      void (await Private.validateQuery(this._connection, this._query));
+      // void (await this._connection.validateQuery(this._query));
       this.emitChanged({ type: 'model-reset' });
       if (this._streaming) {
         return this._fetchBlock(0);
@@ -811,25 +813,6 @@ namespace Private {
           }
         }
       );
-    });
-  }
-
-  /**
-   * Validate a query with the OmniSci backend.
-   */
-  export function validateQuery(
-    connection: OmniSciConnection,
-    query: string
-  ): Promise<ReadonlyArray<JSONObject>> {
-    return new Promise<ReadonlyArray<JSONObject>>((resolve, reject) => {
-      connection
-        .validateQuery(query)
-        .then((result: ReadonlyArray<JSONObject>) => {
-          resolve(result);
-        })
-        .catch((err: any) => {
-          reject(err);
-        });
     });
   }
 }
