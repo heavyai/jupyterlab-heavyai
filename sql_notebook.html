@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Standalone SQL Editor &#8212; Jupyterlab OmniSci</title>
+    <title>Notebook SQL Editor &#8212; Jupyterlab OmniSci</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
     <link href="_static/css/index.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
@@ -38,8 +38,8 @@
     <script async="async" src="_static/sphinx-thebe.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Notebook SQL Editor" href="sql_notebook.html" />
-    <link rel="prev" title="Usage" href="usage.html" />
+    <link rel="next" title="Creating Visualizations" href="visualization.html" />
+    <link rel="prev" title="Standalone SQL Editor" href="sql.html" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="docsearch:language" content="en">
@@ -88,13 +88,13 @@
    Usage
   </a>
   <ul class="current">
-   <li class="toctree-l2 current active">
-    <a class="current reference internal" href="#">
+   <li class="toctree-l2">
+    <a class="reference internal" href="sql.html">
      Standalone SQL Editor
     </a>
    </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="sql_notebook.html">
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
      Notebook SQL Editor
     </a>
    </li>
@@ -157,9 +157,9 @@
         <!-- ipynb file if we had a myst markdown file -->
         
         <!-- Download raw file -->
-        <a class="dropdown-buttons" href="_sources/sql.md"><button type="button"
+        <a class="dropdown-buttons" href="_sources/sql_notebook.ipynb"><button type="button"
                 class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
-                data-placement="left">.md</button></a>
+                data-placement="left">.ipynb</button></a>
         <!-- Download PDF via print -->
         <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
             onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
@@ -184,14 +184,7 @@
             <i class="fas fa-list"></i> Contents
         </div>
         <nav id="bd-toc-nav">
-            <ul class="nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#ibis">
-   Ibis
-  </a>
- </li>
-</ul>
-
+            
         </nav>
     </div>
 </div>
@@ -200,18 +193,82 @@
         
               <div>
                 
-  <div class="section" id="standalone-sql-editor">
-<h1>Standalone SQL Editor<a class="headerlink" href="#standalone-sql-editor" title="Permalink to this headline">¶</a></h1>
-<p>You can open an OmiSci SQL editor by going to <strong>File &gt; New &gt; OmniSci SQL Editor</strong> or clicking the icon on the launcher.</p>
-<p>Input your database credentials by clicking on the blue icon on the right:</p>
-<p><img alt="" src="_images/sqlcon.png" /></p>
-<p>Then you can input an SQL query and hit the triangle to see the results:</p>
-<p><img alt="" src="_images/sql.png" /></p>
-<p>To set a default connection that will be saved and used for new editors, go to <strong>Settings &gt; Set Default Omnisci Connection…</strong>.</p>
-<div class="section" id="ibis">
-<h2>Ibis<a class="headerlink" href="#ibis" title="Permalink to this headline">¶</a></h2>
-<p>Once you have set a default connection, you can run the <strong>Inject Ibis OmniSci Connection</strong> command to prefil a cell to connect to it with Ibis.</p>
-<p><img alt="" src="_images/inject-ibis-con.gif" /></p>
+  <div class="section" id="notebook-sql-editor">
+<h1>Notebook SQL Editor<a class="headerlink" href="#notebook-sql-editor" title="Permalink to this headline">¶</a></h1>
+<p>Ibis is a great tool for abtracting SQL queries, and for more programmatic query generation. However, there are times when it is still useful to quickly test raw SQL. Fortunately, we can use an ibis connection and some display magics to accomplish this.</p>
+<p>First, we make the relevant imports:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">ibis</span>
+<span class="kn">import</span> <span class="nn">jupyterlab_omnisci</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>Now we make a connection to the database:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">omnisci_cli</span> <span class="o">=</span> <span class="n">ibis</span><span class="o">.</span><span class="n">omniscidb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+    <span class="n">host</span><span class="o">=</span><span class="s1">&#39;metis.mapd.com&#39;</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">&#39;HyperInteractive&#39;</span><span class="p">,</span>
+    <span class="n">port</span><span class="o">=</span><span class="mi">443</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s1">&#39;mapd&#39;</span><span class="p">,</span> <span class="n">protocol</span><span class="o">=</span> <span class="s1">&#39;https&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<p>And verify that the connection worked</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">omnisci_cli</span><span class="o">.</span><span class="n">list_tables</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-none notranslate"><div class="highlight"><pre><span></span>[&#39;flights_donotmodify&#39;,
+ &#39;contributions_donotmodify&#39;,
+ &#39;tweets_nov_feb&#39;,
+ &#39;zipcodes_orig&#39;,
+ &#39;zipcodes&#39;,
+ &#39;demo_vote_clean&#39;,
+ &#39;us_faults&#39;,
+ &#39;zipcodes_2017&#39;,
+ &#39;us_county_level_tiger_edges_2018&#39;,
+ &#39;ca_roads_tiger&#39;,
+ &#39;input_node&#39;,
+ &#39;uk_wells&#39;,
+ &#39;RentalListings&#39;]
+</pre></div>
+</div>
+</div>
+</div>
+<p>Let’s create a SQL editor from this client:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">jupyterlab_omnisci</span><span class="o">.</span><span class="n">OmniSciSQLEditorRenderer</span><span class="p">(</span><span class="n">omnisci_cli</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;jupyterlab_omnisci.magics.OmniSciSQLEditorRenderer at 0x7f4d9ef47410&gt;
+</pre></div>
+</div>
+</div>
+</div>
+<p>That gave us a blank canvas for getting data from the database. However, it can be nice to start from an ibis expreesion and then vary it from there. To do that, we can give an expression as the second argument for the <code class="docutils literal notranslate"><span class="pre">OmniSciSQLEditorRenderer</span></code>:</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">table</span> <span class="o">=</span> <span class="n">omnisci_cli</span><span class="o">.</span><span class="n">table</span><span class="p">(</span><span class="s1">&#39;tweets_nov_feb&#39;</span><span class="p">)</span>
+<span class="n">expr</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">goog_x</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">),</span> <span class="n">table</span><span class="o">.</span><span class="n">goog_y</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">),</span> <span class="n">table</span><span class="o">.</span><span class="n">tweet_id</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="s1">&#39;rowid&#39;</span><span class="p">)]</span>
+
+<span class="n">jupyterlab_omnisci</span><span class="o">.</span><span class="n">OmniSciSQLEditorRenderer</span><span class="p">(</span><span class="n">omnisci_cli</span><span class="p">,</span> <span class="n">expr</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;jupyterlab_omnisci.magics.OmniSciSQLEditorRenderer at 0x7f4d9fa32d50&gt;
+</pre></div>
+</div>
+</div>
 </div>
 </div>
 
@@ -243,8 +300,8 @@
     
     <div class='prev-next-bottom'>
         
-    <a class='left-prev' id="prev-link" href="usage.html" title="previous page">Usage</a>
-    <a class='right-next' id="next-link" href="sql_notebook.html" title="next page">Notebook SQL Editor</a>
+    <a class='left-prev' id="prev-link" href="sql.html" title="previous page">Standalone SQL Editor</a>
+    <a class='right-next' id="next-link" href="visualization.html" title="next page">Creating Visualizations</a>
 
     </div>
     <footer class="footer mt-5 mt-md-0">

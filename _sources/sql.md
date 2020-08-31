@@ -1,4 +1,4 @@
-# Executing SQL Queries and using Ibis
+# Standalone SQL Editor
 
 You can open an OmiSci SQL editor by going to **File > New > OmniSci SQL Editor** or clicking the icon on the launcher.
 
