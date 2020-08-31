@@ -1,16 +1,12 @@
 import { Dialog, showDialog } from '@jupyterlab/apputils';
-
 import { CompletionHandler } from '@jupyterlab/completer';
-
-import { DataConnector, ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
-
-import { JSONExt, JSONObject, Token } from '@phosphor/coreutils';
-
-import { IDisposable } from '@phosphor/disposable';
-
-import { ISignal, Signal } from '@phosphor/signaling';
-
-import { PanelLayout, Widget } from '@phosphor/widgets';
+import { URLExt } from '@jupyterlab/coreutils';
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import { DataConnector } from '@jupyterlab/statedb';
+import { JSONExt, JSONObject, Token } from '@lumino/coreutils';
+import { IDisposable } from '@lumino/disposable';
+import { ISignal, Signal } from '@lumino/signaling';
+import { PanelLayout, Widget } from '@lumino/widgets';
 
 declare const require: any;
 // tslint:disable-next-line:no-var-requires

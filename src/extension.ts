@@ -4,55 +4,40 @@ import {
   JupyterFrontEnd,
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
-
 import {
   ICommandPalette,
   IThemeManager,
   MainAreaWidget,
   WidgetTracker
 } from '@jupyterlab/apputils';
-
 import { IEditorServices } from '@jupyterlab/codeeditor';
-
 import { ICompletionManager } from '@jupyterlab/completer';
-
-import { ISettingRegistry, URLExt } from '@jupyterlab/coreutils';
-
+import { URLExt } from '@jupyterlab/coreutils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
-
 import { ILauncher } from '@jupyterlab/launcher';
-
 import { IMainMenu } from '@jupyterlab/mainmenu';
-
 import {
   INotebookTracker,
   Notebook,
   NotebookActions
 } from '@jupyterlab/notebook';
-
 import { ServerConnection } from '@jupyterlab/services';
-
-import { ReadonlyJSONObject } from '@phosphor/coreutils';
-
-import { DataGrid, TextRenderer } from '@phosphor/datagrid';
-
-import { Widget } from '@phosphor/widgets';
-
+import { ISettingRegistry } from '@jupyterlab/settingregistry';
+import { ReadonlyJSONObject } from '@lumino/coreutils';
+import { DataGrid, TextRenderer } from '@lumino/datagrid';
+import { Widget } from '@lumino/widgets';
 import {
   IOmniSciConnectionData,
   IOmniSciConnectionManager,
   OmniSciCompletionConnector,
   OmniSciConnectionManager
 } from './connection';
-
 import { OmniSciSQLEditor } from './grid';
-
-import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
-
 import {
   RenderedOmniSciSQLEditor,
   sqlEditorRendererFactory
 } from './mimeextensions';
+import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.
@@ -845,7 +830,7 @@ con = ibis.omniscidb.connect(
     NotebookActions.insertAbove(options.notebook);
     const model =
       (notebook.activeCell && notebook.activeCell.model) ||
-      notebook.model.cells.get(0);
+      notebook.model!.cells.get(0);
     // Assert exists because we have verified by creating.
     model!.value.text = value;
   }

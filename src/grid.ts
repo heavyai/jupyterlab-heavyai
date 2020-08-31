@@ -1,4 +1,4 @@
-import { JSONExt, JSONObject } from '@phosphor/coreutils';
+import { JSONExt, JSONObject } from '@lumino/coreutils';
 
 import {
   BasicKeyHandler,
@@ -7,9 +7,9 @@ import {
   DataGrid,
   DataModel,
   TextRenderer
-} from '@phosphor/datagrid';
+} from '@lumino/datagrid';
 
-import { Message } from '@phosphor/messaging';
+import { Message } from '@lumino/messaging';
 
 import {
   Panel,
@@ -17,9 +17,9 @@ import {
   SplitPanel,
   StackedPanel,
   Widget
-} from '@phosphor/widgets';
+} from '@lumino/widgets';
 
-import { ISignal, Signal } from '@phosphor/signaling';
+import { ISignal, Signal } from '@lumino/signaling';
 
 import { ToolbarButton } from '@jupyterlab/apputils';
 
@@ -190,7 +190,7 @@ export namespace OmniSciSQLEditor {
 }
 
 /**
- * A widget that hosts a phosphor grid with a OmniSci dataset.
+ * A widget that hosts a lumino grid with a OmniSci dataset.
  */
 export class OmniSciGrid extends Panel {
   /**
@@ -228,7 +228,7 @@ export class OmniSciGrid extends Panel {
         columnHeaderHeight: 36
       }
     });
-    this._grid.defaultRenderer = renderer;
+    (this._grid as any).defaultRenderer = renderer;
     this._grid.dataModel = this._model;
     this._grid.mouseHandler = new BasicMouseHandler();
     this._grid.keyHandler = new BasicKeyHandler();
@@ -273,10 +273,10 @@ export class OmniSciGrid extends Panel {
    * The text renderer for the viewer.
    */
   get renderer(): TextRenderer {
-    return this._grid.defaultRenderer as TextRenderer;
+    return (this._grid as any).defaultRenderer as TextRenderer;
   }
   set renderer(value: TextRenderer) {
-    this._grid.defaultRenderer = value;
+    (this._grid as any).defaultRenderer = value;
   }
 
   /**
@@ -740,7 +740,7 @@ namespace Private {
     (toolbar.layout as PanelLayout).addWidget(queryEditor);
     (toolbar.layout as PanelLayout).addWidget(
       new ToolbarButton({
-        iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
+        className: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
           widget.query = queryEditor.editor.model.value.text;
         },
@@ -750,7 +750,7 @@ namespace Private {
     if (manager) {
       (toolbar.layout as PanelLayout).addWidget(
         new ToolbarButton({
-          iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
+          className: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
           onClick: () => {
             void manager
               .chooseConnection(

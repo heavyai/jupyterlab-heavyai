@@ -9,7 +9,7 @@ import { DocumentRegistry } from '@jupyterlab/docregistry';
 
 import { INotebookModel } from '@jupyterlab/notebook';
 
-import { IDisposable, DisposableDelegate } from '@phosphor/disposable';
+import { IDisposable, DisposableDelegate } from '@lumino/disposable';
 
 import { extractTransforms } from 'vega-lite';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
@@ -34,7 +34,7 @@ function createNew(
   nb: NotebookPanel,
   context: DocumentRegistry.IContext<INotebookModel>
 ): IDisposable {
-  context.session.kernelChanged.connect((_, { newValue, oldValue }) => {
+  context.sessionContext.kernelChanged.connect((_, { newValue, oldValue }) => {
     if (oldValue) {
       oldValue.removeCommTarget(COMM_TARGET, commTarget);
     }
@@ -44,9 +44,10 @@ function createNew(
     }
   });
   return new DisposableDelegate(() => {
-    if (context.session.kernel) {
-      context.session.kernel.removeCommTarget(COMM_TARGET, commTarget);
-    }
+    // Don't know how to get current kernel anymore
+    // if (context.sessionContext.kernel) {
+    //   context.sessionContext.kernel.removeCommTarget(COMM_TARGET, commTarget);
+    // }
   });
 }
 function activate(app: JupyterFrontEnd) {

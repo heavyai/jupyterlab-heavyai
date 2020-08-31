@@ -1,6 +1,6 @@
-import { PromiseDelegate } from '@phosphor/coreutils';
+import { PromiseDelegate } from '@lumino/coreutils';
 
-import { Widget } from '@phosphor/widgets';
+import { Widget } from '@lumino/widgets';
 
 import { PathExt } from '@jupyterlab/coreutils';
 
@@ -34,7 +34,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
     this.toolbar.addItem(
       'Render',
       new ToolbarButton({
-        iconClassName: 'jp-RunIcon jp-Icon jp-Icon-16',
+        iconClass: 'jp-RunIcon jp-Icon jp-Icon-16',
         onClick: () => {
           void this._render();
         },
@@ -44,7 +44,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
     this.toolbar.addItem(
       'Connect',
       new ToolbarButton({
-        iconClassName: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
+        iconClass: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
         onClick: () => {
           const name = PathExt.basename(this.context.path);
           void options.manager
