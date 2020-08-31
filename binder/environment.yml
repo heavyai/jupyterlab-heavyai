@@ -13,3 +13,4 @@ dependencies:
   - black
   - wheel
   - twine
+  - altair

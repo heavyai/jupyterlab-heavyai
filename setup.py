@@ -26,6 +26,7 @@ setup(
         "pyyaml",
         "vdom",
         "tornado",
+        "altair",
     ],
     extras_require={"dev": ["jupyter-book", "black", "wheel", "twine"]},
 )
