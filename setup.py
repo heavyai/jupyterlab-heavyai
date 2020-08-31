@@ -13,7 +13,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="jupyterlab-omnisci",  # Required
-    version="2.1.0",  # Required
+    version="3.0.0",  # Required
     description="Omnisci integration with JupyterLab",  # Required
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)

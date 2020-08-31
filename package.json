@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-omnisci",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "JupyterLab - Omnisci integration",
   "homepage": "https://github.com/omnisci/jupyterlab-omnisci",
   "bugs": {

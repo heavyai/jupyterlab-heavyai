@@ -65,12 +65,16 @@ create a tarball, and install it as a JupyterLab extension:
 jlpm
 jlpm run build
 jlpm pack --filename out.tgz
-jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
 jupyter labextension install out.tgz
 ```
 
-Now open JupyterLab and run through all the notebooks in `notebooks` to make sure
-they still render correctly.
+Now open JupyterLab and run through all the notebooks in `book` to make sure
+they still render correctly:
+
+
+```bash
+jupyter lab
+```
 
 Now you can publish the Python package:
 

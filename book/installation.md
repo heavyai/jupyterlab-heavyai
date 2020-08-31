@@ -20,7 +20,7 @@ jupyter labextension install \
 
 *(pending new conda release, not working yet)*
 
-This will install both the Python package as well as the JupyterLab extension.
+This will install both the Python package and the JupyterLab extension.
 
 ```bash
 conda install -c conda-forge jupyterlab-omnisci
