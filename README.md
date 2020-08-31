@@ -3,4 +3,4 @@
 Connect to OmniSci, query their databases, and render the OmniSci-flavored Vega specification,
 all within JupyterLab.
 
-See the [documenation](https://omnisci.github.io/jupyterlab-omnisci/) for more information.
+See the [documentation](https://omnisci.github.io/jupyterlab-omnisci/) for more information.
