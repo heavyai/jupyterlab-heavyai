@@ -1,16 +1,23 @@
 on: [push]
-name: 'JupyterLab'
+name: "JupyterLab"
 jobs:
   extension:
     runs-on: ubuntu-latest
     name: Build JupyterLab extension
     steps:
       - uses: actions/checkout@v2
+      - name: Cache conda
+        uses: actions/cache@v1
+        with:
+          path: ~/conda_pkgs_dir
+          key: conda-${{ hashFiles('binder/environment.yml') }}
+          restore-keys: conda-
       - name: Setup Miniconda
         uses: conda-incubator/setup-miniconda@v1.7.0
         with:
           environment-file: binder/environment.yml
           activate-environment: jupyterlab-omnisci
+          use-only-tar-bz2: true
       - name: Install Python package
         shell: bash -l {0}
         run: pip install -e .[dev]
