@@ -108,9 +108,7 @@ const NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:notebook';
 /**
  * The Omnisci connection handler extension.
  */
-const omnisciConnectionPlugin: JupyterFrontEndPlugin<
-  IOmniSciConnectionManager
-> = {
+const omnisciConnectionPlugin: JupyterFrontEndPlugin<IOmniSciConnectionManager> = {
   activate: activateOmniSciConnection,
   id: CONNECTION_PLUGIN_ID,
   requires: [ICommandPalette, IMainMenu, ISettingRegistry],

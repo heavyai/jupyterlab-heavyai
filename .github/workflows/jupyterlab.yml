@@ -1,8 +1,9 @@
 on: [push]
 
 jobs:
-  dev:
+  extension:
     runs-on: ubuntu-latest
+    name: Build JupyterLab extension
     steps:
       - uses: actions/checkout@v2
       - name: Setup Miniconda
@@ -18,7 +19,4 @@ jobs:
         run: jlpm install
       - name: Install jupyterlab extensions
         shell: bash -l {0}
-        run: jupyter labextension install @jupyter-widgets/jupyterlab-manager .
-      - name: Enable server extensions
-        shell: bash -l {0}
-        run: jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
+        run: jupyter labextension install .

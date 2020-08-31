@@ -1,0 +1,37 @@
+on: [push]
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    name: Build and publish Jupyter Book
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v1.7.0
+        with:
+          environment-file: binder/environment.yml
+          activate-environment: jupyterlab-omnisci
+      - name: Install Python package
+        shell: bash -l {0}
+        run: pip install -e .[dev]
+      - name: Build Jupyter Book
+        shell: bash -l {0}
+        run: jupyter-book build book
+      - name: Push book to Github Pages
+        uses: peaceiris/actions-gh-pages@v3.6.1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./book/_build/html
+  format:
+    runs-on: ubuntu-latest
+    name: Check black formatting
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: Install black
+        run: pip install black
+      - name: Run black
+        run: black --check jupyterlab_omnisci

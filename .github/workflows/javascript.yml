@@ -1,0 +1,18 @@
+on: [push]
+
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: "14.x"
+      - uses: actions/checkout@v2
+      - name: Install dependencies
+        run: yarn
+      - name: Build Typescript
+        run: yarn run build
+      - name: Run prettier
+        run: yarn run prettier --check
