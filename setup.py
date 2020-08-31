@@ -17,7 +17,7 @@ setup(
     description="Omnisci integration with JupyterLab",  # Required
     long_description=long_description,  # Optional
     long_description_content_type="text/markdown",  # Optional (see note above)
-    url="https://github.com/Quansight/jupyterlab-omnisci",  # Optional
+    url="https://github.com/omnisci/jupyterlab-omnisci",  # Optional
     packages=find_packages(),
     install_requires=[
         "ipywidgets",

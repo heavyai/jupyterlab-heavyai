@@ -2,9 +2,9 @@
   "name": "jupyterlab-omnisci",
   "version": "1.0.1",
   "description": "JupyterLab - Omnisci integration",
-  "homepage": "https://github.com/Quansight/jupyterlab-omnisci",
+  "homepage": "https://github.com/omnisci/jupyterlab-omnisci",
   "bugs": {
-    "url": "https://github.com/Quansight/jupyterlab-omnisci/issues"
+    "url": "https://github.com/omnisci/jupyterlab-omnisci/issues"
   },
   "license": "Apache-2.0",
   "author": "Omnisci",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Quansight/jupyterlab-omnisci.git"
+    "url": "https://github.com/omnisci/jupyterlab-omnisci.git"
   },
   "scripts": {
     "build": "tsc",
