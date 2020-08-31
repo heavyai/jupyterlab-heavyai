@@ -1,0 +1,336 @@
+
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>Using session IDs &#8212; Jupyterlab OmniSci</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
+    <link href="_static/css/index.css" rel="stylesheet">
+    <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.css" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="_static/jupyter-sphinx.css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="_static/togglebutton.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
+    <script src="_static/mystnb.js"></script>
+    <script src="_static/sphinx-book-theme.js"></script>
+    <script >var togglebuttonSelector = '.toggle, .admonition.dropdown, .tag_hide_input div.cell_input, .tag_hide-input div.cell_input, .tag_hide_output div.cell_output, .tag_hide-output div.cell_output, .tag_hide_cell.cell, .tag_hide-cell.cell';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://unpkg.com/@jupyter-widgets/html-manager@^0.18.0/dist/embed-amd.js"></script>
+    <script async="async" src="https://unpkg.com/thebelab@latest/lib/index.js"></script>
+    <script >
+        const thebe_selector = ".thebe"
+        const thebe_selector_input = "pre"
+        const thebe_selector_output = ".output"
+    </script>
+    <script async="async" src="_static/sphinx-thebe.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing" href="contributing.html" />
+    <link rel="prev" title="Creating Visualizations" href="visualization.html" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="docsearch:language" content="en">
+
+
+
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+<div class="col-12 col-md-3 bd-sidebar site-navigation show" id="site-navigation">
+    
+        <div class="navbar-brand-box">
+<a class="navbar-brand text-wrap" href="index.html">
+  
+  
+  <h1 class="site-logo" id="site-title">Jupyterlab OmniSci</h1>
+  
+</a>
+</div>
+
+<form class="bd-search d-flex align-items-center" action="search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search this book..." aria-label="Search this book..." autocomplete="off" >
+</form>
+
+<nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <ul class="nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="intro.html">
+   JupyterLab OmniSci
+  </a>
+ </li>
+</ul>
+<ul class="current nav sidenav_l1">
+ <li class="toctree-l1">
+  <a class="reference internal" href="installation.html">
+   Installation
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="reference internal" href="usage.html">
+   Usage
+  </a>
+  <ul class="current">
+   <li class="toctree-l2">
+    <a class="reference internal" href="sql.html">
+     Executing SQL Queries and using Ibis
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="visualization.html">
+     Creating Visualizations
+    </a>
+   </li>
+   <li class="toctree-l2 current active">
+    <a class="current reference internal" href="#">
+     Using session IDs
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="contributing.html">
+   Contributing
+  </a>
+ </li>
+</ul>
+
+</nav>
+
+ <!-- To handle the deprecated key -->
+
+<div class="navbar_extra_footer">
+  Powered by <a href="https://jupyterbook.org">Jupyter Book</a>
+</div>
+
+</div>
+
+
+          
+
+
+          
+<main class="col py-md-3 pl-md-4 bd-content overflow-auto" role="main">
+    
+    <div class="row topbar fixed-top container-xl">
+    <div class="col-12 col-md-3 bd-topbar-whitespace site-navigation show">
+    </div>
+    <div class="col pl-2 topbar-main">
+        
+        <button id="navbar-toggler" class="navbar-toggler ml-0" type="button" data-toggle="collapse"
+            data-toggle="tooltip" data-placement="bottom" data-target=".site-navigation" aria-controls="navbar-menu"
+            aria-expanded="true" aria-label="Toggle navigation" aria-controls="site-navigation"
+            title="Toggle navigation" data-toggle="tooltip" data-placement="left">
+            <i class="fas fa-bars"></i>
+            <i class="fas fa-arrow-left"></i>
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        
+        <div class="dropdown-buttons-trigger">
+    <button id="dropdown-buttons-trigger" class="btn btn-secondary topbarbtn" aria-label="Download this page"><i
+            class="fas fa-download"></i></button>
+
+    
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/session_ids.md"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.md</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
+</div>
+        <!-- Source interaction buttons -->
+
+
+        <!-- Full screen (wrap in <a> to have style consistency -->
+        <a class="full-screen-button"><button type="button" class="btn btn-secondary topbarbtn" data-toggle="tooltip"
+                data-placement="bottom" onclick="toggleFullScreen()" title="Fullscreen mode"><i
+                    class="fas fa-expand"></i></button></a>
+
+        <!-- Launch buttons -->
+
+    </div>
+
+    <!-- Table of contents -->
+    <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> Contents
+        </div>
+        <nav id="bd-toc-nav">
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#enable-the-session-manager-server-extension">
+   1. Enable the session manager server extension.
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#set-up-the-user-s-environment">
+   2. Set up the user’s environment
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#directing-the-user-to-the-session">
+   3. Directing the user to the session
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#advanced-configuration">
+   4. Advanced configuration
+  </a>
+ </li>
+</ul>
+
+        </nav>
+    </div>
+</div>
+    <div id="main-content" class="row">
+        <div class="col-12 col-md-9 pl-md-3 pr-md-0">
+        
+              <div>
+                
+  <div class="section" id="using-session-ids">
+<h1>Using session IDs<a class="headerlink" href="#using-session-ids" title="Permalink to this headline">¶</a></h1>
+<p>In some contexts the user may be coming from another context (such as OmniSci Immerse)
+where they already have an authenticated session to the OmniSci databse.
+This extension provides a way to pass that session information to JupyterLab so that they
+may continue with their data analysis uninterrupted.
+There are some steps required to set this up, however:</p>
+<div class="section" id="enable-the-session-manager-server-extension">
+<h2>1. Enable the session manager server extension.<a class="headerlink" href="#enable-the-session-manager-server-extension" title="Permalink to this headline">¶</a></h2>
+<p>We must an extension to the JupyterLab server that knows how to find the session
+information, which can then be passed to the frontend application.
+Once the package <code class="docutils literal notranslate"><span class="pre">jupyterlab_omnisci</span></code> is installed, the extension can be enabled by running</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter serverextension <span class="nb">enable</span> --sys-prefix jupyterlab_omnisci.serverextension
+</pre></div>
+</div>
+<p>If this works, you should not see any error messages, and you can verify
+it is enabled by running</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter serverextension list
+</pre></div>
+</div>
+</div>
+<div class="section" id="set-up-the-user-s-environment">
+<h2>2. Set up the user’s environment<a class="headerlink" href="#set-up-the-user-s-environment" title="Permalink to this headline">¶</a></h2>
+<p>The user environment should be prepared for the extension to get the necessary information.
+This setup could occur during a container launch, or after spawning the Jupyter server process.
+By default, the extension looks for the protocol, host, and port of the OmniSci server
+in environment variables.
+The names of these variables may be configured in the user’s <code class="docutils literal notranslate"><span class="pre">jupyter_notebook_config.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="o">.</span><span class="n">OmniSciSessionManager</span><span class="o">.</span><span class="n">protocol</span> <span class="o">=</span> <span class="s1">&#39;OMNISCI_PROTOCOL&#39;</span>
+<span class="n">c</span><span class="o">.</span><span class="n">OmniSciSessionManager</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="s1">&#39;OMNISCI_HOST&#39;</span>
+<span class="n">c</span><span class="o">.</span><span class="n">OmniSciSessionManager</span><span class="o">.</span><span class="n">port</span> <span class="o">=</span> <span class="s1">&#39;OMNISCI_PORT&#39;</span>
+</pre></div>
+</div>
+<p>The session ID is more ephemeral. The extension looks for that information in a file on disk.
+This file should be plain text, and contain the session ID and nothing else.
+The location of this file <em>must</em> be configured in the <code class="docutils literal notranslate"><span class="pre">jupyter_notebook_config.py</span></code> file,
+otherwise it won’t know where to find the session:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="o">.</span><span class="n">OmniSciSessionManager</span><span class="o">.</span><span class="n">session_file</span> <span class="o">=</span> <span class="s1">&#39;/path/to/session/file&#39;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="directing-the-user-to-the-session">
+<h2>3. Directing the user to the session<a class="headerlink" href="#directing-the-user-to-the-session" title="Permalink to this headline">¶</a></h2>
+<p>Once the server extension is enabled, and the user’s environment is configured,
+it should be ready to use.
+You can direct the user to a workspace that is ready-to-use by sending them
+to this url (where <code class="docutils literal notranslate"><span class="pre">BASE_URL</span></code> is the server root):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{BASE_URL}/lab?omnisci&amp;reset
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">omnisci</span></code> URL parameter launches a few activities with the session ID that should be ready-to-go.
+The <code class="docutils literal notranslate"><span class="pre">reset</span></code> URL parameter clears any existing workspace that would try to load,
+since we are replacing it with our own.
+If everything has worked, you should see something like the following:</p>
+<p><img alt="session" src="_images/session-workspace.png" /></p>
+</div>
+<div class="section" id="advanced-configuration">
+<h2>4. Advanced configuration<a class="headerlink" href="#advanced-configuration" title="Permalink to this headline">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">OmniSciSessionManager</span></code> is the default provider of session IDs,
+but this can be configured and replaced by other implementations.
+For instance, if you want to get connection data from another location
+other than environment variables and local files, you can replace it with your
+own implementation.</p>
+<p>To do this, you need to write a new session manager that implements the interface
+given in <span class="xref myst">this</span> file,
+and configure the notebook server to use that in the <code class="docutils literal notranslate"><span class="pre">jupyter_notebook_config.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">c</span><span class="o">.</span><span class="n">OmniSciConfig</span><span class="o">.</span><span class="n">session_manager</span> <span class="o">=</span> <span class="s2">&quot;your_new_module.YourImplementation&quot;</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+              </div>
+              
+        </div>
+    </div>
+    
+    
+    <div class='prev-next-bottom'>
+        
+    <a class='left-prev' id="prev-link" href="visualization.html" title="previous page">Creating Visualizations</a>
+    <a class='right-next' id="next-link" href="contributing.html" title="next page">Contributing</a>
+
+    </div>
+    <footer class="footer mt-5 mt-md-0">
+    <div class="container">
+      <p>
+        
+          By OmniSci and Quansight<br/>
+        
+            &copy; Copyright 2020.<br/>
+      </p>
+    </div>
+  </footer>
+</main>
+
+
+      </div>
+    </div>
+
+    <script src="_static/js/index.js"></script>
+    
+  </body>
+</html>

@@ -1,12 +1,11 @@
 
 
-
 <!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>Index &#8212; Jupyterlab OmniSci</title>
+    <title>Contributing &#8212; Jupyterlab OmniSci</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/css/all.min.css" integrity="sha384-KA6wR/X5RY4zFAHpv/CnoG2UW1uogYfdnP67Uv7eULvTveboZJg0qUpmJZb5VqzN" crossorigin="anonymous">
     <link href="_static/css/index.css" rel="stylesheet">
     <link rel="stylesheet" href="_static/sphinx-book-theme.css" type="text/css" />
@@ -37,8 +36,9 @@
         const thebe_selector_output = ".output"
     </script>
     <script async="async" src="_static/sphinx-thebe.js"></script>
-    <link rel="index" title="Index" href="#" />
+    <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Using session IDs" href="session_ids.html" />
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="docsearch:language" content="en">
@@ -76,7 +76,7 @@
   </a>
  </li>
 </ul>
-<ul class="nav sidenav_l1">
+<ul class="current nav sidenav_l1">
  <li class="toctree-l1">
   <a class="reference internal" href="installation.html">
    Installation
@@ -87,8 +87,8 @@
    Usage
   </a>
  </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="contributing.html">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
    Contributing
   </a>
  </li>
@@ -130,6 +130,18 @@
             class="fas fa-download"></i></button>
 
     
+    <div class="dropdown-buttons">
+        <!-- ipynb file if we had a myst markdown file -->
+        
+        <!-- Download raw file -->
+        <a class="dropdown-buttons" href="_sources/contributing.md"><button type="button"
+                class="btn btn-secondary topbarbtn" title="Download source file" data-toggle="tooltip"
+                data-placement="left">.md</button></a>
+        <!-- Download PDF via print -->
+        <button type="button" id="download-print" class="btn btn-secondary topbarbtn" title="Print to PDF"
+            onClick="window.print()" data-toggle="tooltip" data-placement="left">.pdf</button>
+    </div>
+    
 </div>
         <!-- Source interaction buttons -->
 
@@ -145,8 +157,23 @@
 
     <!-- Table of contents -->
     <div class="d-none d-md-block col-md-2 bd-toc show">
+        <div class="tocsection onthispage pt-5 pb-3">
+            <i class="fas fa-list"></i> Contents
+        </div>
         <nav id="bd-toc-nav">
-            
+            <ul class="nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#installing-from-source">
+   Installing from source
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#releasing">
+   Releasing
+  </a>
+ </li>
+</ul>
+
         </nav>
     </div>
 </div>
@@ -155,13 +182,101 @@
         
               <div>
                 
+  <div class="section" id="contributing">
+<h1>Contributing<a class="headerlink" href="#contributing" title="Permalink to this headline">¶</a></h1>
+<p>We welcome new contributions from anyone, including new ideas, reports of issues, code changes, etc.</p>
+<div class="section" id="installing-from-source">
+<h2>Installing from source<a class="headerlink" href="#installing-from-source" title="Permalink to this headline">¶</a></h2>
+<p>To install from source, run the following in a terminal:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git clone git@github.com:omnisci/jupyterlab-omnisci.git
 
-<h1 id="index">Index</h1>
+<span class="nb">cd</span> jupyterlab-omnisci
+conda env create -f binder/environment.yml
+conda activate jupyterlab-omnisci
 
-<div class="genindex-jumpbox">
- 
+pip install -e .<span class="o">[</span>dev<span class="o">]</span>
+
+jlpm install
+jlpm run build
+
+jupyter labextension install @jupyter-widgets/jupyterlab-manager .
+jupyter serverextension <span class="nb">enable</span> --sys-prefix jupyterlab_omnisci.serverextension
+</pre></div>
+</div>
+<p>Now you can build the docs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter-book build book
+</pre></div>
+</div>
+<p>And update the formatting of any files you change:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>yarn run prettier
+black jupyterlab_omnisci
+</pre></div>
+</div>
+</div>
+<div class="section" id="releasing">
+<h2>Releasing<a class="headerlink" href="#releasing" title="Permalink to this headline">¶</a></h2>
+<p>First create a test environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda env create -f binder/environment.yml --name tmp
+conda activate tmp
+</pre></div>
+</div>
+<p>Then bump the Python version in <code class="docutils literal notranslate"><span class="pre">setup.py</span></code> and upload a test version:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm -rf dist/
+python setup.py sdist bdist_wheel
+twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+</pre></div>
+</div>
+<p>Install the test version in your new environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple jupyterlab_omnisci
+</pre></div>
+</div>
+<p>Now bump the version for the Javascript package in <code class="docutils literal notranslate"><span class="pre">package.json</span></code>. The run a build,
+create a tarball, and install it as a JupyterLab extension:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jlpm
+jlpm run build
+jlpm pack --filename out.tgz
+jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
+jupyter labextension install out.tgz
+</pre></div>
+</div>
+<p>Now open JupyterLab and run through all the notebooks in <code class="docutils literal notranslate"><span class="pre">notebooks</span></code> to make sure
+they still render correctly.</p>
+<p>Now you can publish the Python package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>twine upload dist/*
+</pre></div>
+</div>
+<p>And publish the node package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm publish out.tgz
+</pre></div>
+</div>
+<p>And add a git tag for the release and push:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git tag &lt;new version&gt;
+git push
+git push --tags
+</pre></div>
+</div>
+</div>
 </div>
 
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            kernelName: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
 
               </div>
               
@@ -171,6 +286,7 @@
     
     <div class='prev-next-bottom'>
         
+    <a class='left-prev' id="prev-link" href="session_ids.html" title="previous page">Using session IDs</a>
 
     </div>
     <footer class="footer mt-5 mt-md-0">
