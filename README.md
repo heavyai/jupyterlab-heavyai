@@ -5,39 +5,29 @@ all within JupyterLab.
 
 ![example](./screenshot.png)
 
+Note, if you are looking to create visualizations with Altair backed by Omnisci, install the [`ibis-vega-transform`](https://github.com/quansight/ibis-vega-transform) package instead of, or alongside, this one.
+
 ## Installation
 
 First, install JupyterLab and `pymapd` as well the `jupyterlab-omnisci` Python package:
 
 ```bash
-conda install -c conda-forge pymapd nodejs jaeger
+conda install -c conda-forge pymapd nodejs
 
-pip install jupyterlab-omnisci "tornado<6" "notebook<6"
+pip install jupyterlab-omnisci
 ```
 
-Then install the `jupyterlab-omnisci` JupyterLab extension:
+Then install the `jupyterlab-omnisci` JupyterLab extension as well as Jupyter Widgets, if you want to use their support:
 
 ```bash
 jupyter labextension install \
-    @jupyter-widgets/jupyterlab-manager \
-    ibis-vega-transform \
-    # optional, if you want to see icon in JL to launch tracing GUI
-    jupyterlab-server-proxy-saulshanabrook  \
-    jupyterlab-omnisci
+    @jupyter-widgets/jupyterlab-manager \    jupyterlab-omnisci
 ```
 
 Then launch JupyterLab:
 
 ```bash
 jupyter lab
-```
-
-You can also createt dashboards with Phoila:
-
-```bash
-pip install git+https://github.com/Quansight/phoila.git@comm_open
-phoila install ibis-vega-transform
-phoila "examples/Charting Example.ipynb"
 ```
 
 ## Executing SQL Queries
@@ -165,13 +155,12 @@ cd jupyterlab-omnisci
 conda env create -f binder/environment.yml
 conda activate jupyterlab-omnisci
 
-pip install -e .
+pip install -e .[dev]
 
 jlpm install
 jlpm run build
 
-jupyter labextension install @jupyter-widgets/jupyterlab-manager ibis-vega-transform --no-build
-jupyter labextension install .
+jupyter labextension install @jupyter-widgets/jupyterlab-manager .
 jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
 ```
 
@@ -180,7 +169,7 @@ jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
 First create a test environment:
 
 ```bash
-conda create -n tmp -c conda-forge pymapd nodejs setuptools wheel twine
+conda env create -f binder/environment.yml --name tmp
 conda activate tmp
 ```
 

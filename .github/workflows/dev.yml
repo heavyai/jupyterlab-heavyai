@@ -1,0 +1,23 @@
+on: [push]
+
+jobs:
+  dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Miniconda
+        uses: conda-incubator/setup-miniconda@v1.7.0
+        with:
+          environment-file: binder/environment.yml
+          activate-environment: jupyterlab-omnisci
+      - name: Install Python package
+        shell: bash -l {0}
+        run: pip install -e .[dev]
+      - name: Install JS deps
+        shell: bash -l {0}
+        run: jlpm install
+      - name: Install jupyterlab extensions
+        shell: bash -l {0}
+        run: jupyter labextension install @jupyter-widgets/jupyterlab-manager .
+      - name: Enable server extensions
+        shell: bash -l {0}
+        run: jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
