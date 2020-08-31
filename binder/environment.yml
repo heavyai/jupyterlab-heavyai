@@ -10,7 +10,6 @@ dependencies:
   - pyyaml
   - vdom
   - tornado
-  - jupyter-book
   - black
   - wheel
   - twine
