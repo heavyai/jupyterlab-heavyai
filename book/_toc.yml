@@ -1,4 +1,8 @@
 - file: intro
-- file: content
+- file: installation
+- file: usage
   sections:
-    - file: markdown
+    - file: sql
+    - file: visualization
+    - file: session_ids
+- file: contributing
