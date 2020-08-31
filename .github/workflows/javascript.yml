@@ -1,5 +1,5 @@
 on: [push]
-
+name: 'Javascript'
 jobs:
   dev:
     runs-on: ubuntu-latest

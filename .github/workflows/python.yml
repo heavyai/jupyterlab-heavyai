@@ -1,5 +1,5 @@
 on: [push]
-
+name: 'Python'
 jobs:
   book:
     runs-on: ubuntu-latest

@@ -1,5 +1,5 @@
 on: [push]
-
+name: 'JupyterLab'
 jobs:
   extension:
     runs-on: ubuntu-latest
