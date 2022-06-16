@@ -1,13 +1,13 @@
 {
-  "name": "jupyterlab-omnisci",
-  "version": "2.0.0",
-  "description": "JupyterLab - Omnisci integration",
-  "homepage": "https://github.com/omnisci/jupyterlab-omnisci",
+  "name": "jupyterlab-heavyai",
+  "version": "1.0.0",
+  "description": "JupyterLab - Heavy.AI integration",
+  "homepage": "https://github.com/heavyai/jupyterlab-heavyai",
   "bugs": {
-    "url": "https://github.com/omnisci/jupyterlab-omnisci/issues"
+    "url": "https://github.com/heavyai/jupyterlab-heavyai/issues"
   },
   "license": "Apache-2.0",
-  "author": "Omnisci",
+  "author": "Heavy.AI",
   "files": [
     "lib/*.d.ts",
     "lib/*.js.map",
@@ -22,7 +22,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/omnisci/jupyterlab-omnisci.git"
+    "url": "https://github.com/heavyai/jupyterlab-heavyai.git"
   },
   "scripts": {
     "build": "tsc",

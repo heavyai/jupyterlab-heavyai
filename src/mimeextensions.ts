@@ -8,11 +8,11 @@ import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
 
 import { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 
-import { IOmniSciConnectionData } from './connection';
+import { IHeavyAIConnectionData } from './connection';
 
-import { OmniSciVega } from './widget';
+import { HeavyAIVega } from './widget';
 
-import { OmniSciSQLEditor } from './grid';
+import { HeavyAISQLEditor } from './grid';
 
 import { compileToVega } from './vega-lite';
 
@@ -21,12 +21,12 @@ import '../style/index.css';
 /**
  * The MIME type for backend-rendered vega.
  */
-export const VEGA_MIME_TYPE = 'application/vnd.omnisci.vega+json';
+export const VEGA_MIME_TYPE = 'application/vnd.heavyai.vega+json';
 
 /**
  * The MIME type for a SQL editor.
  */
-export const SQL_EDITOR_MIME_TYPE = 'application/vnd.omnisci.sqleditor+json';
+export const SQL_EDITOR_MIME_TYPE = 'application/vnd.heavyai.sqleditor+json';
 
 /**
  * The MIME type for png data.
@@ -34,9 +34,9 @@ export const SQL_EDITOR_MIME_TYPE = 'application/vnd.omnisci.sqleditor+json';
 export const IMAGE_MIME = 'image/png';
 
 /**
- * A class for rendering a OmniSci-generated image.
+ * A class for rendering a HeavyAI-generated image.
  */
-export class RenderedOmniSciVega extends Widget
+export class RenderedHeavyAIVega extends Widget
   implements IRenderMime.IRenderer {
   /**
    * Construct the rendered vega widget.
@@ -47,7 +47,7 @@ export class RenderedOmniSciVega extends Widget
   }
 
   /**
-   * Render OmniSci image into this widget's node.
+   * Render HeavyAI image into this widget's node.
    */
   renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     const layout = this.layout as SingletonLayout;
@@ -68,11 +68,11 @@ export class RenderedOmniSciVega extends Widget
     // Get the data from the mimebundle
     const data = (model.data[
       VEGA_MIME_TYPE
-    ] as unknown) as IOmniSciVegaMimeBundle;
+    ] as unknown) as IHeavyAIVegaMimeBundle;
     const { connection, sessionId, vega, vegaLite } = data;
 
-    // Create a new OmniSciVega
-    const vegaWidget = new OmniSciVega({
+    // Create a new HeavyAIVega
+    const vegaWidget = new HeavyAIVega({
       sessionId,
       connection,
       vega: vega || compileToVega(vegaLite),
@@ -98,14 +98,14 @@ export class RenderedOmniSciVega extends Widget
 }
 
 /**
- * OmniSci renderer custom mimetype format.
+ * HeavyAI renderer custom mimetype format.
  */
-interface IOmniSciVegaMimeBundle {
+interface IHeavyAIVegaMimeBundle {
   /**
    * Connection data containing all of the info
    * we need to make the connection.
    */
-  connection: IOmniSciConnectionData;
+  connection: IHeavyAIConnectionData;
 
   /**
    * A session ID for a pre-authenticated session.
@@ -124,9 +124,9 @@ interface IOmniSciVegaMimeBundle {
 }
 
 /**
- * A class for rendering a OmniSci-generated image.
+ * A class for rendering a HeavyAI-generated image.
  */
-export class RenderedOmniSciSQLEditor extends Widget
+export class RenderedHeavyAISQLEditor extends Widget
   implements IRenderMime.IRenderer {
   /**
    * Construct the rendered sql editor widget.
@@ -134,8 +134,8 @@ export class RenderedOmniSciSQLEditor extends Widget
   constructor() {
     super();
     this.layout = new SingletonLayout();
-    this.addClass('omnisci-RenderedOmniSciSQLEditor');
-    this._widget = new OmniSciSQLEditor({
+    this.addClass('heavyai-RenderedHeavyAISQLEditor');
+    this._widget = new HeavyAISQLEditor({
       editorFactory: Private.editorFactory
     });
     (this.layout as SingletonLayout).widget = this._widget;
@@ -144,7 +144,7 @@ export class RenderedOmniSciSQLEditor extends Widget
   /**
    * Get the underlying SQL editor.
    */
-  get widget(): OmniSciSQLEditor {
+  get widget(): HeavyAISQLEditor {
     return this._widget;
   }
 
@@ -155,7 +155,7 @@ export class RenderedOmniSciSQLEditor extends Widget
     // Get the data from the mimebundle
     const data = (model.data[
       SQL_EDITOR_MIME_TYPE
-    ] as unknown) as IOmniSciSQLEditorMimeBundle;
+    ] as unknown) as IHeavyAISQLEditorMimeBundle;
     if (!data) {
       return Promise.resolve(void 0);
     }
@@ -164,18 +164,18 @@ export class RenderedOmniSciSQLEditor extends Widget
     return Promise.resolve(void 0);
   }
 
-  private _widget: OmniSciSQLEditor;
+  private _widget: HeavyAISQLEditor;
 }
 
 /**
- * OmniSci renderer custom mimetype format.
+ * HeavyAI renderer custom mimetype format.
  */
-interface IOmniSciSQLEditorMimeBundle {
+interface IHeavyAISQLEditorMimeBundle {
   /**
    * Connection data containing all of the info
    * we need to make the connection.
    */
-  connection: IOmniSciConnectionData;
+  connection: IHeavyAIConnectionData;
 
   /**
    * A session ID for a pre-authenticated session.
@@ -188,13 +188,13 @@ interface IOmniSciSQLEditorMimeBundle {
   query?: string;
 }
 /**
- * A mime renderer factory for omnisci-vega data.
+ * A mime renderer factory for heavyai-vega data.
  */
 export const vegaRendererFactory: IRenderMime.IRendererFactory = {
   safe: false,
   mimeTypes: [VEGA_MIME_TYPE],
   defaultRank: 10,
-  createRenderer: options => new RenderedOmniSciVega()
+  createRenderer: options => new RenderedHeavyAIVega()
 };
 
 /**
@@ -206,35 +206,35 @@ export const vegaRendererFactory: IRenderMime.IRendererFactory = {
  */
 export interface ISQLEditorRendererFactory
   extends IRenderMime.IRendererFactory {
-  rendererCreated: ISignal<void, RenderedOmniSciSQLEditor>;
+  rendererCreated: ISignal<void, RenderedHeavyAISQLEditor>;
 }
 /**
- * A mime renderer factory for omnisci-sql-editor data.
+ * A mime renderer factory for heavyai-sql-editor data.
  */
 export const sqlEditorRendererFactory: ISQLEditorRendererFactory = {
   safe: false,
   mimeTypes: [SQL_EDITOR_MIME_TYPE],
   defaultRank: 10,
   createRenderer: options => {
-    const rendered = new RenderedOmniSciSQLEditor();
+    const rendered = new RenderedHeavyAISQLEditor();
     rendered.id = `sql-editor-mime-renderer-${++Private.id}`;
     (sqlEditorRendererFactory.rendererCreated as Signal<
       any,
-      RenderedOmniSciSQLEditor
+      RenderedHeavyAISQLEditor
     >).emit(rendered);
     return rendered;
   },
-  rendererCreated: new Signal<any, RenderedOmniSciSQLEditor>({})
+  rendererCreated: new Signal<any, RenderedHeavyAISQLEditor>({})
 };
 
 const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
   {
-    id: 'jupyterlab-omnisci:vega-factory',
+    id: 'jupyterlab-heavyai:vega-factory',
     rendererFactory: vegaRendererFactory,
     dataType: 'string'
   },
   {
-    id: 'jupyterlab-omnisci:sqleditor-factory',
+    id: 'jupyterlab-heavyai:sqleditor-factory',
     rendererFactory: sqlEditorRendererFactory,
     dataType: 'string'
   }

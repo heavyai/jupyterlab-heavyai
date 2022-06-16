@@ -14,7 +14,7 @@ import { IDisposable, DisposableDelegate } from '@lumino/disposable';
 import { extractTransforms } from 'vega-lite';
 import { Kernel, KernelMessage } from '@jupyterlab/services';
 
-const PLUGIN_ID = 'jupyterlab-omnisci:extract-vega-lite-plugin';
+const PLUGIN_ID = 'jupyterlab-heavyai:extract-vega-lite-plugin';
 
 const plugin: JupyterFrontEndPlugin<void> = {
   activate,

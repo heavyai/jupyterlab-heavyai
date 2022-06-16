@@ -2,11 +2,11 @@ from notebook.utils import url_path_join
 
 from jupyterlab_server import LabConfig
 
-from .handlers import OmniSciSessionHandler
+from .handlers import HeavyAISessionHandler
 
 
 def _jupyter_server_extension_paths():
-    return [{"module": "jupyterlab_omnisci.serverextension"}]
+    return [{"module": "jupyterlab_heavyai.serverextension"}]
 
 
 def load_jupyter_server_extension(nb_server_app):
@@ -22,7 +22,7 @@ def load_jupyter_server_extension(nb_server_app):
     base_url = web_app.settings["base_url"]
     lab_path = url_path_join(base_url)
 
-    omnisci_session_endpoint = url_path_join(lab_path, "omnisci/session")
-    print(omnisci_session_endpoint)
-    handlers = [(omnisci_session_endpoint, OmniSciSessionHandler)]
+    heavyai_session_endpoint = url_path_join(lab_path, "heavyai/session")
+    print(heavyai_session_endpoint)
+    handlers = [(heavyai_session_endpoint, HeavyAISessionHandler)]
     web_app.add_handlers(".*$", handlers)

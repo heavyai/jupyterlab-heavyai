@@ -7,11 +7,11 @@ We welcome new contributions from anyone, including new ideas, reports of issues
 To install from source, run the following in a terminal:
 
 ```bash
-git clone git@github.com:omnisci/jupyterlab-omnisci.git
+git clone git@github.com:heavyai/jupyterlab-heavyai.git
 
-cd jupyterlab-omnisci
+cd jupyterlab-heavyai
 conda env create -f binder/environment.yml
-conda activate jupyterlab-omnisci
+conda activate jupyterlab-heavyai
 
 pip install -e .[dev]
 
@@ -19,7 +19,7 @@ jlpm install
 jlpm run build
 
 jupyter labextension install @jupyter-widgets/jupyterlab-manager .
-jupyter serverextension enable --sys-prefix jupyterlab_omnisci.serverextension
+jupyter serverextension enable --sys-prefix jupyterlab_heavyai.serverextension
 ```
 
 Now you can build the docs:
@@ -32,7 +32,7 @@ And update the formatting of any files you change:
 
 ```bash
 yarn run prettier
-black jupyterlab_omnisci
+black jupyterlab_heavyai
 ```
 
 ## Releasing
@@ -40,22 +40,15 @@ black jupyterlab_omnisci
 First create a test environment:
 
 ```bash
-conda env create -f binder/environment.yml --name tmp
+mamba env create -f binder/environment.yml --name release_jupyterlab_heavyai
 conda activate tmp
 ```
 
-Then bump the Python version in `setup.py` and upload a test version:
+Then bump the Python version in `pyproject.toml`, build and install the output.
 
 ```bash
-rm -rf dist/
-python setup.py sdist bdist_wheel
-twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-```
-
-Install the test version in your new environment:
-
-```bash
-pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple jupyterlab_omnisci
+flit build
+pip install dist/*.whl
 ```
 
 Now bump the version for the Javascript package in `package.json`. The run a build,
@@ -71,7 +64,6 @@ jupyter labextension install out.tgz
 Now open JupyterLab and run through all the notebooks in `book` to make sure
 they still render correctly:
 
-
 ```bash
 jupyter lab
 ```
@@ -79,7 +71,7 @@ jupyter lab
 Now you can publish the Python package:
 
 ```bash
-twine upload dist/*
+flit publish
 ```
 
 And publish the node package:

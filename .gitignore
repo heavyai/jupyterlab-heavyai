@@ -20,3 +20,5 @@ __pycache__
 *.gz
 *.whl
 yarn.lock
+.DS_Store
+.idea

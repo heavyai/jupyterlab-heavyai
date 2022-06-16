@@ -49,7 +49,7 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
 
         type:  What the mimetype of the output should be. Valid types:
             'vl': Vega Lite mimetype so the chart is rendered in the browser.
-            'vl-omnisci': OmniSci Vega Lite mimetype so the chart is rendered with the OmniSci Vega renderer
+            'vl-heavyai': HeavyAI Vega Lite mimetype so the chart is rendered with the HeavyAI Vega renderer
             'json': JSON mimetype so you can see the JSON of the chart.
             'sql': Text mimetype to see the SQL computed for the chart.
 
@@ -60,14 +60,14 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
     """
     # If options for vega-embed have been provided, pass those to the renderer.
     embed_options = options.get("embed_options", None)
-    assert type in ("vl", "vl-omnisci", "json", "sql")
+    assert type in ("vl", "vl-heavyai", "json", "sql")
     if type == "vl":
         display_type = lambda spec: VegaLite(
             spec, metadata={"embed_options": embed_options}
         )
         display_data = EMPTY_SPEC
-    elif type == "vl-omnisci":
-        display_type = VegaLiteOmniSci
+    elif type == "vl-heavyai":
+        display_type = VegaLiteHeavyAI
         display_data = [EMPTY_SPEC, None]
     elif type == "json":
         display_type = CompatJSON
@@ -97,12 +97,12 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
                 view["data"] = DEFAULT_TRANSFORMER(expr.execute())
             # If we are compiling to backend rendered vega
             # just record the SQL statement
-            elif type == "vl-omnisci":
+            elif type == "vl-heavyai":
                 view["data"] = {"sql": expr.compile()}
 
         if type == "vl":
             return spec
-        elif type == "vl-omnisci":
+        elif type == "vl-heavyai":
             return [spec, get_client(all_expressions[0])]
         elif type == "json":
             return spec
@@ -175,7 +175,7 @@ def get_display(f, *args, display_handle=True, **kwargs):
     """
     Get a IPython display handle that can be updated
     Usage:
-        chart_handle = jupyterlab_omnisci.get_display(render_chart, *args)
+        chart_handle = jupyterlab_heavyai.get_display(render_chart, *args)
     """
 
     global DISPLAY_HANDLE
@@ -189,11 +189,11 @@ def get_display(f, *args, display_handle=True, **kwargs):
 ##
 # Custom display objects
 ##
-class VegaLiteOmniSci(DisplayObject):
+class VegaLiteHeavyAI(DisplayObject):
     def _repr_mimebundle_(self, include, exclude):
         spec, conn = self.data
         return {
-            "application/vnd.omnisci.vega+json": {
+            "application/vnd.heavyai.vega+json": {
                 "vegaLite": spec,
                 "connection": {
                     "host": conn.host,
@@ -397,7 +397,7 @@ def display_chart(chart, backend_render=False):
 
 
 
-    backend_render: Whether to also render with OmniSci's builtin Vega rendering.
+    backend_render: Whether to also render with HeavyAI's builtin Vega rendering.
     """
 
     def display_header(name):
@@ -414,14 +414,14 @@ def display_chart(chart, backend_render=False):
     display_render(False, False, "sql")
     display_render(False, False, "vl")
     if backend_render:
-        display_render(False, False, "vl-omnisci")
+        display_render(False, False, "vl-heavyai")
 
     display_header("Compiled")
     display_render(True, False, "json")
     display_render(True, False, "sql")
     display_render(True, False, "vl")
     if backend_render:
-        display_render(False, False, "vl-omnisci")
+        display_render(False, False, "vl-heavyai")
 
     display_header("Extracted")
     display_render(False, True, "json")
@@ -432,4 +432,4 @@ def display_chart(chart, backend_render=False):
     display_render(True, True, "sql")
     display_render(True, True, "vl")
     if backend_render:
-        display_render(False, False, "vl-omnisci")
+        display_render(False, False, "vl-heavyai")

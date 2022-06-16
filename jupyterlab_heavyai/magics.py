@@ -8,9 +8,9 @@ import yaml
 import urllib.parse
 
 import ibis
-import pymapd
+import heavyai
 
-__all__ = ["OmniSciVegaRenderer", "OmniSciSQLEditorRenderer"]
+__all__ = ["HeavyAIVegaRenderer", "HeavyAISQLEditorRenderer"]
 
 from IPython.core.magic import register_cell_magic
 from IPython.display import display
@@ -23,10 +23,10 @@ except Exception:
     register_cell_magic = lambda x: x
 
 
-class OmniSciVegaRenderer:
+class HeavyAIVegaRenderer:
     """
     Class that produces a vega mimebundle that the notebook
-    omnisci renderer can understand.
+    heavyai renderer can understand.
     """
 
     def __init__(self, connection, data=None, vl_data=None):
@@ -38,10 +38,10 @@ class OmniSciVegaRenderer:
         =========
 
         connection: dict or ibis connection
-            A dictionary containing the connection data for the omnisci
+            A dictionary containing the connection data for the heavyai
             server. Must include 'user', 'password', 'host', 'port',
             'dbname', and 'protocol'.
-            Alternatively, an ibis connection to the omnisci databse.
+            Alternatively, an ibis connection to the heavyai databse.
 
         data: dict
             Vega data to render.
@@ -59,8 +59,8 @@ class OmniSciVegaRenderer:
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """
-        Return a mimebundle with 'application/vnd.omnisci.vega+json'
-        data, which is a custom mimetype for rendering omnisci vega
+        Return a mimebundle with 'application/vnd.heavyai.vega+json'
+        data, which is a custom mimetype for rendering heavyai vega
         in Jupyter notebooks.
         """
         bundle = {"connection": self.connection, "sessionId": self.session}
@@ -68,13 +68,13 @@ class OmniSciVegaRenderer:
             bundle["vega"] = self.data
         else:
             bundle["vegaLite"] = self.vl_data
-        return {"application/vnd.omnisci.vega+json": bundle}
+        return {"application/vnd.heavyai.vega+json": bundle}
 
 
-class OmniSciSQLEditorRenderer:
+class HeavyAISQLEditorRenderer:
     """
     Class that produces a sql editor mimebundle that the notebook
-    omnisci renderer can understand.
+    heavyai renderer can understand.
     """
 
     def __init__(self, connection, query=""):
@@ -85,10 +85,10 @@ class OmniSciSQLEditorRenderer:
         =========
 
         connection: dict or ibis connection
-            A dictionary containing the connection data for the omnisci
+            A dictionary containing the connection data for the heavyai
             server. Must include 'user', 'password', 'host', 'port',
             'dbname', and 'protocol'.
-            Alternatively, an ibis connection to the omnisci databse.
+            Alternatively, an ibis connection to the heavyai databse.
 
         query: string or ibis expression.
             An initial query for the SQL editor.
@@ -104,8 +104,8 @@ class OmniSciSQLEditorRenderer:
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """
-        Return a mimebundle with 'application/vnd.omnisci.vega+json'
-        data, which is a custom mimetype for rendering omnisci vega
+        Return a mimebundle with 'application/vnd.heavyai.vega+json'
+        data, which is a custom mimetype for rendering heavyai vega
         in Jupyter notebooks.
         """
         data = {
@@ -113,51 +113,51 @@ class OmniSciSQLEditorRenderer:
             "sessionId": self.session,
             "query": self.query,
         }
-        return {"application/vnd.omnisci.sqleditor+json": data}
+        return {"application/vnd.heavyai.sqleditor+json": data}
 
 
 @register_cell_magic
-def omnisci_vega(line, cell):
+def heavyai_vega(line, cell):
     """
-    Cell magic for rendering vega produced by the omnisci backend.
+    Cell magic for rendering vega produced by the heavyai backend.
 
-    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    Usage: Initiate it with the line `%% heavyai $connection_data`,
     where `connection_data` is the dictionary containing the connection
-    data for the OmniSci server. The rest of the cell should be yaml-specified
+    data for the HeavyAI server. The rest of the cell should be yaml-specified
     vega data.
     """
     connection_data = ast.literal_eval(line)
     vega = yaml.safe_load(cell)
-    display(OmniSciVegaRenderer(connection_data, vega))
+    display(HeavyAIVegaRenderer(connection_data, vega))
 
 
 @register_cell_magic
-def omnisci_vegalite(line, cell):
+def heavyai_vegalite(line, cell):
     """
-    Cell magic for rendering vega lite produced by the omnisci backend.
+    Cell magic for rendering vega lite produced by the heavyai backend.
 
-    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    Usage: Initiate it with the line `%% heavyai $connection_data`,
     where `connection_data` is the dictionary containing the connection
-    data for the OmniSci server. The rest of the cell should be yaml-specified
+    data for the HeavyAI server. The rest of the cell should be yaml-specified
     vega lite data.
     """
     connection_data = ast.literal_eval(line)
     vl = yaml.safe_load(cell)
-    display(OmniSciVegaRenderer(connection_data, vl_data=vl))
+    display(HeavyAIVegaRenderer(connection_data, vl_data=vl))
 
 
 @register_cell_magic
-def omnisci_sqleditor(line, cell):
+def heavyai_sqleditor(line, cell):
     """
     Cell magic for rendering a SQL editor.
 
-    Usage: Initiate it with the line `%% omnisci $connection_data`,
+    Usage: Initiate it with the line `%% heavyai $connection_data`,
     where `connection_data` is the dictionary containing the connection
-    data for the OmniSci server. The rest of the cell should be
+    data for the HeavyAI server. The rest of the cell should be
     a SQL query for the initial value of the editor.
     """
     connection_data = ast.literal_eval(line)
-    display(OmniSciSQLEditorRenderer(connection_data, cell))
+    display(HeavyAISQLEditorRenderer(connection_data, cell))
 
 
 def _make_connection(connection):
@@ -165,11 +165,11 @@ def _make_connection(connection):
     Given a connection client, return JSON-serializable dictionary
     with connection data for the client, as well as a session id if available.
     If it is already a dictionary, return that.
-    Works for Ibis clients, pymapd connections, and dictionaries.
+    Works for Ibis clients, heavyai connections, and dictionaries.
 
     Parameters
     ----------
-    connection: ibis.omniscidb.OmniSciDBClient or pymapd.Connection or dict
+    connection: ibis.heavyai.HeavyAIDBClient or heavyai.Connection or dict
         A connection object.
 
     Returns
@@ -179,7 +179,7 @@ def _make_connection(connection):
         if available. If the session id is not available (for instance, if
         a dict is provided), then returns None for the second item.
     """
-    if isinstance(connection, ibis.omniscidb.OmniSciDBClient):
+    if isinstance(connection, ibis.heavyai.HeavyAIDBClient):
         con = dict(
             host=connection.host,
             port=connection.port,
@@ -189,7 +189,7 @@ def _make_connection(connection):
             username=connection.user,
         )
         session = connection.con._session
-    elif isinstance(connection, pymapd.Connection):
+    elif isinstance(connection, heavyai.Connection):
         parsed = urllib.parse.urlparse(connection._host)
         con = dict(
             host=parsed.hostname,

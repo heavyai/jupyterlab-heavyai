@@ -27,42 +27,42 @@ import { ReadonlyJSONObject } from '@lumino/coreutils';
 import { DataGrid, TextRenderer } from '@lumino/datagrid';
 import { Widget } from '@lumino/widgets';
 import {
-  IOmniSciConnectionData,
-  IOmniSciConnectionManager,
-  OmniSciCompletionConnector,
-  OmniSciConnectionManager
+  IHeavyyaiConnectionData,
+  IHeavyyaiConnectionManager,
+  HeavyyaiCompletionConnector,
+  HeavyyaiConnectionManager
 } from './connection';
-import { OmniSciSQLEditor } from './grid';
+import { HeavyyaiSQLEditor } from './grid';
 import {
-  RenderedOmniSciSQLEditor,
+  RenderedHeavyyaiSQLEditor,
   sqlEditorRendererFactory
 } from './mimeextensions';
-import { OmniSciVegaViewer, OmniSciVegaViewerFactory } from './viewer';
+import { HeavyyaiVegaViewer, HeavyyaiVegaViewerFactory } from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.
  */
-const FACTORY = 'OmniSciVega';
+const FACTORY = 'HeavyyaiVega';
 
 /**
  * Command IDs for the extension.
  */
 namespace CommandIDs {
-  export const newGrid = 'omnisci:new-grid';
+  export const newGrid = 'heavyai:new-grid';
 
-  export const invokeCompleter = 'omnisci:invoke-completer';
+  export const invokeCompleter = 'heavyai:invoke-completer';
 
-  export const selectCompleter = 'omnisci:select-completer';
+  export const selectCompleter = 'heavyai:select-completer';
 
-  export const setConnection = 'omnisci:set-connection';
+  export const setConnection = 'heavyai:set-connection';
 
-  export const setEnvironment = 'omnisci:set-environment';
+  export const setEnvironment = 'heavyai:set-environment';
 
-  export const injectIbisConnection = 'omnisci:inject-ibis-connection';
+  export const injectIbisConnection = 'heavyai:inject-ibis-connection';
 
-  export const createNotebook = 'omnisci:create-notebook';
+  export const createNotebook = 'heavyai:create-notebook';
 
-  export const createWorkspace = 'omnisci:create-workspace';
+  export const createWorkspace = 'heavyai:create-workspace';
 }
 
 /**
@@ -75,53 +75,53 @@ export const VEGA_MIME_TYPE = 'application/vnd.vega.v3+json';
 
 export const EXTENSIONS = [
   '.vega',
-  '.omnisci.vega',
-  '.omnisci.vg.json',
-  '.omnisci.vega.json',
+  '.heavyai.vega',
+  '.heavyai.vg.json',
+  '.heavyai.vega.json',
   '.vg.json',
   '.vega.json'
 ];
 
-const CONNECTION_PLUGIN_ID = 'jupyterlab-omnisci:connection';
+const CONNECTION_PLUGIN_ID = 'jupyterlab-heavyai:connection';
 
-const VEGA_PLUGIN_ID = 'jupyterlab-omnisci:vega';
+const VEGA_PLUGIN_ID = 'jupyterlab-heavyai:vega';
 
-const SQL_EDITOR_PLUGIN_ID = 'jupyterlab-omnisci:sql-editor';
+const SQL_EDITOR_PLUGIN_ID = 'jupyterlab-heavyai:sql-editor';
 
-const NOTEBOOK_PLUGIN_ID = 'jupyterlab-omnisci:notebook';
+const NOTEBOOK_PLUGIN_ID = 'jupyterlab-heavyai:notebook';
 
 /**
- * The Omnisci connection handler extension.
+ * The HeavyAI connection handler extension.
  */
-const omnisciConnectionPlugin: JupyterFrontEndPlugin<IOmniSciConnectionManager> = {
-  activate: activateOmniSciConnection,
+const heavyaiConnectionPlugin: JupyterFrontEndPlugin<IHeavyyaiConnectionManager> = {
+  activate: activateHeavyyaiConnection,
   id: CONNECTION_PLUGIN_ID,
   requires: [ICommandPalette, IMainMenu, ISettingRegistry],
-  provides: IOmniSciConnectionManager,
+  provides: IHeavyyaiConnectionManager,
   autoStart: true
 };
 
-async function activateOmniSciConnection(
+async function activateHeavyyaiConnection(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry
-): Promise<IOmniSciConnectionManager> {
+): Promise<IHeavyyaiConnectionManager> {
   // Fetch the initial state of the settings.
   const settings = await settingRegistry.load(CONNECTION_PLUGIN_ID);
-  const manager = new OmniSciConnectionManager({ settings });
+  const manager = new HeavyyaiConnectionManager({ settings });
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
     execute: async () => {
       const connection = await manager.chooseConnection(
-        'Set Default Omnisci Connection',
+        'Set Default HeavyAI Connection',
         manager.defaultConnection
       );
       manager.defaultConnection = connection;
       return connection;
     },
-    label: 'Set Default Omnisci Connection...'
+    label: 'Set Default HeavyAI Connection...'
   });
 
   // Add an application-wide connection-setting command.
@@ -131,7 +131,7 @@ async function activateOmniSciConnection(
       manager.environment = environment;
       return environment;
     },
-    label: 'Set OmniSci Connection Environment...'
+    label: 'Set Heavyyai Connection Environment...'
   });
 
   mainMenu.settingsMenu.addGroup(
@@ -141,18 +141,18 @@ async function activateOmniSciConnection(
     ],
     50
   );
-  palette.addItem({ command: CommandIDs.setConnection, category: 'OmniSci' });
-  palette.addItem({ command: CommandIDs.setEnvironment, category: 'OmniSci' });
+  palette.addItem({ command: CommandIDs.setConnection, category: 'Heavyyai' });
+  palette.addItem({ command: CommandIDs.setEnvironment, category: 'Heavyyai' });
 
   return manager;
 }
 
 /**
- * The OmniSci-Vega file type.
+ * The Heavyyai-Vega file type.
  */
-const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
-  name: 'omnisci-vega',
-  displayName: 'OmniSci Vega',
+const heavyaiFileType: Partial<DocumentRegistry.IFileType> = {
+  name: 'heavyai-vega',
+  displayName: 'Heavyyai Vega',
   fileFormat: 'text',
   extensions: EXTENSIONS,
   mimeTypes: [VEGA_MIME_TYPE],
@@ -160,31 +160,31 @@ const omnisciFileType: Partial<DocumentRegistry.IFileType> = {
 };
 
 /**
- * The Omnisci vega file handler extension.
+ * The HeavyAI vega file handler extension.
  */
-const omnisciVegaPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateOmniSciVegaViewer,
+const heavyaiVegaPlugin: JupyterFrontEndPlugin<void> = {
+  activate: activateHeavyyaiVegaViewer,
   id: VEGA_PLUGIN_ID,
-  requires: [ILayoutRestorer, IOmniSciConnectionManager],
+  requires: [ILayoutRestorer, IHeavyyaiConnectionManager],
   autoStart: true
 };
 
-function activateOmniSciVegaViewer(
+function activateHeavyyaiVegaViewer(
   app: JupyterFrontEnd,
   restorer: ILayoutRestorer,
-  manager: IOmniSciConnectionManager
+  manager: IHeavyyaiConnectionManager
 ): void {
-  const viewerNamespace = 'omnisci-viewer-widget';
+  const viewerNamespace = 'heavyai-viewer-widget';
 
-  const factory = new OmniSciVegaViewerFactory({
+  const factory = new HeavyyaiVegaViewerFactory({
     name: FACTORY,
     modelName: 'text',
-    fileTypes: ['json', 'omnisci-vega', 'vega3', 'vega4'],
-    defaultFor: ['omnisci-vega'],
+    fileTypes: ['json', 'heavyai-vega', 'vega3', 'vega4'],
+    defaultFor: ['heavyai-vega'],
     readOnly: true,
     manager
   });
-  const viewerTracker = new WidgetTracker<OmniSciVegaViewer>({
+  const viewerTracker = new WidgetTracker<HeavyyaiVegaViewer>({
     namespace: viewerNamespace
   });
 
@@ -195,7 +195,7 @@ function activateOmniSciVegaViewer(
     name: widget => widget.context.path
   });
 
-  app.docRegistry.addFileType(omnisciFileType);
+  app.docRegistry.addFileType(heavyaiFileType);
   app.docRegistry.addWidgetFactory(factory);
 
   factory.widgetCreated.connect((sender, widget) => {
@@ -222,10 +222,10 @@ function activateOmniSciVegaViewer(
 }
 
 /**
- * The Omnisci SQL editor extension.
+ * The HeavyAI SQL editor extension.
  */
-const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateOmniSciGridViewer,
+const heavyaiGridPlugin: JupyterFrontEndPlugin<void> = {
+  activate: activateHeavyyaiGridViewer,
   id: SQL_EDITOR_PLUGIN_ID,
   requires: [
     ICompletionManager,
@@ -233,26 +233,26 @@ const omnisciGridPlugin: JupyterFrontEndPlugin<void> = {
     ILauncher,
     ILayoutRestorer,
     IMainMenu,
-    IOmniSciConnectionManager,
+    IHeavyyaiConnectionManager,
     IThemeManager
   ],
   autoStart: true
 };
 
-function activateOmniSciGridViewer(
+function activateHeavyyaiGridViewer(
   app: JupyterFrontEnd,
   completionManager: ICompletionManager,
   editorServices: IEditorServices,
   launcher: ILauncher,
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
-  manager: IOmniSciConnectionManager,
+  manager: IHeavyyaiConnectionManager,
   themeManager: IThemeManager
 ): void {
-  const gridNamespace = 'omnisci-grid-widget';
-  const mimeGridNamespace = 'omnisci-mime-grid-widget';
+  const gridNamespace = 'heavyai-grid-widget';
+  const mimeGridNamespace = 'heavyai-mime-grid-widget';
 
-  const gridTracker = new WidgetTracker<MainAreaWidget<OmniSciSQLEditor>>({
+  const gridTracker = new WidgetTracker<MainAreaWidget<HeavyyaiSQLEditor>>({
     namespace: gridNamespace
   });
 
@@ -280,7 +280,7 @@ function activateOmniSciGridViewer(
   gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.content.input.editor;
     const sessionId = explorer.content.grid.sessionId;
-    const connector = new OmniSciCompletionConnector({
+    const connector = new HeavyyaiCompletionConnector({
       connection: explorer.content.grid.connectionData,
       sessionId
     });
@@ -289,7 +289,7 @@ function activateOmniSciGridViewer(
 
     explorer.content.grid.onModelChanged.connect(() => {
       const sessionId = explorer.content.grid.sessionId;
-      handle.connector = new OmniSciCompletionConnector({
+      handle.connector = new HeavyyaiCompletionConnector({
         connection: explorer.content.grid.connectionData,
         sessionId
       });
@@ -326,7 +326,7 @@ function activateOmniSciGridViewer(
   // editor mime renderer, but that requires some full-extension machinery.
   // So we extend the renderer factory with a "created" signal, and when that
   // fires, do some extra work in the real extension.
-  const mimeGridTracker = new WidgetTracker<RenderedOmniSciSQLEditor>({
+  const mimeGridTracker = new WidgetTracker<RenderedHeavyyaiSQLEditor>({
     namespace: mimeGridNamespace
   });
   // Add the new renderer to an instance tracker when it is created.
@@ -340,7 +340,7 @@ function activateOmniSciGridViewer(
     const grid = mime.widget;
     const sessionId = grid.grid.sessionId;
     const editor = grid.input.editor;
-    const connector = new OmniSciCompletionConnector({
+    const connector = new HeavyyaiCompletionConnector({
       connection: grid.grid.connectionData,
       sessionId
     });
@@ -349,7 +349,7 @@ function activateOmniSciGridViewer(
 
     grid.grid.onModelChanged.connect(() => {
       const sessionId = grid.grid.sessionId;
-      handle.connector = new OmniSciCompletionConnector({
+      handle.connector = new HeavyyaiCompletionConnector({
         connection: grid.grid.connectionData,
         sessionId
       });
@@ -402,23 +402,23 @@ function activateOmniSciGridViewer(
   app.commands.addKeyBinding({
     command: CommandIDs.selectCompleter,
     keys: ['Enter'],
-    selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-active`
+    selector: `.heavyai-Heavyyai-toolbar .jp-Editor.jp-mod-completer-active`
   });
   app.commands.addKeyBinding({
     command: CommandIDs.invokeCompleter,
     keys: ['Tab'],
-    selector: `.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-completer-enabled`
+    selector: `.heavyai-Heavyyai-toolbar .jp-Editor.jp-mod-completer-enabled`
   });
 
   app.commands.addCommand(CommandIDs.newGrid, {
-    label: 'OmniSci SQL Editor',
-    iconClass: 'omnisci-OmniSci-logo',
+    label: 'Heavyyai SQL Editor',
+    iconClass: 'heavyai-Heavyyai-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
       const connectionData =
-        (args['connectionData'] as IOmniSciConnectionData) || undefined;
+        (args['connectionData'] as IHeavyyaiConnectionData) || undefined;
       const sessionId = (args['sessionId'] as string) || undefined;
-      const grid = new OmniSciSQLEditor({
+      const grid = new HeavyyaiSQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
         manager,
         connectionData,
@@ -426,10 +426,10 @@ function activateOmniSciGridViewer(
         initialQuery: query
       });
       Private.id++;
-      grid.id = `omnisci-grid-widget-${Private.id}`;
-      grid.title.label = `OmniSci SQL Editor ${Private.id}`;
+      grid.id = `heavyai-grid-widget-${Private.id}`;
+      grid.title.label = `Heavyyai SQL Editor ${Private.id}`;
       grid.title.closable = true;
-      grid.title.iconClass = 'omnisci-OmniSci-logo';
+      grid.title.iconClass = 'heavyai-Heavyyai-logo';
       const main = new MainAreaWidget({ content: grid });
       main.id = grid.id;
       void gridTracker.add(main);
@@ -462,34 +462,34 @@ function activateOmniSciGridViewer(
 }
 
 /**
- * The Omnisci inital notebook extension.
+ * The HeavyAI inital notebook extension.
  */
-const omnisciNotebookPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateOmniSciNotebook,
+const heavyaiNotebookPlugin: JupyterFrontEndPlugin<void> = {
+  activate: activateHeavyyaiNotebook,
   id: NOTEBOOK_PLUGIN_ID,
   requires: [
     JupyterFrontEnd.IPaths,
     ICommandPalette,
     IMainMenu,
     INotebookTracker,
-    IOmniSciConnectionManager,
+    IHeavyyaiConnectionManager,
     IRouter
   ],
   autoStart: true
 };
 
-function activateOmniSciNotebook(
+function activateHeavyyaiNotebook(
   app: JupyterFrontEnd,
   paths: JupyterFrontEnd.IPaths,
   palette: ICommandPalette,
   menu: IMainMenu,
   tracker: INotebookTracker,
-  manager: IOmniSciConnectionManager,
+  manager: IHeavyyaiConnectionManager,
   router: IRouter
 ): void {
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
-    label: 'Insert Ibis OmniSci Connection…',
+    label: 'Insert Ibis Heavyyai Connection…',
     execute: async () => {
       const current = tracker.currentWidget;
       if (!current) {
@@ -510,13 +510,13 @@ function activateOmniSciNotebook(
 
   // Add a command to create a new notebook with an ibis connection.
   app.commands.addCommand(CommandIDs.createNotebook, {
-    label: 'Notebook with OmniSci Connection',
-    iconClass: 'omnisci-OmniSci-logo',
+    label: 'Notebook with Heavyyai Connection',
+    iconClass: 'heavyai-Heavyyai-logo',
     execute: async args => {
-      const connectionData: IOmniSciConnectionData =
-        (args['connectionData'] as IOmniSciConnectionData) || {};
-      const environment: IOmniSciConnectionData =
-        (args['environment'] as IOmniSciConnectionData) || {};
+      const connectionData: IHeavyyaiConnectionData =
+        (args['connectionData'] as IHeavyyaiConnectionData) || {};
+      const environment: IHeavyyaiConnectionData =
+        (args['environment'] as IHeavyyaiConnectionData) || {};
       const sessionId = (args['sessionId'] as string) || '';
       const initialQuery = (args['initialQuery'] as string) || '';
 
@@ -558,7 +558,7 @@ function activateOmniSciNotebook(
   // This specifically does not ask for user input, as we want it to
   // be triggerable via routing.
   app.commands.addCommand(CommandIDs.createWorkspace, {
-    label: 'Create OmniSci Workspace',
+    label: 'Create Heavyyai Workspace',
     execute: async () => {
       await app.restored;
       const workspace = await Private.fetchWorkspaceData();
@@ -589,7 +589,7 @@ function activateOmniSciNotebook(
   // Add ibis connection injection to the palette and the edit menu.
   palette.addItem({
     command: CommandIDs.injectIbisConnection,
-    category: 'OmniSci'
+    category: 'Heavyyai'
   });
   menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
 
@@ -597,13 +597,13 @@ function activateOmniSciNotebook(
   menu.fileMenu.newMenu.addGroup([{ command: CommandIDs.createNotebook }], 11);
   palette.addItem({
     command: CommandIDs.createWorkspace,
-    category: 'OmniSci'
+    category: 'Heavyyai'
   });
 
   // Add workspace creation to the router, so that external services
   // may launch a new workspace via URL.
   router.register({
-    pattern: /(\?omnisci|\&omnisci)($|&)/,
+    pattern: /(\?heavyai|\&heavyai)($|&)/,
     command: CommandIDs.createWorkspace
   });
 }
@@ -612,10 +612,10 @@ function activateOmniSciNotebook(
  * Export the plugin as default.
  */
 const plugins: JupyterFrontEndPlugin<any>[] = [
-  omnisciConnectionPlugin,
-  omnisciVegaPlugin,
-  omnisciGridPlugin,
-  omnisciNotebookPlugin
+  heavyaiConnectionPlugin,
+  heavyaiVegaPlugin,
+  heavyaiGridPlugin,
+  heavyaiNotebookPlugin
 ];
 export default plugins;
 
@@ -633,7 +633,7 @@ namespace Private {
    * to connect via session id.
    */
   export function canUseSession(
-    data: IOmniSciConnectionData | undefined
+    data: IHeavyyaiConnectionData | undefined
   ): boolean {
     return !!data && !!data.host && !!data.port && !!data.protocol;
   }
@@ -645,12 +645,12 @@ namespace Private {
     /**
      * Connection data for the initial state.
      */
-    connection?: IOmniSciConnectionData;
+    connection?: IHeavyyaiConnectionData;
 
     /**
      * Connection data for the initial state.
      */
-    environment?: IOmniSciConnectionData;
+    environment?: IHeavyyaiConnectionData;
 
     /**
      * An initial query to use.
@@ -669,7 +669,7 @@ namespace Private {
   const serverSettings = ServerConnection.makeSettings();
 
   export async function fetchWorkspaceData(): Promise<IWorkspaceData> {
-    const url = URLExt.join(serverSettings.baseUrl, 'omnisci', 'session');
+    const url = URLExt.join(serverSettings.baseUrl, 'heavyai', 'session');
     const response = await ServerConnection.makeRequest(
       url,
       {},
@@ -738,23 +738,23 @@ namespace Private {
   });
 
   /**
-   * A template for an Ibis OmniSci client.
+   * A template for an Ibis Heavyyai client.
    */
   const IBIS_TEMPLATE = `
 {{os}}import ibis
 
-con = ibis.omniscidb.connect(
+con = ibis.heavyai.connect(
     host={{host}}, user={{user}}, password={{password}},
     port={{port}}, database={{database}}, protocol={{protocol}}
 )`.trim();
 
   /**
-   * A template for an Ibis OmniSci client when a session ID is available.
+   * A template for an Ibis Heavyyai client when a session ID is available.
    */
   const SESSION_IBIS_TEMPLATE = `
 {{os}}import ibis
 
-con = ibis.omniscidb.connect(
+con = ibis.heavyai.connect(
     host={{host}}, port={{port}}, protocol={{protocol}}, session_id={{session}}
 )`.trim();
 
@@ -774,18 +774,18 @@ con = ibis.omniscidb.connect(
    */
   export function injectIbisConnection(options: {
     notebook: Notebook;
-    connection?: IOmniSciConnectionData;
-    environment?: IOmniSciConnectionData;
+    connection?: IHeavyyaiConnectionData;
+    environment?: IHeavyyaiConnectionData;
     sessionId?: string;
     initialQuery?: string;
   }) {
     const notebook = options.notebook;
     const env = options.environment || {};
-    const con: IOmniSciConnectionData = {};
+    const con: IHeavyyaiConnectionData = {};
     let os = Object.keys(env).length === 0 ? '' : 'import os\n';
     // Merge the connection with any environment variables
     // that have been specified.
-    const keys: ReadonlyArray<keyof IOmniSciConnectionData> = [
+    const keys: ReadonlyArray<keyof IHeavyyaiConnectionData> = [
       'host',
       'protocol',
       'port',

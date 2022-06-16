@@ -1,0 +1,68 @@
+[build-system]
+requires = ["flit_core >=3.3,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "jupyterlab-heavyai"
+version = "1.0"
+requires-python = ">=3.7"
+authors = [{name = "Heavy.AI", email = "community@heavy.ai"}]
+description = "HeavyAI integration with JupyterLab"
+readme = "README.md"
+license = {file = "LICENSE.md"}
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering",
+]
+
+dependencies = [
+    "ipywidgets",
+    "altair",
+    "pyyaml",
+    "vdom",
+    "tornado",
+    "jupyterlab>=2.0.0,<3.0.0",
+    "ibis-framework >=2.0",
+    "heavyai",
+
+    "importlib_metadata",  # drop for python >3.7
+    "packaging"
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+dev = [
+    "jupyterlab-heavyai[test]",
+    "jupyter-book",
+    "pre-commit",
+    "flit"
+]
+
+[project.urls]
+Home = "https://github.com/heavyai/jupyterlab-heavyai"
+Source = "https://github.com/heavyai/jupyterlab-heavyai"
+
+[tool.flit.module]
+name = "jupyterlab_heavyai"
+
+[tool.flit.sdist]
+exclude = [
+    "ci/*", ".github/*", "*.yaml", ".*", "jupyterlab_heavyai/tests/*", "docs/*"
+]
+
+[tool.black]
+line-length = 79
+target-version = ["py37", "py38", "py39", "py310"]
+
+[tool.isort]
+ensure_newline_before_comments = true
+line_length = 79
+multi_line_output = 3
+include_trailing_comma = true
+
+[tool.mypy]
+ignore_missing_imports = true

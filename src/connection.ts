@@ -16,10 +16,10 @@ declare const MapdCon: any;
 
 /* tslint:disable */
 /**
- * The OmniSciConnectionManager token.
+ * The HeavyAIConnectionManager token.
  */
-export const IOmniSciConnectionManager = new Token<IOmniSciConnectionManager>(
-  'jupyterlab-omnisci:IOmniSciConnectionManager'
+export const IHeavyAIConnectionManager = new Token<IHeavyAIConnectionManager>(
+  'jupyterlab-heavyai:IHeavyAIConnectionManager'
 );
 
 /* tslint:enable */
@@ -27,17 +27,17 @@ export const IOmniSciConnectionManager = new Token<IOmniSciConnectionManager>(
 /**
  * A type stub for a connection object.
  */
-export type OmniSciConnection = any;
+export type HeavyAIConnection = any;
 
 /**
- * Connection data for the omnisci browser client.
+ * Connection data for the heavyai browser client.
  *
  * #### Notes
  * This interface is intended to be API compatible with the servers.json
- * server specification that is used by OmniSci Immerse. As such,
+ * server specification that is used by HeavyAI Immerse. As such,
  * it includes a number of fields that we do not use in this package.
  */
-export interface IOmniSciConnectionData {
+export interface IHeavyAIConnectionData {
   /**
    * The name of the database to connect to.
    */
@@ -59,7 +59,7 @@ export interface IOmniSciConnectionData {
   password?: string;
 
   /**
-   * A URL for the OmniSci server.
+   * A URL for the HeavyAI server.
    *
    * If host, protocol, and port are given,
    * those will take precedence.
@@ -108,11 +108,11 @@ export interface IOmniSciConnectionData {
 /**
  * The public interface for a connection manager.
  */
-export interface IOmniSciConnectionManager extends IDisposable {
+export interface IHeavyAIConnectionManager extends IDisposable {
   /**
    * The default connection data.
    */
-  readonly defaultConnection: IOmniSciConnectionData | undefined;
+  readonly defaultConnection: IHeavyAIConnectionData | undefined;
 
   /**
    * A connection specifying properties that are stored
@@ -124,20 +124,20 @@ export interface IOmniSciConnectionManager extends IDisposable {
    * This is not used for client-side connections like the SQL editor,
    * as they do not have access to environment variables.
    */
-  readonly environment: IOmniSciConnectionData | undefined;
+  readonly environment: IHeavyAIConnectionData | undefined;
 
   /**
    * A list of predefined connections.
    */
-  readonly connections: ReadonlyArray<IOmniSciConnectionData>;
+  readonly connections: ReadonlyArray<IHeavyAIConnectionData>;
 
   /**
    * Prompt user to choose a connection.
    */
   chooseConnection(
     label: string,
-    oldData?: IOmniSciConnectionData
-  ): Promise<IOmniSciConnectionData | undefined>;
+    oldData?: IHeavyAIConnectionData
+  ): Promise<IHeavyAIConnectionData | undefined>;
 
   /**
    * A signal that fires when the connection listing changes.
@@ -145,11 +145,11 @@ export interface IOmniSciConnectionManager extends IDisposable {
   readonly changed: ISignal<this, void>;
 }
 
-export class OmniSciConnectionManager implements IOmniSciConnectionManager {
+export class HeavyAIConnectionManager implements IHeavyAIConnectionManager {
   /**
    * Construct a new conection manager.
    */
-  constructor(options: OmniSciConnectionManager.IOptions) {
+  constructor(options: HeavyAIConnectionManager.IOptions) {
     this._settings = options.settings;
     this._settings.changed.connect(this._onSettingsChanged, this);
     this._onSettingsChanged(this._settings);
@@ -167,10 +167,10 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * servers known to it, and select one that is marked with `"master": true`,
    * or, if there is only one option, select that.
    */
-  get defaultConnection(): IOmniSciConnectionData | undefined {
+  get defaultConnection(): IHeavyAIConnectionData | undefined {
     return this._defaultConnection;
   }
-  set defaultConnection(value: IOmniSciConnectionData | undefined) {
+  set defaultConnection(value: IHeavyAIConnectionData | undefined) {
     // If the new value is undefined, write the existing values
     // unmodified. This will trigger a possible selection of the
     // value in `_onSettingsChanged.
@@ -200,7 +200,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
     const labMatch = labServers.find(s => {
       return (
         Object.keys(value).filter(
-          (key: keyof IOmniSciConnectionData) => value[key] !== s[key]
+          (key: keyof IHeavyAIConnectionData) => value[key] !== s[key]
         ).length === 0
       );
     });
@@ -226,10 +226,10 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    * This is not used for client-side connections like the SQL editor,
    * as they do not have access to environment variables.
    */
-  get environment(): IOmniSciConnectionData | undefined {
+  get environment(): IHeavyAIConnectionData | undefined {
     return this._environment;
   }
-  set environment(value: IOmniSciConnectionData | undefined) {
+  set environment(value: IHeavyAIConnectionData | undefined) {
     if (
       (!value && !this._environment) ||
       JSONExt.deepEqual(value as JSONObject, this._environment as JSONObject)
@@ -245,7 +245,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   /**
    * The overall list of connections known to the manager.
    */
-  get connections(): ReadonlyArray<IOmniSciConnectionData> {
+  get connections(): ReadonlyArray<IHeavyAIConnectionData> {
     return this._labConnections.slice();
   }
 
@@ -261,8 +261,8 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
    */
   chooseConnection(
     label: string,
-    oldData?: IOmniSciConnectionData
-  ): Promise<IOmniSciConnectionData | undefined> {
+    oldData?: IHeavyAIConnectionData
+  ): Promise<IHeavyAIConnectionData | undefined> {
     return Private.showConnectionDialog({
       title: label,
       oldData,
@@ -274,7 +274,7 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   /**
    * Prompt the user to populate environment variables.
    */
-  setEnvironment(): Promise<IOmniSciConnectionData | undefined> {
+  setEnvironment(): Promise<IHeavyAIConnectionData | undefined> {
     return Private.showConnectionDialog({
       title: 'Set Connection Environment Variables',
       oldData: this._environment,
@@ -304,12 +304,12 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
   private _onSettingsChanged(settings: ISettingRegistry.ISettings): void {
     const newServers =
       ((settings.get('servers').composite as unknown) as
-        | IOmniSciConnectionData[]
+        | IHeavyAIConnectionData[]
         | undefined) || [];
     // Normalize the connection data.
     this._labConnections = newServers.map(Private.normalizeConnectionData);
     const environment = settings.get('environment').composite as
-      | IOmniSciConnectionData
+      | IHeavyAIConnectionData
       | undefined;
     this._environment = environment;
     this._defaultConnection = Private.chooseDefault(this.connections);
@@ -318,16 +318,16 @@ export class OmniSciConnectionManager implements IOmniSciConnectionManager {
 
   private _settings: ISettingRegistry.ISettings;
   private _isDisposed = false;
-  private _defaultConnection: IOmniSciConnectionData | undefined = undefined;
-  private _environment: IOmniSciConnectionData | undefined = undefined;
+  private _defaultConnection: IHeavyAIConnectionData | undefined = undefined;
+  private _environment: IHeavyAIConnectionData | undefined = undefined;
   private _changed = new Signal<this, void>(this);
-  private _labConnections: ReadonlyArray<IOmniSciConnectionData> = [];
+  private _labConnections: ReadonlyArray<IHeavyAIConnectionData> = [];
 }
 
 /**
- * A namespace for OmniSciConnectionManager statics.
+ * A namespace for HeavyAIConnectionManager statics.
  */
-export namespace OmniSciConnectionManager {
+export namespace HeavyAIConnectionManager {
   /**
    * Options for creating a connection manager.
    */
@@ -340,9 +340,9 @@ export namespace OmniSciConnectionManager {
 }
 
 /**
- * Make a connection to the OmniSci backend.
+ * Make a connection to the HeavyAI backend.
  *
- * @param data: connection data for the OmniSci database.
+ * @param data: connection data for the HeavyAI database.
  *   Must include at least protocol, host, and port. If a session ID
  *   is not given, it must also incldue database, usernamem and password.
  *
@@ -352,9 +352,9 @@ export namespace OmniSciConnectionManager {
  * @returns a promise that resolves with the connection object.
  */
 export async function makeConnection(
-  data: IOmniSciConnectionData,
+  data: IHeavyAIConnectionData,
   sessionId?: string
-): Promise<OmniSciConnection> {
+): Promise<HeavyAIConnection> {
   // Whether or not we have a session id, we need protocol,
   // host, and port to be defined.
   let con = new MapdCon()
@@ -380,11 +380,11 @@ export async function makeConnection(
 }
 
 /**
- * A dialog for entering OmniSci connection data.
+ * A dialog for entering HeavyAI connection data.
  */
-export class OmniSciConnectionDialog extends Widget
-  implements Dialog.IBodyWidget<IOmniSciConnectionData> {
-  constructor(options: OmniSciConnectionDialog.IOptions = {}) {
+export class HeavyAIConnectionDialog extends Widget
+  implements Dialog.IBodyWidget<IHeavyAIConnectionData> {
+  constructor(options: HeavyAIConnectionDialog.IOptions = {}) {
     super();
     let layout = (this.layout = new PanelLayout());
     const oldData = options.oldData;
@@ -449,8 +449,8 @@ export class OmniSciConnectionDialog extends Widget
   /**
    * Get connection data for the current state of the dialog.
    */
-  getValue(): IOmniSciConnectionData {
-    const data: IOmniSciConnectionData = {
+  getValue(): IHeavyAIConnectionData {
+    const data: IHeavyAIConnectionData = {
       username: this._user.value || undefined,
       password: this._password.value || undefined,
       database: this._database.value || undefined,
@@ -459,7 +459,7 @@ export class OmniSciConnectionDialog extends Widget
       port: this._port.value ? parseInt(this._port.value, 10) : undefined
     };
     Object.keys(data).forEach(
-      (k: keyof IOmniSciConnectionData) =>
+      (k: keyof IHeavyAIConnectionData) =>
         data[k] === undefined && delete data[k]
     );
     return data;
@@ -508,7 +508,7 @@ export class OmniSciConnectionDialog extends Widget
   /**
    * Given connection data, populate the inputs.
    */
-  private _populateInputs(data: IOmniSciConnectionData): void {
+  private _populateInputs(data: IHeavyAIConnectionData): void {
     this._user.value = data.username || '';
     this._password.value = data.password || '';
     this._database.value = data.database || '';
@@ -523,7 +523,7 @@ export class OmniSciConnectionDialog extends Widget
    * is the null "-" option, for when the inputs don't match.
    * The values for the options are their indices in the list-1
    */
-  private _buildSelect(knownServers: ReadonlyArray<IOmniSciConnectionData>) {
+  private _buildSelect(knownServers: ReadonlyArray<IHeavyAIConnectionData>) {
     const select = document.createElement('select');
     let idx = 0;
 
@@ -548,7 +548,7 @@ Password ${server.password ? '*****' : 'unknown'}`;
     return select;
   }
 
-  private _servers: ReadonlyArray<IOmniSciConnectionData>;
+  private _servers: ReadonlyArray<IHeavyAIConnectionData>;
   private _select: HTMLSelectElement;
   private _user: HTMLInputElement;
   private _password: HTMLInputElement;
@@ -559,9 +559,9 @@ Password ${server.password ? '*****' : 'unknown'}`;
 }
 
 /**
- * A namespace for OmniSciConnectionDialog statics.
+ * A namespace for HeavyAIConnectionDialog statics.
  */
-export namespace OmniSciConnectionDialog {
+export namespace HeavyAIConnectionDialog {
   /**
    * Options to create a new connection dialog.
    */
@@ -569,12 +569,12 @@ export namespace OmniSciConnectionDialog {
     /**
      * A previous connection to prepopulate.
      */
-    oldData?: IOmniSciConnectionData;
+    oldData?: IHeavyAIConnectionData;
 
     /**
      * A list of known servers for selection.
      */
-    knownServers?: ReadonlyArray<IOmniSciConnectionData>;
+    knownServers?: ReadonlyArray<IHeavyAIConnectionData>;
 
     /**
      * Whether to show the password field.
@@ -586,9 +586,9 @@ export namespace OmniSciConnectionDialog {
 }
 
 /**
- * A class for fetching completion data from a OmniSci connection.
+ * A class for fetching completion data from a HeavyAI connection.
  */
-export class OmniSciCompletionConnector extends DataConnector<
+export class HeavyAICompletionConnector extends DataConnector<
   CompletionHandler.IReply,
   void,
   CompletionHandler.IRequest
@@ -596,7 +596,7 @@ export class OmniSciCompletionConnector extends DataConnector<
   /**
    * Construct a new completion connector.
    */
-  constructor(options: OmniSciCompletionConnector.IOptions = {}) {
+  constructor(options: HeavyAICompletionConnector.IOptions = {}) {
     super();
     // Note: unlike other places, this expects an authenticated
     // session ID to work.
@@ -607,7 +607,7 @@ export class OmniSciCompletionConnector extends DataConnector<
   }
 
   /**
-   * Fetch completion data from the OmniSci backend.
+   * Fetch completion data from the HeavyAI backend.
    */
   fetch(
     request: CompletionHandler.IRequest
@@ -657,13 +657,13 @@ export class OmniSciCompletionConnector extends DataConnector<
       }
     );
   }
-  private _connection: Promise<OmniSciConnection> | undefined = undefined;
+  private _connection: Promise<HeavyAIConnection> | undefined = undefined;
 }
 
 /**
- * A namespace for OmniSciCompletionConnector statics.
+ * A namespace for HeavyAICompletionConnector statics.
  */
-export namespace OmniSciCompletionConnector {
+export namespace HeavyAICompletionConnector {
   /**
    * Options used to create the completion connector.
    */
@@ -671,7 +671,7 @@ export namespace OmniSciCompletionConnector {
     /**
      * Connection data for the backend.
      */
-    connection?: IOmniSciConnectionData;
+    connection?: IHeavyAIConnectionData;
 
     /**
      * A session ID for an already authenticated session.
@@ -691,8 +691,8 @@ namespace Private {
    * If the list is empty, returns undefined.
    */
   export function chooseDefault(
-    connections: ReadonlyArray<IOmniSciConnectionData>
-  ): IOmniSciConnectionData | undefined {
+    connections: ReadonlyArray<IHeavyAIConnectionData>
+  ): IHeavyAIConnectionData | undefined {
     if (!connections.length) {
       return undefined;
     }
@@ -705,8 +705,8 @@ namespace Private {
    * a database, parse it into protocol, host, and port.
    */
   export function normalizeConnectionData(
-    data: IOmniSciConnectionData
-  ): IOmniSciConnectionData {
+    data: IHeavyAIConnectionData
+  ): IHeavyAIConnectionData {
     let { host, port, protocol } = data;
 
     // Assume https if protocol is undefined.
@@ -741,14 +741,14 @@ namespace Private {
   }
 
   /**
-   * Show a dialog for entering OmniSci connection data.
+   * Show a dialog for entering HeavyAI connection data.
    */
   export function showConnectionDialog(
     options: IConnectionDialogOptions
-  ): Promise<IOmniSciConnectionData | undefined> {
-    return showDialog<IOmniSciConnectionData>({
+  ): Promise<IHeavyAIConnectionData | undefined> {
+    return showDialog<IHeavyAIConnectionData>({
       title: options.title,
-      body: new OmniSciConnectionDialog(options),
+      body: new HeavyAIConnectionDialog(options),
       buttons: [Dialog.cancelButton(), Dialog.okButton()]
     }).then(result => {
       if (result.button.accept) {
@@ -760,7 +760,7 @@ namespace Private {
   }
 
   export interface IConnectionDialogOptions
-    extends OmniSciConnectionDialog.IOptions {
+    extends HeavyAIConnectionDialog.IOptions {
     title: string;
   }
 }

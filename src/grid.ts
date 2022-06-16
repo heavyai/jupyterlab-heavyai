@@ -26,10 +26,10 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 import { CodeEditor, CodeEditorWrapper } from '@jupyterlab/codeeditor';
 
 import {
-  IOmniSciConnectionData,
-  IOmniSciConnectionManager,
+  IHeavyAIConnectionData,
+  IHeavyAIConnectionManager,
   makeConnection,
-  OmniSciConnection
+  HeavyAIConnection
 } from './connection';
 
 /**
@@ -42,18 +42,18 @@ const BLOCK_SIZE = 50000;
  */
 const DEFAULT_LIMIT = 50000;
 
-export class OmniSciSQLEditor extends Panel {
+export class HeavyAISQLEditor extends Panel {
   /**
-   * Construct a new OmniSciSQLEditor widget.
+   * Construct a new HeavyAISQLEditor widget.
    */
-  constructor(options: OmniSciSQLEditor.IOptions) {
+  constructor(options: HeavyAISQLEditor.IOptions) {
     super();
     const content = new SplitPanel({ orientation: 'vertical', spacing: 2 });
     this.addWidget(content);
     const connection =
       options.connectionData ||
       (options.manager && options.manager.defaultConnection);
-    const grid = new OmniSciGrid({
+    const grid = new HeavyAIGrid({
       connectionData: connection,
       sessionId: options.sessionId,
       initialQuery: options.initialQuery || ''
@@ -68,7 +68,7 @@ export class OmniSciSQLEditor extends Panel {
     this._content = content;
     this._grid = grid;
     this._tool = toolbar;
-    this.addClass('omnisci-OmniSciSQLEditor');
+    this.addClass('heavyai-HeavyAISQLEditor');
   }
 
   /**
@@ -81,7 +81,7 @@ export class OmniSciSQLEditor extends Panel {
   /**
    * Get a reference to the grid widget.
    */
-  get grid(): OmniSciGrid {
+  get grid(): HeavyAIGrid {
     return this._grid;
   }
 
@@ -150,16 +150,16 @@ export class OmniSciSQLEditor extends Panel {
   }
 
   private _content: SplitPanel;
-  private _grid: OmniSciGrid;
+  private _grid: HeavyAIGrid;
   private _tool: Panel;
 }
 
 /**
- * A namespace for OmniSciSQLEditor statics.
+ * A namespace for HeavyAISQLEditor statics.
  */
-export namespace OmniSciSQLEditor {
+export namespace HeavyAISQLEditor {
   /**
-   * Options for creating a new OmniSciSQLEditor.
+   * Options for creating a new HeavyAISQLEditor.
    */
   export interface IOptions {
     /**
@@ -170,7 +170,7 @@ export namespace OmniSciSQLEditor {
     /**
      * An optional initial connection data structure.
      */
-    connectionData?: IOmniSciConnectionData;
+    connectionData?: IHeavyAIConnectionData;
 
     /**
      * An optional pre-authenticated session ID for the SQL editor.
@@ -185,30 +185,30 @@ export namespace OmniSciSQLEditor {
     /**
      * An optional connection manager.
      */
-    manager?: IOmniSciConnectionManager;
+    manager?: IHeavyAIConnectionManager;
   }
 }
 
 /**
- * A widget that hosts a lumino grid with a OmniSci dataset.
+ * A widget that hosts a lumino grid with a HeavyAI dataset.
  */
-export class OmniSciGrid extends Panel {
+export class HeavyAIGrid extends Panel {
   /**
-   * Construct a new OmniSciGrid widget.
+   * Construct a new HeavyAIGrid widget.
    */
-  constructor(options: OmniSciGrid.IOptions = {}) {
+  constructor(options: HeavyAIGrid.IOptions = {}) {
     super();
-    this.addClass('omnisci-OmniSciGrid');
+    this.addClass('heavyai-HeavyAIGrid');
     // Create the Layout
     this._content = new StackedPanel();
-    this._content.addClass('omnisci-OmniSciGrid-content');
+    this._content.addClass('heavyai-HeavyAIGrid-content');
     this._error = new Widget({ node: document.createElement('pre') });
-    this._error.addClass('omnisci-ErrorMessage');
+    this._error.addClass('heavyai-ErrorMessage');
     this.addWidget(this._content);
     this.addWidget(this._error);
 
     // Create the data model
-    this._model = new OmniSciTableModel();
+    this._model = new HeavyAITableModel();
 
     // Create the grid
     const renderer = new TextRenderer({
@@ -250,11 +250,11 @@ export class OmniSciGrid extends Panel {
   /**
    * The current connection data for the viewer.
    */
-  get connectionData(): IOmniSciConnectionData | undefined {
+  get connectionData(): IHeavyAIConnectionData | undefined {
     return this._model.connectionData;
   }
   async setConnectionData(
-    value: IOmniSciConnectionData | undefined,
+    value: IHeavyAIConnectionData | undefined,
     sessionId?: string
   ): Promise<void> {
     await this._updateModel(value, this._model.query, sessionId);
@@ -306,7 +306,7 @@ export class OmniSciGrid extends Panel {
    * A change signal emitted when the connection or
    * query data change.
    */
-  get onModelChanged(): ISignal<OmniSciGrid, void> {
+  get onModelChanged(): ISignal<HeavyAIGrid, void> {
     return this._onModelChanged;
   }
 
@@ -317,7 +317,7 @@ export class OmniSciGrid extends Panel {
    * validation failure, it shows the error in the panel.
    */
   private async _updateModel(
-    connectionData: IOmniSciConnectionData | undefined,
+    connectionData: IHeavyAIConnectionData | undefined,
     query: string,
     sessionId?: string
   ): Promise<void> {
@@ -339,7 +339,7 @@ export class OmniSciGrid extends Panel {
     this._onModelChanged.emit(void 0);
   }
 
-  private _model: OmniSciTableModel;
+  private _model: HeavyAITableModel;
   private _grid: DataGrid;
   private _content: StackedPanel;
   private _error: Widget;
@@ -347,17 +347,17 @@ export class OmniSciGrid extends Panel {
 }
 
 /**
- * A namespace for OmniSciGrid statics.
+ * A namespace for HeavyAIGrid statics.
  */
-export namespace OmniSciGrid {
+export namespace HeavyAIGrid {
   /**
-   * Options for creating a new OmniSciGrid.
+   * Options for creating a new HeavyAIGrid.
    */
   export interface IOptions {
     /**
      * An optional initial connection data structure.
      */
-    connectionData?: IOmniSciConnectionData;
+    connectionData?: IHeavyAIConnectionData;
 
     /**
      * An optional pre-authenticated session ID for the grid.
@@ -374,7 +374,7 @@ export namespace OmniSciGrid {
 /**
  * A data model for a query.
  */
-export class OmniSciTableModel extends DataModel {
+export class HeavyAITableModel extends DataModel {
   /**
    * Construct a new data model.
    */
@@ -415,7 +415,7 @@ export class OmniSciTableModel extends DataModel {
   /**
    * The current connection data for the model.
    */
-  get connectionData(): IOmniSciConnectionData | undefined {
+  get connectionData(): IHeavyAIConnectionData | undefined {
     return this._connectionData;
   }
 
@@ -519,7 +519,7 @@ export class OmniSciTableModel extends DataModel {
    *   an error if the validation fails.
    */
   async updateModel(
-    connectionData: IOmniSciConnectionData | undefined,
+    connectionData: IHeavyAIConnectionData | undefined,
     query: string,
     sessionId?: string
   ): Promise<void> {
@@ -704,8 +704,8 @@ export class OmniSciTableModel extends DataModel {
   }
 
   private _query = '';
-  private _connectionData: IOmniSciConnectionData | undefined;
-  private _connection: OmniSciConnection | undefined;
+  private _connectionData: IHeavyAIConnectionData | undefined;
+  private _connection: HeavyAIConnection | undefined;
 
   private _fieldNames: string[];
   private _dataBlocks: { [idx: number]: ReadonlyArray<JSONObject> } = {};
@@ -722,12 +722,12 @@ namespace Private {
    * it will create a change-connection button.
    */
   export function createToolbar(
-    widget: OmniSciGrid,
+    widget: HeavyAIGrid,
     editorFactory: CodeEditor.Factory,
-    manager?: IOmniSciConnectionManager
+    manager?: IHeavyAIConnectionManager
   ): Panel {
     const toolbar = new Panel();
-    toolbar.addClass('omnisci-OmniSci-toolbar');
+    toolbar.addClass('heavyai-HeavyAI-toolbar');
 
     // Create the query editor.
     const queryEditor = new CodeEditorWrapper({
@@ -752,7 +752,7 @@ namespace Private {
     if (manager) {
       (toolbar.layout as PanelLayout).addWidget(
         new ToolbarButton({
-          className: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
+          className: 'heavyai-HeavyAI-logo jp-Icon jp-Icon-16',
           onClick: () => {
             void manager
               .chooseConnection(
@@ -763,7 +763,7 @@ namespace Private {
                 return widget.setConnectionData(connectionData);
               });
           },
-          tooltip: 'Enter OmniSci Connection Data'
+          tooltip: 'Enter HeavyAI Connection Data'
         })
       );
     }
@@ -793,10 +793,10 @@ namespace Private {
   }
 
   /**
-   * Query the OmniSci backend.
+   * Query the HeavyAI backend.
    */
   export function makeQuery(
-    connection: OmniSciConnection,
+    connection: HeavyAIConnection,
     query: string,
     options: Object = {}
   ): Promise<ReadonlyArray<JSONObject>> {

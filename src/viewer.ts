@@ -13,14 +13,14 @@ import {
 } from '@jupyterlab/docregistry';
 
 import {
-  IOmniSciConnectionData,
-  IOmniSciConnectionManager
+  IHeavyAIConnectionData,
+  IHeavyAIConnectionManager
 } from './connection';
 
-import { OmniSciVega } from './widget';
+import { HeavyAIVega } from './widget';
 
-export class OmniSciVegaViewer extends DocumentWidget<Widget> {
-  constructor(options: OmniSciVegaViewer.IOptions) {
+export class HeavyAIVegaViewer extends DocumentWidget<Widget> {
+  constructor(options: HeavyAIVegaViewer.IOptions) {
     super({
       context: options.context,
       reveal: options.context.ready.then(() => this._render()),
@@ -28,8 +28,8 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
     });
     this._connectionData = options.manager.defaultConnection;
 
-    this.toolbar.addClass('omnisci-OmniSci-toolbar');
-    this.addClass('omnisci-OmniSciVegaViewer');
+    this.toolbar.addClass('heavyai-HeavyAI-toolbar');
+    this.addClass('heavyai-HeavyAIVegaViewer');
 
     this.toolbar.addItem(
       'Render',
@@ -44,7 +44,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
     this.toolbar.addItem(
       'Connect',
       new ToolbarButton({
-        iconClass: 'omnisci-OmniSci-logo jp-Icon jp-Icon-16',
+        iconClass: 'heavyai-HeavyAI-logo jp-Icon jp-Icon-16',
         onClick: () => {
           const name = PathExt.basename(this.context.path);
           void options.manager
@@ -56,7 +56,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
               this._connectionData = connectionData;
             });
         },
-        tooltip: 'Enter OmniSci Connection Data'
+        tooltip: 'Enter HeavyAI Connection Data'
       })
     );
   }
@@ -64,10 +64,10 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   /**
    * The current connection data for the viewer.
    */
-  get connectionData(): IOmniSciConnectionData | undefined {
+  get connectionData(): IHeavyAIConnectionData | undefined {
     return this._connectionData;
   }
-  set connectionData(value: IOmniSciConnectionData | undefined) {
+  set connectionData(value: IHeavyAIConnectionData | undefined) {
     this._connectionData = value;
     void this._render();
   }
@@ -80,7 +80,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   }
 
   /**
-   * Render OmniSci into this widget's node.
+   * Render HeavyAI into this widget's node.
    */
   private _render(): Promise<void> {
     if (this._widget) {
@@ -95,7 +95,7 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
       return Promise.resolve(void 0);
     }
     const data = JSON.parse(text.replace(/\n/g, ''));
-    this._widget = new OmniSciVega({
+    this._widget = new HeavyAIVega({
       vega: data,
       connection: this._connectionData
     });
@@ -116,14 +116,14 @@ export class OmniSciVegaViewer extends DocumentWidget<Widget> {
   }
 
   private _ready = new PromiseDelegate<void>();
-  private _widget: OmniSciVega | null = null;
-  private _connectionData: IOmniSciConnectionData | undefined;
+  private _widget: HeavyAIVega | null = null;
+  private _connectionData: IHeavyAIConnectionData | undefined;
 }
 
 /**
- * A namespace for OmniSciVegaViewer statics.
+ * A namespace for HeavyAIVegaViewer statics.
  */
-export namespace OmniSciVegaViewer {
+export namespace HeavyAIVegaViewer {
   /**
    * Options to create a new document viewer.
    */
@@ -136,18 +136,18 @@ export namespace OmniSciVegaViewer {
     /**
      * An options manager for the document.
      */
-    manager: IOmniSciConnectionManager;
+    manager: IHeavyAIConnectionManager;
   }
 }
 
 /**
  * A widget factory for images.
  */
-export class OmniSciVegaViewerFactory extends ABCWidgetFactory<
-  OmniSciVegaViewer,
+export class HeavyAIVegaViewerFactory extends ABCWidgetFactory<
+  HeavyAIVegaViewer,
   DocumentRegistry.IModel
 > {
-  constructor(options: OmniSciVegaViewerFactory.IOptions) {
+  constructor(options: HeavyAIVegaViewerFactory.IOptions) {
     super(options);
     this._manager = options.manager;
   }
@@ -157,18 +157,18 @@ export class OmniSciVegaViewerFactory extends ABCWidgetFactory<
    */
   protected createNewWidget(
     context: DocumentRegistry.IContext<DocumentRegistry.IModel>
-  ): OmniSciVegaViewer {
-    return new OmniSciVegaViewer({ context, manager: this._manager });
+  ): HeavyAIVegaViewer {
+    return new HeavyAIVegaViewer({ context, manager: this._manager });
   }
 
-  private _manager: IOmniSciConnectionManager;
+  private _manager: IHeavyAIConnectionManager;
 }
 
-export namespace OmniSciVegaViewerFactory {
+export namespace HeavyAIVegaViewerFactory {
   export interface IOptions extends DocumentRegistry.IWidgetFactoryOptions {
     /**
      * A connection manager.
      */
-    manager: IOmniSciConnectionManager;
+    manager: IHeavyAIConnectionManager;
   }
 }

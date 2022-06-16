@@ -1,17 +1,15 @@
-name: jupyterlab-omnisci
+name: jupyterlab-heavyai
 channels:
   - conda-forge
 dependencies:
-  - pymapd>=0.12.0
+  - heavyai
   - nodejs
   - python>=3.7
   - jupyterlab<3.0.0,>=2.0.0
+  - jupyter-book
   - ipywidgets
   - pyyaml
   - vdom
   - tornado
-  - black
-  - wheel
-  - twine
   - altair
   - ibis-framework

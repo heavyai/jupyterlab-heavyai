@@ -3,9 +3,9 @@ import { JSONObject, PromiseDelegate } from '@lumino/coreutils';
 import { Widget } from '@lumino/widgets';
 
 import {
-  IOmniSciConnectionData,
+  IHeavyAIConnectionData,
   makeConnection,
-  OmniSciConnection
+  HeavyAIConnection
 } from './connection';
 
 /**
@@ -14,18 +14,18 @@ import {
 const IMAGE_MIME = 'image/png';
 
 /**
- * A class for rendering a OmniSci-generated image.
+ * A class for rendering a HeavyAI-generated image.
  */
-export class OmniSciVega extends Widget {
+export class HeavyAIVega extends Widget {
   /**
-   * Construct a new OmniSci widget.
+   * Construct a new HeavyAI widget.
    */
-  constructor(options: OmniSciVega.IOptions) {
+  constructor(options: HeavyAIVega.IOptions) {
     super();
-    this.addClass('omnisci-OmniSciVega');
+    this.addClass('heavyai-HeavyAIVega');
     this._img = document.createElement('img');
     this._error = document.createElement('pre');
-    this._error.className = 'omnisci-ErrorMessage';
+    this._error.className = 'heavyai-ErrorMessage';
     this.node.appendChild(this._img);
     this.node.appendChild(this._error);
 
@@ -105,17 +105,17 @@ export class OmniSciVega extends Widget {
   private _rendered = new PromiseDelegate<string>();
   private _vega: JSONObject;
   private _vegaLite: JSONObject | undefined;
-  private _connectionPromise: Promise<OmniSciConnection>;
+  private _connectionPromise: Promise<HeavyAIConnection>;
   private _img: HTMLImageElement;
   private _error: HTMLElement;
 }
 
 /**
- * A namespace for OmniSciVega statics.
+ * A namespace for HeavyAIVega statics.
  */
-export namespace OmniSciVega {
+export namespace HeavyAIVega {
   /**
-   * Options used to create a new OmniSciVega widget.
+   * Options used to create a new HeavyAIVega widget.
    */
   export interface IOptions {
     /**
@@ -126,7 +126,7 @@ export namespace OmniSciVega {
     /**
      * Connection information.
      */
-    connection: IOmniSciConnectionData;
+    connection: IHeavyAIConnectionData;
 
     /**
      * An optional vega-lite spec which was used to generate the vega spec.

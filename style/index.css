@@ -1,46 +1,46 @@
 :root {
-  --omnisci-vega-toolbar-height: calc(36px + var(--jp-border-width));
-  --omnisci-sqleditor-toolbar-min-height: 52px;
+  --heavyai-vega-toolbar-height: calc(36px + var(--jp-border-width));
+  --heavyai-sqleditor-toolbar-min-height: 52px;
 }
 
-.omnisci-ErrorMessage {
+.heavyai-ErrorMessage {
   background-color: var(--jp-rendermime-error-background);
   color: var(--jp-ui-font-color1);
   white-space: pre-wrap;
 }
 
-.omnisci-OmniSciVegaViewer {
+.heavyai-HeavyAIVegaViewer {
   height: 100%;
   width: 100%;
 }
 
-.omnisci-OmniSciVega {
+.heavyai-HeavyAIVega {
   height: 100%;
   width: 100%;
   overflow: auto;
 }
 
-.omnisci-OmniSciGrid-content {
+.heavyai-HeavyAIGrid-content {
   height: 100%;
 }
 
-.omnisci-RenderedOmniSciSQLEditor .omnisci-OmniSciSQLEditor {
+.heavyai-RenderedHeavyAISQLEditor .heavyai-HeavyAISQLEditor {
   height: 100%;
 }
 
-.jp-Cell .jp-OutputArea-output.omnisci-RenderedOmniSciSQLEditor {
-  min-height: calc(384px + var(--omnisci-sqleditor-toolbar-min-height));
+.jp-Cell .jp-OutputArea-output.heavyai-RenderedHeavyAISQLEditor {
+  min-height: calc(384px + var(--heavyai-sqleditor-toolbar-min-height));
 }
 
-.omnisci-OmniSciSQLEditor .p-SplitPanel {
+.heavyai-HeavyAISQLEditor .p-SplitPanel {
   height: 100%;
 }
 
-.omnisci-OmniSciGrid {
+.heavyai-HeavyAIGrid {
   min-height: 128px;
 }
 
-.omnisci-OmniSci-toolbar {
+.heavyai-HeavyAI-toolbar {
   justify-content: right;
   align-items: center;
   padding: 12px;
@@ -50,18 +50,18 @@
   border-bottom: var(--jp-border-width) solid var(--jp-toolbar-border-color);
   box-shadow: var(--jp-toolbar-box-shadow);
   background: var(--jp-toolbar-background);
-  min-height: var(--omnisci-sqleditor-toolbar-min-height);
+  min-height: var(--heavyai-sqleditor-toolbar-min-height);
 }
 
-.omnisci-OmniSciVegaViewer .jp-Toolbar.omnisci-OmniSci-toolbar {
-  height: var(--omnisci-vega-toolbar-height) !important;
+.heavyai-HeavyAIVegaViewer .jp-Toolbar.heavyai-HeavyAI-toolbar {
+  height: var(--heavyai-vega-toolbar-height) !important;
 }
 
-.omnisci-OmniSci-toolbar .jp-Toolbar-item {
+.heavyai-HeavyAI-toolbar .jp-Toolbar-item {
   height: auto;
 }
 
-.omnisci-OmniSci-toolbar .jp-Editor {
+.heavyai-HeavyAI-toolbar .jp-Editor {
   flex: 1 1 auto;
   font-size: 1em;
   font-family: monospace;
@@ -70,26 +70,26 @@
   height: 100%;
 }
 
-.omnisci-OmniSci-toolbar .jp-Editor.jp-mod-focused {
+.heavyai-HeavyAI-toolbar .jp-Editor.jp-mod-focused {
   border: var(--jp-border-width) solid var(--jp-cell-editor-active-border-color);
   box-shadow: var(--jp-input-box-shadow);
   background-color: var(--jp-cell-editor-active-background);
 }
 
-.omnisci-OmniSci-toolbar .jp-Editor .CodeMirror {
+.heavyai-HeavyAI-toolbar .jp-Editor .CodeMirror {
   width: 100%;
 }
 
-.omnisci-OmniSci-logo {
-  background-image: url('omnisci-logo.svg');
+.heavyai-HeavyAI-logo {
+  background-image: url('heavyai-logo.ico');
   background-size: 100%;
 }
 
-.p-Menu-itemIcon.omnisci-OmniSci-logo {
+.p-Menu-itemIcon.heavyai-HeavyAI-logo {
   background-size: 75%;
 }
 
-#setting-editor .omnisci-OmniSci-logo {
+#setting-editor .heavyai-HeavyAI-logo {
   background-repeat: no-repeat;
   background-position: center;
 }
