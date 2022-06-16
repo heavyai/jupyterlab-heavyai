@@ -27,22 +27,22 @@ import { ReadonlyJSONObject } from '@lumino/coreutils';
 import { DataGrid, TextRenderer } from '@lumino/datagrid';
 import { Widget } from '@lumino/widgets';
 import {
-  IHeavyyaiConnectionData,
-  IHeavyyaiConnectionManager,
-  HeavyyaiCompletionConnector,
-  HeavyyaiConnectionManager
+  IHeavyAIConnectionData,
+  IHeavyAIConnectionManager,
+  HeavyAICompletionConnector,
+  HeavyAIConnectionManager
 } from './connection';
-import { HeavyyaiSQLEditor } from './grid';
+import { HeavyAISQLEditor } from './grid';
 import {
-  RenderedHeavyyaiSQLEditor,
+  RenderedHeavyAISQLEditor,
   sqlEditorRendererFactory
 } from './mimeextensions';
-import { HeavyyaiVegaViewer, HeavyyaiVegaViewerFactory } from './viewer';
+import { HeavyAIVegaViewer, HeavyAIVegaViewerFactory } from './viewer';
 
 /**
  * The name of the factory that creates pdf widgets.
  */
-const FACTORY = 'HeavyyaiVega';
+const FACTORY = 'HeavyAIVega';
 
 /**
  * Command IDs for the extension.
@@ -93,23 +93,23 @@ const NOTEBOOK_PLUGIN_ID = 'jupyterlab-heavyai:notebook';
 /**
  * The HeavyAI connection handler extension.
  */
-const heavyaiConnectionPlugin: JupyterFrontEndPlugin<IHeavyyaiConnectionManager> = {
-  activate: activateHeavyyaiConnection,
+const heavyaiConnectionPlugin: JupyterFrontEndPlugin<IHeavyAIConnectionManager> = {
+  activate: activateHeavyAIConnection,
   id: CONNECTION_PLUGIN_ID,
   requires: [ICommandPalette, IMainMenu, ISettingRegistry],
-  provides: IHeavyyaiConnectionManager,
+  provides: IHeavyAIConnectionManager,
   autoStart: true
 };
 
-async function activateHeavyyaiConnection(
+async function activateHeavyAIConnection(
   app: JupyterFrontEnd,
   palette: ICommandPalette,
   mainMenu: IMainMenu,
   settingRegistry: ISettingRegistry
-): Promise<IHeavyyaiConnectionManager> {
+): Promise<IHeavyAIConnectionManager> {
   // Fetch the initial state of the settings.
   const settings = await settingRegistry.load(CONNECTION_PLUGIN_ID);
-  const manager = new HeavyyaiConnectionManager({ settings });
+  const manager = new HeavyAIConnectionManager({ settings });
 
   // Add an application-wide connection-setting command.
   app.commands.addCommand(CommandIDs.setConnection, {
@@ -131,7 +131,7 @@ async function activateHeavyyaiConnection(
       manager.environment = environment;
       return environment;
     },
-    label: 'Set Heavyyai Connection Environment...'
+    label: 'Set HeavyAI Connection Environment...'
   });
 
   mainMenu.settingsMenu.addGroup(
@@ -141,18 +141,18 @@ async function activateHeavyyaiConnection(
     ],
     50
   );
-  palette.addItem({ command: CommandIDs.setConnection, category: 'Heavyyai' });
-  palette.addItem({ command: CommandIDs.setEnvironment, category: 'Heavyyai' });
+  palette.addItem({ command: CommandIDs.setConnection, category: 'HeavyAI' });
+  palette.addItem({ command: CommandIDs.setEnvironment, category: 'HeavyAI' });
 
   return manager;
 }
 
 /**
- * The Heavyyai-Vega file type.
+ * The HeavyAI-Vega file type.
  */
 const heavyaiFileType: Partial<DocumentRegistry.IFileType> = {
   name: 'heavyai-vega',
-  displayName: 'Heavyyai Vega',
+  displayName: 'HeavyAI Vega',
   fileFormat: 'text',
   extensions: EXTENSIONS,
   mimeTypes: [VEGA_MIME_TYPE],
@@ -163,20 +163,20 @@ const heavyaiFileType: Partial<DocumentRegistry.IFileType> = {
  * The HeavyAI vega file handler extension.
  */
 const heavyaiVegaPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateHeavyyaiVegaViewer,
+  activate: activateHeavyAIVegaViewer,
   id: VEGA_PLUGIN_ID,
-  requires: [ILayoutRestorer, IHeavyyaiConnectionManager],
+  requires: [ILayoutRestorer, IHeavyAIConnectionManager],
   autoStart: true
 };
 
-function activateHeavyyaiVegaViewer(
+function activateHeavyAIVegaViewer(
   app: JupyterFrontEnd,
   restorer: ILayoutRestorer,
-  manager: IHeavyyaiConnectionManager
+  manager: IHeavyAIConnectionManager
 ): void {
   const viewerNamespace = 'heavyai-viewer-widget';
 
-  const factory = new HeavyyaiVegaViewerFactory({
+  const factory = new HeavyAIVegaViewerFactory({
     name: FACTORY,
     modelName: 'text',
     fileTypes: ['json', 'heavyai-vega', 'vega3', 'vega4'],
@@ -184,7 +184,7 @@ function activateHeavyyaiVegaViewer(
     readOnly: true,
     manager
   });
-  const viewerTracker = new WidgetTracker<HeavyyaiVegaViewer>({
+  const viewerTracker = new WidgetTracker<HeavyAIVegaViewer>({
     namespace: viewerNamespace
   });
 
@@ -198,16 +198,26 @@ function activateHeavyyaiVegaViewer(
   app.docRegistry.addFileType(heavyaiFileType);
   app.docRegistry.addWidgetFactory(factory);
 
-  factory.widgetCreated.connect((sender, widget) => {
-    void viewerTracker.add(widget);
+  factory.widgetCreated.connect(
+    (
+      sender: any,
+      widget: {
+        context: { path: string };
+        title: { iconClass: string; iconLabel: string };
+      }
+    ) => {
+      if (widget instanceof HeavyAIVegaViewer) {
+        void viewerTracker.add(widget);
+      }
 
-    const types = app.docRegistry.getFileTypesForPath(widget.context.path);
+      const types = app.docRegistry.getFileTypesForPath(widget.context.path);
 
-    if (types.length > 0) {
-      widget.title.iconClass = types[0].iconClass || '';
-      widget.title.iconLabel = types[0].iconLabel || '';
+      if (types.length > 0) {
+        widget.title.iconClass = types[0].iconClass || '';
+        widget.title.iconLabel = types[0].iconLabel || '';
+      }
     }
-  });
+  );
 
   // Update the default connection data for viewers that don't already
   // have it defined.
@@ -225,7 +235,7 @@ function activateHeavyyaiVegaViewer(
  * The HeavyAI SQL editor extension.
  */
 const heavyaiGridPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateHeavyyaiGridViewer,
+  activate: activateHeavyAIGridViewer,
   id: SQL_EDITOR_PLUGIN_ID,
   requires: [
     ICompletionManager,
@@ -233,26 +243,26 @@ const heavyaiGridPlugin: JupyterFrontEndPlugin<void> = {
     ILauncher,
     ILayoutRestorer,
     IMainMenu,
-    IHeavyyaiConnectionManager,
+    IHeavyAIConnectionManager,
     IThemeManager
   ],
   autoStart: true
 };
 
-function activateHeavyyaiGridViewer(
+function activateHeavyAIGridViewer(
   app: JupyterFrontEnd,
   completionManager: ICompletionManager,
   editorServices: IEditorServices,
   launcher: ILauncher,
   restorer: ILayoutRestorer,
   mainMenu: IMainMenu,
-  manager: IHeavyyaiConnectionManager,
+  manager: IHeavyAIConnectionManager,
   themeManager: IThemeManager
 ): void {
   const gridNamespace = 'heavyai-grid-widget';
   const mimeGridNamespace = 'heavyai-mime-grid-widget';
 
-  const gridTracker = new WidgetTracker<MainAreaWidget<HeavyyaiSQLEditor>>({
+  const gridTracker = new WidgetTracker<MainAreaWidget<HeavyAISQLEditor>>({
     namespace: gridNamespace
   });
 
@@ -280,7 +290,7 @@ function activateHeavyyaiGridViewer(
   gridTracker.widgetAdded.connect((sender, explorer) => {
     const editor = explorer.content.input.editor;
     const sessionId = explorer.content.grid.sessionId;
-    const connector = new HeavyyaiCompletionConnector({
+    const connector = new HeavyAICompletionConnector({
       connection: explorer.content.grid.connectionData,
       sessionId
     });
@@ -289,7 +299,7 @@ function activateHeavyyaiGridViewer(
 
     explorer.content.grid.onModelChanged.connect(() => {
       const sessionId = explorer.content.grid.sessionId;
-      handle.connector = new HeavyyaiCompletionConnector({
+      handle.connector = new HeavyAICompletionConnector({
         connection: explorer.content.grid.connectionData,
         sessionId
       });
@@ -326,7 +336,7 @@ function activateHeavyyaiGridViewer(
   // editor mime renderer, but that requires some full-extension machinery.
   // So we extend the renderer factory with a "created" signal, and when that
   // fires, do some extra work in the real extension.
-  const mimeGridTracker = new WidgetTracker<RenderedHeavyyaiSQLEditor>({
+  const mimeGridTracker = new WidgetTracker<RenderedHeavyAISQLEditor>({
     namespace: mimeGridNamespace
   });
   // Add the new renderer to an instance tracker when it is created.
@@ -340,7 +350,7 @@ function activateHeavyyaiGridViewer(
     const grid = mime.widget;
     const sessionId = grid.grid.sessionId;
     const editor = grid.input.editor;
-    const connector = new HeavyyaiCompletionConnector({
+    const connector = new HeavyAICompletionConnector({
       connection: grid.grid.connectionData,
       sessionId
     });
@@ -349,7 +359,7 @@ function activateHeavyyaiGridViewer(
 
     grid.grid.onModelChanged.connect(() => {
       const sessionId = grid.grid.sessionId;
-      handle.connector = new HeavyyaiCompletionConnector({
+      handle.connector = new HeavyAICompletionConnector({
         connection: grid.grid.connectionData,
         sessionId
       });
@@ -402,23 +412,23 @@ function activateHeavyyaiGridViewer(
   app.commands.addKeyBinding({
     command: CommandIDs.selectCompleter,
     keys: ['Enter'],
-    selector: `.heavyai-Heavyyai-toolbar .jp-Editor.jp-mod-completer-active`
+    selector: `.heavyai-HeavyAI-toolbar .jp-Editor.jp-mod-completer-active`
   });
   app.commands.addKeyBinding({
     command: CommandIDs.invokeCompleter,
     keys: ['Tab'],
-    selector: `.heavyai-Heavyyai-toolbar .jp-Editor.jp-mod-completer-enabled`
+    selector: `.heavyai-HeavyAI-toolbar .jp-Editor.jp-mod-completer-enabled`
   });
 
   app.commands.addCommand(CommandIDs.newGrid, {
-    label: 'Heavyyai SQL Editor',
-    iconClass: 'heavyai-Heavyyai-logo',
+    label: 'HeavyAI SQL Editor',
+    iconClass: 'heavyai-HeavyAI-logo',
     execute: args => {
       const query = (args['initialQuery'] as string) || '';
       const connectionData =
-        (args['connectionData'] as IHeavyyaiConnectionData) || undefined;
+        (args['connectionData'] as IHeavyAIConnectionData) || undefined;
       const sessionId = (args['sessionId'] as string) || undefined;
-      const grid = new HeavyyaiSQLEditor({
+      const grid = new HeavyAISQLEditor({
         editorFactory: editorServices.factoryService.newInlineEditor,
         manager,
         connectionData,
@@ -427,9 +437,9 @@ function activateHeavyyaiGridViewer(
       });
       Private.id++;
       grid.id = `heavyai-grid-widget-${Private.id}`;
-      grid.title.label = `Heavyyai SQL Editor ${Private.id}`;
+      grid.title.label = `HeavyAI SQL Editor ${Private.id}`;
       grid.title.closable = true;
-      grid.title.iconClass = 'heavyai-Heavyyai-logo';
+      grid.title.iconClass = 'heavyai-HeavyAI-logo';
       const main = new MainAreaWidget({ content: grid });
       main.id = grid.id;
       void gridTracker.add(main);
@@ -465,31 +475,31 @@ function activateHeavyyaiGridViewer(
  * The HeavyAI inital notebook extension.
  */
 const heavyaiNotebookPlugin: JupyterFrontEndPlugin<void> = {
-  activate: activateHeavyyaiNotebook,
+  activate: activateHeavyAINotebook,
   id: NOTEBOOK_PLUGIN_ID,
   requires: [
     JupyterFrontEnd.IPaths,
     ICommandPalette,
     IMainMenu,
     INotebookTracker,
-    IHeavyyaiConnectionManager,
+    IHeavyAIConnectionManager,
     IRouter
   ],
   autoStart: true
 };
 
-function activateHeavyyaiNotebook(
+function activateHeavyAINotebook(
   app: JupyterFrontEnd,
   paths: JupyterFrontEnd.IPaths,
   palette: ICommandPalette,
   menu: IMainMenu,
   tracker: INotebookTracker,
-  manager: IHeavyyaiConnectionManager,
+  manager: IHeavyAIConnectionManager,
   router: IRouter
 ): void {
   // Add a command to inject the ibis connection data into the active notebook.
   app.commands.addCommand(CommandIDs.injectIbisConnection, {
-    label: 'Insert Ibis Heavyyai Connection…',
+    label: 'Insert Ibis HeavyAI Connection…',
     execute: async () => {
       const current = tracker.currentWidget;
       if (!current) {
@@ -510,13 +520,13 @@ function activateHeavyyaiNotebook(
 
   // Add a command to create a new notebook with an ibis connection.
   app.commands.addCommand(CommandIDs.createNotebook, {
-    label: 'Notebook with Heavyyai Connection',
-    iconClass: 'heavyai-Heavyyai-logo',
+    label: 'Notebook with HeavyAI Connection',
+    iconClass: 'heavyai-HeavyAI-logo',
     execute: async args => {
-      const connectionData: IHeavyyaiConnectionData =
-        (args['connectionData'] as IHeavyyaiConnectionData) || {};
-      const environment: IHeavyyaiConnectionData =
-        (args['environment'] as IHeavyyaiConnectionData) || {};
+      const connectionData: IHeavyAIConnectionData =
+        (args['connectionData'] as IHeavyAIConnectionData) || {};
+      const environment: IHeavyAIConnectionData =
+        (args['environment'] as IHeavyAIConnectionData) || {};
       const sessionId = (args['sessionId'] as string) || '';
       const initialQuery = (args['initialQuery'] as string) || '';
 
@@ -558,7 +568,7 @@ function activateHeavyyaiNotebook(
   // This specifically does not ask for user input, as we want it to
   // be triggerable via routing.
   app.commands.addCommand(CommandIDs.createWorkspace, {
-    label: 'Create Heavyyai Workspace',
+    label: 'Create HeavyAI Workspace',
     execute: async () => {
       await app.restored;
       const workspace = await Private.fetchWorkspaceData();
@@ -589,7 +599,7 @@ function activateHeavyyaiNotebook(
   // Add ibis connection injection to the palette and the edit menu.
   palette.addItem({
     command: CommandIDs.injectIbisConnection,
-    category: 'Heavyyai'
+    category: 'HeavyAI'
   });
   menu.editMenu.addGroup([{ command: CommandIDs.injectIbisConnection }], 50);
 
@@ -597,7 +607,7 @@ function activateHeavyyaiNotebook(
   menu.fileMenu.newMenu.addGroup([{ command: CommandIDs.createNotebook }], 11);
   palette.addItem({
     command: CommandIDs.createWorkspace,
-    category: 'Heavyyai'
+    category: 'HeavyAI'
   });
 
   // Add workspace creation to the router, so that external services
@@ -633,7 +643,7 @@ namespace Private {
    * to connect via session id.
    */
   export function canUseSession(
-    data: IHeavyyaiConnectionData | undefined
+    data: IHeavyAIConnectionData | undefined
   ): boolean {
     return !!data && !!data.host && !!data.port && !!data.protocol;
   }
@@ -645,12 +655,12 @@ namespace Private {
     /**
      * Connection data for the initial state.
      */
-    connection?: IHeavyyaiConnectionData;
+    connection?: IHeavyAIConnectionData;
 
     /**
      * Connection data for the initial state.
      */
-    environment?: IHeavyyaiConnectionData;
+    environment?: IHeavyAIConnectionData;
 
     /**
      * An initial query to use.
@@ -738,7 +748,7 @@ namespace Private {
   });
 
   /**
-   * A template for an Ibis Heavyyai client.
+   * A template for an Ibis HeavyAI client.
    */
   const IBIS_TEMPLATE = `
 {{os}}import ibis
@@ -749,7 +759,7 @@ con = ibis.heavyai.connect(
 )`.trim();
 
   /**
-   * A template for an Ibis Heavyyai client when a session ID is available.
+   * A template for an Ibis HeavyAI client when a session ID is available.
    */
   const SESSION_IBIS_TEMPLATE = `
 {{os}}import ibis
@@ -774,18 +784,18 @@ con = ibis.heavyai.connect(
    */
   export function injectIbisConnection(options: {
     notebook: Notebook;
-    connection?: IHeavyyaiConnectionData;
-    environment?: IHeavyyaiConnectionData;
+    connection?: IHeavyAIConnectionData;
+    environment?: IHeavyAIConnectionData;
     sessionId?: string;
     initialQuery?: string;
   }) {
     const notebook = options.notebook;
     const env = options.environment || {};
-    const con: IHeavyyaiConnectionData = {};
+    const con: IHeavyAIConnectionData = {};
     let os = Object.keys(env).length === 0 ? '' : 'import os\n';
     // Merge the connection with any environment variables
     // that have been specified.
-    const keys: ReadonlyArray<keyof IHeavyyaiConnectionData> = [
+    const keys: ReadonlyArray<keyof IHeavyAIConnectionData> = [
       'host',
       'protocol',
       'port',

@@ -9,7 +9,6 @@ from copy import copy
 import typing
 
 import ibis
-import ibis.client
 import ipywidgets
 
 import altair
