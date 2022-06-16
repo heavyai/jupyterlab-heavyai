@@ -1,6 +1,6 @@
-import { JSONObject, PromiseDelegate } from '@phosphor/coreutils';
+import { JSONObject, PromiseDelegate } from '@lumino/coreutils';
 
-import { Widget } from '@phosphor/widgets';
+import { Widget } from '@lumino/widgets';
 
 import {
   IOmniSciConnectionData,

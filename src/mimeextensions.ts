@@ -1,8 +1,8 @@
-import { JSONObject } from '@phosphor/coreutils';
+import { JSONObject } from '@lumino/coreutils';
 
-import { ISignal, Signal } from '@phosphor/signaling';
+import { ISignal, Signal } from '@lumino/signaling';
 
-import { SingletonLayout, Widget } from '@phosphor/widgets';
+import { SingletonLayout, Widget } from '@lumino/widgets';
 
 import { CodeMirrorEditorFactory } from '@jupyterlab/codemirror';
 

@@ -19,3 +19,4 @@ __pycache__
 *.tgz
 *.gz
 *.whl
+yarn.lock
