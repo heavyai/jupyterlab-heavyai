@@ -1,6 +1,6 @@
+from jupyterlab_server.server import APIHandler
 from tornado import web
 
-from jupyterlab_server.server import APIHandler
 from .config import HeavyAIConfig
 
 

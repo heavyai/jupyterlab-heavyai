@@ -1,14 +1,15 @@
 """
 Importing this module registers Jupyter cell magics for rendering
-Vega Lite and Vega in the MapD server and for rendering a SQL editor given a query.
+Vega Lite and Vega in the MapD server and for rendering a SQL editor given
+a query.
 """
 
 import ast
-import yaml
 import urllib.parse
 
-import ibis
 import heavyai
+import ibis_heavyai
+import yaml  # type: ignore
 
 __all__ = ["HeavyAIVegaRenderer", "HeavyAISQLEditorRenderer"]
 
@@ -18,9 +19,9 @@ from IPython.display import display
 # Allow this module to be imported outside of an IPython context
 # by making `register_cell_magic a no-op in that case.
 try:
-    get_ipython()  # noqa
+    get_ipython()  # type: ignore # noqa
 except Exception:
-    register_cell_magic = lambda x: x
+    register_cell_magic = lambda x: x  # noqa
 
 
 class HeavyAIVegaRenderer:
@@ -50,7 +51,9 @@ class HeavyAIVegaRenderer:
             Vega lite data to render.
         """
         if (not (data or vl_data)) or (data and vl_data):
-            raise RuntimeError("Either vega or vega lite data must be specified")
+            raise RuntimeError(
+                "Either vega or vega lite data must be specified"
+            )
         connection, session = _make_connection(connection)
         self.connection = connection
         self.session = session
@@ -179,7 +182,7 @@ def _make_connection(connection):
         if available. If the session id is not available (for instance, if
         a dict is provided), then returns None for the second item.
     """
-    if isinstance(connection, ibis.heavyai.HeavyAIDBClient):
+    if isinstance(connection, ibis_heavyai.Backend):
         con = dict(
             host=connection.host,
             port=connection.port,

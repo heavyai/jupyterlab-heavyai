@@ -1,2 +1,2 @@
-from .altair import *
-from .magics import *
+from .altair import *  # noqa
+from .magics import *  # noqa

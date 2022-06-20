@@ -1,25 +1,30 @@
 """
 This file enables using Ibis expressions inside Altair charts.
 
-To use it, import it and enable the `ibis` renderer and `ibis` data transformer,
+To use it, import it and enable the `ibis` renderer and `ibis` data transformer
 then pass an Ibis expression directly to `altair.Chart`.
 """
 import pprint
-from copy import copy
 import typing
-
-import ibis
-import ipywidgets
+from copy import copy
 
 import altair
+import ibis
+import ipywidgets
 import pandas
 from altair.vegalite.v3.display import default_renderer
 
 __all__ = ["display_chart", "interactive_chart", "get_display"]
 
 import ipykernel.comm
-from IPython.display import JSON, DisplayObject, display, Code, HTML, DisplayHandle
-
+from IPython.display import (
+    HTML,
+    JSON,
+    Code,
+    DisplayHandle,
+    DisplayObject,
+    display,
+)
 
 # Data transformer to use in ibis renderer
 DEFAULT_TRANSFORMER = altair.utils.data.to_json
@@ -35,7 +40,8 @@ COMM_ID = "extract-vega-lite"
 
 
 # Set this to the active output when we are rendering with ipywidgets.
-# We use this to get the output into the renderer, without having to pass it in explicitly.
+# We use this to get the output into the renderer, without having to pass it
+# in explicitly.
 ACTIVE_OUTPUT: typing.Optional[ipywidgets.Output] = None
 DISPLAY_HANDLE: typing.Optional[display] = None
 
@@ -48,20 +54,24 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
 
         type:  What the mimetype of the output should be. Valid types:
             'vl': Vega Lite mimetype so the chart is rendered in the browser.
-            'vl-heavyai': HeavyAI Vega Lite mimetype so the chart is rendered with the HeavyAI Vega renderer
+            'vl-heavyai': HeavyAI Vega Lite mimetype so the chart is rendered
+              with the HeavyAI Vega renderer
             'json': JSON mimetype so you can see the JSON of the chart.
             'sql': Text mimetype to see the SQL computed for the chart.
 
-        extract: Whether to extract the transformations from the Vega Lite spec. If True, the display for
-                 this cell becomes asyncronous, because it has to query the frontend through a comm for the
+        extract: Whether to extract the transformations from the Vega Lite
+                 spec. If True, the display for
+                 this cell becomes asyncronous, because it has to query the
+                 frontend through a comm for the
                  updated spec.
-        compile: Whether to take the list of transformations on the spec and compile them to Ibis.
+        compile: Whether to take the list of transformations on the spec and
+                 compile them to Ibis.
     """
     # If options for vega-embed have been provided, pass those to the renderer.
     embed_options = options.get("embed_options", None)
     assert type in ("vl", "vl-heavyai", "json", "sql")
     if type == "vl":
-        display_type = lambda spec: VegaLite(
+        display_type = lambda spec: VegaLite(  # noqa
             spec, metadata={"embed_options": embed_options}
         )
         display_data = EMPTY_SPEC
@@ -88,7 +98,8 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
             # and record the updated expression
             if compile:
                 expr = update_spec(expr, view)
-            # Save the resulting expression so we can access it for the SQL output.
+            # Save the resulting expression so we can access it for the SQL
+            # output.
             all_expressions.append(expr)
             # If we are compiling to vega lite, get the data and run
             # it through the default transformer (to_csv)
@@ -126,11 +137,13 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
 
             # If DISPLAY_HANDLE is set but it's not a DisplayHandle yet
             if not isinstance(DISPLAY_HANDLE, DisplayHandle):
-                DISPLAY_HANDLE = display(display_type(display_data), display_id=True)
+                DISPLAY_HANDLE = display(
+                    display_type(display_data), display_id=True
+                )
             extract_spec(spec, callback)
         elif ACTIVE_OUTPUT:
             # we are in ipywidget mode
-            def callback(s, ACTIVE_OUTPUT=ACTIVE_OUTPUT):
+            def callback(s, ACTIVE_OUTPUT=ACTIVE_OUTPUT):  # type: ignore
                 ACTIVE_OUTPUT.clear_output(wait=True)
                 ACTIVE_OUTPUT.append_display_data(to_display(s))
 
@@ -142,14 +155,17 @@ def ibis_renderer(spec, type="vl", extract=True, compile=True, **options):
 
         return {"text/plain": ""}
 
-    return get_ipython().display_formatter.format(to_display(spec))[0]  # noqa: F821
+    return get_ipython().display_formatter.format(to_display(spec))[  # noqa
+        0
+    ]  # noqa: F821
 
 
 def interactive_chart(f, controls):
     """
     Connect Altair chart to a function.
 
-    Like `ipywidgets.interactive_output` but should return Altair chart and supports
+    Like `ipywidgets.interactive_output` but should return Altair chart and
+    supports
     async altair rendering.
     """
 
@@ -228,7 +244,8 @@ class CompatJSON(JSON):
 
 def extract_spec(spec, callback):
     """
-    Calls extract_transform on the frontend and calls the callback with the transformed spec.
+    Calls extract_transform on the frontend and calls the callback with the
+    transformed spec.
     """
     my_comm = ipykernel.comm.Comm(target_name=COMM_ID, data=spec)
 
@@ -252,15 +269,16 @@ def get_client(expr):
 
 def monkeypatch_altair():
     """
-    Needed until https://github.com/altair-viz/altair/issues/843 is fixed to let Altair
-    handle ibis inputs
+    Needed until https://github.com/altair-viz/altair/issues/843 is fixed to
+    let Altair handle ibis inputs
     """
     original_chart_init = altair.Chart.__init__
 
     def updated_chart_init(self, data=None, *args, **kwargs):
         """
         If user passes in a Ibis expression, create an empty dataframe with
-        those types and set the `ibis` attribute to the original ibis expression.
+        those types and set the `ibis` attribute to the original ibis
+        expression.
         """
         if data is not None and isinstance(data, ibis.Expr):
             expr = data
@@ -279,12 +297,15 @@ _name_to_ibis = {}
 
 def spec_views(spec):
     """
-    Given a vega lite spec, returns all the (possible) specifications in side of it:
+    Given a vega lite spec, returns all the (possible) specifications in side
+    of it:
     https://vega.github.io/vega-lite/docs/spec.html#documentation-overview
     """
     yield spec
     sub_specs = (
-        spec.get("layer", []) + spec.get("hconcat", []) + spec.get("vconcat", [])
+        spec.get("layer", [])
+        + spec.get("hconcat", [])
+        + spec.get("vconcat", [])
     )
     if "spec" in spec:
         sub_specs.append(spec["spec"])
@@ -299,7 +320,8 @@ def ibis_transformation(data):
     turn a pandas DF with the Ibis query that made it attached to it into
     a valid Vega Lite data dict. Since this has to be JSON serializiable
     (because of how Altair is set up), we create a unique name and
-    save the ibis expression globally with that name so we can pick it up later.
+    save the ibis expression globally with that name so we can pick it up
+    later.
     """
     assert isinstance(data, pandas.DataFrame)
     global _i
@@ -323,27 +345,34 @@ def vl_aggregate_to_grouping_expr(expr, a):
 
 def update_spec(expr, spec):
     """
-    Takes in an ibis expression and a spec, updating the spec and returning a new ibis expr
+    Takes in an ibis expression and a spec, updating the spec and returning a
+    new ibis expr
     """
     original_expr = expr
 
-    # iterate through transforms and move as many as we can into the ibis expression
-    # logic modified from
-    # https://github.com/vega/vega-lite-transforms2sql/blob/3b360144305a6cec79792036049e8a920e4d2c9e/transforms2sql.ts#L7
+    # iterate through transforms and move as many as we can into the ibis
+    # expression logic modified from
+    # https://github.com/vega/vega-lite-transforms2sql/blob/3b360144305a6cec79792036049e8a920e4d2c9e/transforms2sql.ts#L7  # noqa
     for transform in spec.get("transform", []):
         groupby = transform.pop("groupby", None)
         if groupby:
-            all_fields_exist = all([field in expr.columns for field in groupby])
+            all_fields_exist = all(
+                [field in expr.columns for field in groupby]
+            )
             if not all_fields_exist:
                 transform["groupby"] = groupby
-                # we referenced a field that isnt in the expression because it was an aggregate we coudnt process
+                # we referenced a field that isnt in the expression because it
+                # was an aggregate we coudnt process
                 continue
             expr = expr.groupby(groupby)
 
         aggregate = transform.pop("aggregate", None)
         if aggregate:
             expr = expr.aggregate(
-                [vl_aggregate_to_grouping_expr(original_expr, a) for a in aggregate]
+                [
+                    vl_aggregate_to_grouping_expr(original_expr, a)
+                    for a in aggregate
+                ]
             )
 
         filter_ = transform.pop("filter", None)
@@ -386,8 +415,8 @@ monkeypatch_altair()
 
 def display_chart(chart, backend_render=False):
     """
-    Given an Altair chart created around an Ibis expression, this displays the different
-    stages of rendering of that chart.
+    Given an Altair chart created around an Ibis expression, this displays
+    the different stages of rendering of that chart.
 
     This is more for debugging than for anything else.
     It iterates through all useful combinations for the renderer,
@@ -396,15 +425,21 @@ def display_chart(chart, backend_render=False):
 
 
 
-    backend_render: Whether to also render with HeavyAI's builtin Vega rendering.
+    backend_render: Whether to also render with HeavyAI's builtin Vega
+    rendering.
     """
 
     def display_header(name):
         display(HTML(f"<h3>{name}</h3>"))
 
     def display_render(compile, extract, type):
-        altair.renderers.enable("ibis", compile=compile, extract=extract, type=type)
-        method = f'altair.renderers.enable("ibis", compile={compile}, extract={extract}, type={repr(type)})'
+        altair.renderers.enable(
+            "ibis", compile=compile, extract=extract, type=type
+        )
+        method = (
+            f'altair.renderers.enable("ibis",'
+            f" compile={compile}, extract={extract}, type={repr(type)})"
+        )
         display(HTML(f"<strong><code>{method}</code></strong>"))
         display(chart)
 

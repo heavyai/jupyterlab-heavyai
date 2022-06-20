@@ -12,12 +12,14 @@ class HeavyAIConfig(Configurable):
     heavyai_session_manager = Instance(
         BaseHeavyAISessionManager,
         config=True,
-        help="A manager instance that knows how to get data for an active HeavyAI session",
+        help="A manager instance that knows how to get data for an active"
+        " HeavyAI session",
     )
 
     @default("heavyai_session_manager")
     def _default_heavyai_session_manager(self):
         """
-        Default to session in an ephemeral file, others as environment variables.
+        Default to session in an ephemeral file, others as environment
+        variables.
         """
         return HeavyAISessionManager(config=self.config)

@@ -1,8 +1,8 @@
 import json
 import os
 
-from traitlets.config import Configurable
 from traitlets import Unicode
+from traitlets.config import Configurable
 
 
 class BaseHeavyAISessionManager(Configurable):
