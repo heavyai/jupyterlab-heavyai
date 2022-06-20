@@ -24,6 +24,7 @@ dependencies = [
     "tornado",
     "jupyterlab>=2.0.0,<3.0.0",
     "ibis-framework >=2.0",
+    "ibis-heavyai",
     "heavyai",
 
     "importlib_metadata",  # drop for python >3.7
